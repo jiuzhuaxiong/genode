@@ -1,0 +1,13 @@
+In order to build the kernel adjust the the GENODE_DIR in etc/build.conf to 
+your setup.
+
+'make config' will use the HelenOS configuration tool to configure the kernel 
+settings, saving the settings in the build directory.
+Loading the preconfigured defaults does not work yet. All options have to be 
+set manually.
+As compiler option use the gcc_native option in order to use the Genode 
+toolchain.
+
+'make kernel' will build the kernel into the build directory. For this is work 
+in progress it does not build yet.
+
