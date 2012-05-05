@@ -1,0 +1,6 @@
+This repository contains the implementation of Genode for the SPARTAN
+kernel.
+
+For this is work in progress this repository is not fully integrated into the 
+Genode build process. As long as this is the fact use the provided 
+'build'-directory for building.

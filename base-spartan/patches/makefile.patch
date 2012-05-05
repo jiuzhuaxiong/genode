@@ -1,0 +1,38 @@
+=== modified file 'Makefile'
+--- Makefile	2011-09-07 00:12:22 +0000
++++ Makefile	2012-05-05 11:40:54 +0000
+@@ -29,6 +29,8 @@
+ # Just for this Makefile. Sub-makes will run in parallel if requested.
+ .NOTPARALLEL:
+ 
++DIR := $(dir $(lastword $(MAKEFILE_LIST)))
++
+ CSCOPE = cscope
+ CHECK = tools/check.sh
+ CONFIG = tools/config.py
+@@ -69,20 +71,20 @@
+ # Autotool (detects compiler features)
+ 
+ autotool $(COMMON_MAKEFILE) $(COMMON_HEADER): $(CONFIG_MAKEFILE)
+-	$(AUTOTOOL)
++	$(DIR)/$(AUTOTOOL)
+ 	-[ -f $(COMMON_HEADER_PREV) ] && diff -q $(COMMON_HEADER_PREV) $(COMMON_HEADER) && mv -f $(COMMON_HEADER_PREV) $(COMMON_HEADER)
+ 
+ # Build-time configuration
+ 
+ config_default $(CONFIG_MAKEFILE) $(CONFIG_HEADER): $(CONFIG_RULES)
+ ifeq ($(HANDS_OFF),y)
+-	$(CONFIG) $< hands-off $(PROFILE)
++	$($(DIR) $(CONFIG)) $< hands-off $(PROFILE)
+ else
+-	$(CONFIG) $< default $(PROFILE)
++	$($(DIR) $(CONFIG)) $< default $(PROFILE)
+ endif
+ 
+ config: $(CONFIG_RULES)
+-	$(CONFIG) $<
++	$($(DIR) $(CONFIG)) $<
+ 
+ # Release files
+ 
+
