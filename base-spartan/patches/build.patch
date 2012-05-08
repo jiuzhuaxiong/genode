@@ -1,6 +1,6 @@
 === modified file 'Makefile'
 --- Makefile	2011-09-07 00:12:22 +0000
-+++ Makefile	2012-05-07 21:22:58 +0000
++++ Makefile	2012-05-07 23:51:44 +0000
 @@ -29,6 +29,8 @@
  # Just for this Makefile. Sub-makes will run in parallel if requested.
  .NOTPARALLEL:
@@ -38,7 +38,7 @@
 
 === modified file 'kernel/Makefile'
 --- kernel/Makefile	2012-03-30 17:39:25 +0000
-+++ kernel/Makefile	2012-05-07 21:09:47 +0000
++++ kernel/Makefile	2012-05-08 00:49:51 +0000
 @@ -29,7 +29,9 @@
  ## Configuration
  #
@@ -59,7 +59,7 @@
  DEPEND_PREV = $(DEPEND).prev
  RAW = kernel.raw
  BIN = kernel.bin
-@@ -56,16 +58,16 @@
+@@ -56,18 +58,18 @@
  MAP_PREV = $(MAP).prev
  DISASM = kernel.disasm
  DUMP = kernel.dump
@@ -80,10 +80,23 @@
  JOBFILE = $(ROOT_PATH)/tools/jobfile.py
  
 -LINK = arch/$(KARCH)/_link.ld
+-EMPTY_MAP = generic/src/debug/empty_map.o
+-SIZEOK_MAP = generic/src/debug/sizeok_map.o
 +LINK = $(DIR)/arch/$(KARCH)/_link.ld
- EMPTY_MAP = generic/src/debug/empty_map.o
- SIZEOK_MAP = generic/src/debug/sizeok_map.o
++EMPTY_MAP = $(DIR)/generic/src/debug/empty_map.o
++SIZEOK_MAP = $(DIR)/generic/src/debug/sizeok_map.o
  
+ .PHONY: all clean
+ 
+@@ -81,7 +83,7 @@
+ ## Common compiler flags
+ #
+ 
+-INCLUDES = generic/include
++INCLUDES = $(DIR)/generic/include
+ 
+ ifeq ($(CONFIG_OPTIMIZE_FOR_SIZE),y)
+ 	OPTIMIZATION = s
 @@ -140,8 +142,8 @@
  # Mind the mutual ordering with the initialization of AFLAGS and LFLAGS.
  # The arch Makefile.inc must be included after the initialization.
@@ -95,6 +108,24 @@
  -include $(DEPEND)
  
  ## The at-sign
+@@ -298,7 +300,7 @@
+ #
+ 
+ ifeq ($(CONFIG_TEST),y)
+-	CFLAGS += -Itest/
++	CFLAGS += -I$(DIR)/test/
+ 	GENERIC_SOURCES += \
+ 		test/test.c \
+ 		test/atomic/atomic1.c \
+@@ -363,7 +365,7 @@
+ LFLAGS_LTO := $(addprefix -Xlinker ,$(LFLAGS))
+ 
+ ifeq ($(CONFIG_SYMTAB),y)
+-	SYMTAB_OBJECTS := generic/src/debug/real_map.o
++	SYMTAB_OBJECTS := $(DIR)/generic/src/debug/real_map.o
+ else
+ 	SYMTAB_OBJECTS :=
+ endif
 @@ -439,13 +441,13 @@
  	-[ -f $(DEPEND_PREV) ] && diff -q $(DEPEND_PREV) $@ && mv -f $(DEPEND_PREV) $@
  
@@ -116,7 +147,7 @@
 
 === modified file 'tools/config.py'
 --- tools/config.py	2011-12-02 17:29:43 +0000
-+++ tools/config.py	2012-05-07 21:22:58 +0000
++++ tools/config.py	2012-05-07 23:51:44 +0000
 @@ -43,7 +43,8 @@
  RULES_FILE = sys.argv[1]
  MAKEFILE = 'Makefile.config'

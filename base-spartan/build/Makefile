@@ -83,6 +83,51 @@ config:
 
 .PHONY: kernel
 kernel:
+	mkdir -p arch/amd64/src/boot
+	mkdir -p arch/amd64/src/debug
+	mkdir -p arch/amd64/src/ddi
+	mkdir -p arch/amd64/src/drivers
+	mkdir -p arch/amd64/src/bios
+	mkdir -p arch/amd64/src/mm
+	mkdir -p arch/amd64/src/cpu
+	mkdir -p arch/amd64/src/proc
+	mkdir -p arch/amd64/src/smp
+	mkdir -p genarch/src/acpi
+	mkdir -p genarch/src/mm
+	mkdir -p genarch/src/fb
+	mkdir -p genarch/src/drivers/i8042
+	mkdir -p genarch/src/drivers/ega
+	mkdir -p genarch/src/kbrd
+	mkdir -p genarch/src/multiboot
+	mkdir -p generic/src/adt
+	mkdir -p generic/src/console
+	mkdir -p generic/src/cpu
+	mkdir -p generic/src/ddi
+	mkdir -p generic/src/debug
+	mkdir -p generic/src/interrupt
+	mkdir -p generic/src/main
+	mkdir -p generic/src/proc
+	mkdir -p generic/src/syscall
+	mkdir -p generic/src/mm
+	mkdir -p generic/src/lib
+	mkdir -p generic/src/printf
+	mkdir -p generic/src/time
+	mkdir -p generic/src/preempt
+	mkdir -p generic/src/synch
+	mkdir -p generic/src/smp
+	mkdir -p generic/src/ipc
+	mkdir -p generic/src/security
+	mkdir -p generic/src/sysinfo
+	mkdir -p generic/src/udebug
+	mkdir -p test/atomic
+	mkdir -p test/btree
+	mkdir -p test/avltree
+	mkdir -p test/fault
+	mkdir -p test/mm
+	mkdir -p test/synch
+	mkdir -p test/print
+	mkdir -p test/thread
+	mkdir -p test/debug
 	$(MAKE) $(VERBOSE_DIR) -f $(CONTRIB_DIR)/kernel/Makefile \
 		-I $(CONTRIB_DIR)/kernel \
 		VPATH=$(CONTRIB_DIR)/kernel
