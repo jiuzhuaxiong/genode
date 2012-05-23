@@ -59,5 +59,6 @@ apply_patches:
 # if $(CONTRIB_DIR) is a symlink, leave $(REAL_CONTRIB_DIR) alone
 clean::
 	$(VERBOSE)rm -rf $(CONTRIB_DIR)
+	$(MAKE) -C $(REAL_DIR)build clean
 
 .NOTPARALLEL:

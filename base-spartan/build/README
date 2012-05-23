@@ -7,3 +7,7 @@ As compiler option use the gcc_native option in order to use the Genode
 toolchain.
 
 'make kernel' will build the kernel into the build directory.
+
+'make hello_test' will build a testing root task replacement using the libc from HelenOS.
+
+'make iso' will build an iso image from the given environment and execute qemu with it.
