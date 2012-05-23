@@ -48,10 +48,17 @@ export CC_OPT_CHECKCC
 
 export LIBGCC_INC_DIR = $(shell dirname `$(CUSTOM_CXX_LIB) -print-libgcc-file-name`)/include
 
+-include $(call select_from_repositories,etc/specs.conf)
+-include $(BUILD_BASE_DIR)/etc/specs.conf
+export SPEC_FILES := $(foreach SPEC,$(SPECS),$(call select_from_repositories,mk/spec-$(SPEC).mk))
+include $(SPEC_FILES)
+export SPECS
+
 #
 # Find out about the target directories to build
 #
-DST_DIRS := $(filter-out all config kernel clean,$(MAKECMDGOALS))
+DST_DIRS := $(filter-out all config kernel hello_test iso clean,$(MAKECMDGOALS))
+#DST_DIRS := $(filter-out all config kernel clean iso,$(MAKECMDGOALS))
 
 ifeq ($(MAKECMDGOALS),)
 DST_DIRS := *
@@ -60,14 +67,8 @@ endif
 #
 # Default rule: build all directories specified as make arguments
 #
-all $(DST_DIRS): config kernel
+all $(DST_DIRS): config kernel hello_test iso
 	@true
-
--include $(call select_from_repositories,etc/specs.conf)
--include $(BUILD_BASE_DIR)/etc/specs.conf
-export SPEC_FILES := $(foreach SPEC,$(SPECS),$(call select_from_repositories,mk/spec-$(SPEC).mk))
-include $(SPEC_FILES)
-export SPECS
 
 # Configure the kernel specific options
 config:
@@ -80,8 +81,6 @@ config:
 		VPATH=$(CONTRIB_DIR) \
 		autotool
 
-
-.PHONY: kernel
 kernel:
 	mkdir -p spartan/arch/amd64/src/boot
 	mkdir -p spartan/arch/amd64/src/debug
@@ -131,8 +130,22 @@ kernel:
 	$(MAKE) $(VERBOSE_DIR) -C spartan/ -f $(CONTRIB_DIR)/kernel/Makefile \
 		-I $(CONTRIB_DIR)/kernel \
 		VPATH=$(CONTRIB_DIR)/kernel
+	cp $(BUILD_BASE_DIR)/spartan/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot
+
+hello_test:
+	$(MAKE) -C $(CONTRIB_DIR)/uspace
+	$(MAKE) -C $(BUILD_BASE_DIR)/../src
+	cp $(BUILD_BASE_DIR)/../src/hello $(BUILD_BASE_DIR)/isofiles/boot
+
+iso:
+	genisoimage -f -l -R -hide-rr-moved -jcharset utf8 \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		-b boot/grub/pc.img \
+		-o "spartan.iso" isofiles
+	sudo qemu-kvm -ctrl-grab -cpu host -vga std -m 2048 \
+		-drive file=spartan.iso,index=0,media=cdrom
 
 clean:
-	rm -rf spartan
-	$(MAKE) $(VERBOSE_DIR) -f $(CONTRIB_DIR)/Makefile clean
+	rm -rf spartan* $(BUILD_BASE_DIR)/isofiles/boot/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot/hello
+	$(MAKE) $(VERBOSE_DIR) -C $(BUILD_BASE_DIR)/../src clean
 
