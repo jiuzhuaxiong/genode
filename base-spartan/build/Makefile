@@ -95,6 +95,8 @@ kernel:
 	mkdir -p spartan/genarch/src/mm
 	mkdir -p spartan/genarch/src/fb
 	mkdir -p spartan/genarch/src/drivers/i8042
+	mkdir -p spartan/genarch/src/drivers/ns16550
+	mkdir -p spartan/genarch/src/drivers/s3c24xx_uart
 	mkdir -p spartan/genarch/src/drivers/ega
 	mkdir -p spartan/genarch/src/kbrd
 	mkdir -p spartan/genarch/src/multiboot
@@ -133,7 +135,7 @@ kernel:
 	cp $(BUILD_BASE_DIR)/spartan/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot
 
 hello_test:
-	$(MAKE) -C $(CONTRIB_DIR)/uspace
+#	$(MAKE) -C $(CONTRIB_DIR)/uspace
 	$(MAKE) -C $(BUILD_BASE_DIR)/../src
 	cp $(BUILD_BASE_DIR)/../src/hello $(BUILD_BASE_DIR)/isofiles/boot
 
@@ -142,7 +144,9 @@ iso:
 		-no-emul-boot -boot-load-size 4 -boot-info-table \
 		-b boot/grub/pc.img \
 		-o "spartan.iso" isofiles
-	sudo qemu-kvm -ctrl-grab -cpu host -vga std -m 2048 \
+	qemu -m 256 -serial mon:stdio -cdrom spartan.iso
+#	qemu -serial mon:stdio -drive file=spartan.iso,index=0,media=cdrom
+#	sudo qemu-kvm -ctrl-grab -cpu host -serial mon:stdio -m 2048 \
 		-drive file=spartan.iso,index=0,media=cdrom
 
 clean:
