@@ -9,7 +9,8 @@ CXXFLAGS  = -I$(SPARTAN_LIBC_DIR)/include -nostdlib -nostdinc -fpermissive -fno-
 #CXXFLAGS += -DCONFIG_CPU_IA32_I586
 #CXXFLAGS += -DCONFIG_KDB_CONS
 
-LD_SCRIPT = genode.ld
+LD_SCRIPT = ../../genode.ld
+CRT0 = ../../crt0.s
 #LD_SCRIPT = $(SPARTAN_LIBC_DIR)/arch/$(UARCH)/_link.ld
 
 #LDFLAGS   = -Wl,-Ttext=0x01000000 -Wl,-T$(LD_SCRIPT)
@@ -22,7 +23,7 @@ LDFLAGS   = -Wl,-T$(LD_SCRIPT)
 all: hello
 
 hello: hello.cc
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -static crt0.s $(SPARTAN_LIBC_DIR)/arch/$(UARCH)/src/syscall.S hello.cc -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -static $(CRT0) $(SPARTAN_LIBC_DIR)/arch/$(UARCH)/src/syscall.S hello.cc -o $@
 
 #
 # Merge kernel and hello program into a single elf image
