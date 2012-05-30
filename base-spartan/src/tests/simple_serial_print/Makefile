@@ -1,6 +1,10 @@
 BASE_DIR = ../../..
 SPARTAN_DIR = $(BASE_DIR)/contrib
-CXXFLAGS  = -I$(SPARTAN_DIR)/uspace/lib/c/include -nostdlib -nostdinc -fpermissive -fno-exceptions
+SPARTAN_LIBC_DIR = $(SPARTAN_DIR)/uspace/lib/c
+
+include $(SPARTAN_DIR)/Makefile.config
+
+CXXFLAGS  = -I$(SPARTAN_LIBC_DIR)/include -nostdlib -nostdinc -fpermissive -fno-exceptions
 #CXXFLAGS += -DCONFIG_MAX_THREAD_BITS=10
 #CXXFLAGS += -DCONFIG_CPU_IA32_I586
 #CXXFLAGS += -DCONFIG_KDB_CONS
@@ -18,7 +22,7 @@ LDFLAGS   = -T$(LD_SCRIPT)
 all: hello
 
 hello: hello.cc
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -static syscall.S crt0.s hello.cc -o $@
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -static $(SPARTAN_LIBC_DIR)/arch/$(UARCH)/src/syscall.S crt0.s hello.cc -o $@
 
 #
 # Merge kernel and hello program into a single elf image

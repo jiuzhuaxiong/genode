@@ -80,11 +80,28 @@ extern "C" void exit(int status)
 	while (1);
 }
 
+extern "C" size_t klog_write(const void *buf, size_t size)
+{
+	ssize_t ret = (ssize_t) __SYSCALL3(SYS_KLOG, 1, (sysarg_t) buf, size);
+	
+	if (ret >= 0)
+		return (size_t) ret;
+	
+	return 0;
+}
+
 /**
  * Main program, called by the startup code in crt0.s
  */
 extern "C" int _main(void)
 {
+	char str[20] = "\nTest succefull !\n";
+	ddi_ioarg_t arg;
+
+	arg.task_id = 1;
+	arg.ioaddr = (void*) 0x3F8;
+	arg.size = 8;
+
 //	__malloc_init();
 //	__async_init();
 	
@@ -120,18 +137,13 @@ extern "C" int _main(void)
 */
 //	__stdio_init(0);
 
-	ddi_ioarg_t arg;
-
-	arg.task_id = 1;
-	arg.ioaddr = (void*) 0x3f8;
-	arg.size = 8;
+	klog_write(str, 17);
 
 	__SYSCALL1(SYS_IOSPACE_ENABLE, (sysarg_t) &arg);
 
 	serial_out_string(COMPORT_0, "Hallo, this is some code running on OKL4.\n");
 	serial_out_string(COMPORT_0, "Returning from main...\n");
 
-//	exit(0);
-	return 0;
+	exit(0);
 }
 
