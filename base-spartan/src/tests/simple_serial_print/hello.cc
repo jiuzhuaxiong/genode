@@ -102,8 +102,6 @@ extern "C" int _main(void)
 	arg.ioaddr = (void*) 0x3F8;
 	arg.size = 8;
 
-	while(1);
-
 //	__malloc_init();
 //	__async_init();
 	
@@ -139,7 +137,7 @@ extern "C" int _main(void)
 */
 //	__stdio_init(0);
 
-	klog_write(str, 17);
+	klog_write(str, 18);
 
 	__SYSCALL1(SYS_IOSPACE_ENABLE, (sysarg_t) &arg);
 

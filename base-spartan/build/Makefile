@@ -67,7 +67,7 @@ endif
 #
 # Default rule: build all directories specified as make arguments
 #
-all $(DST_DIRS): config kernel while_test hello_test iso
+all $(DST_DIRS): config kernel hello_test iso
 	@true
 
 # Configure the kernel specific options

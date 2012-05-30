@@ -21,9 +21,9 @@ PHDRS
 
 SECTIONS
 {
-/*
-	. = 0x1000 + SIZEOF_HEADERS;
 
+	. = 0x1000 + SIZEOF_HEADERS;
+/*
 	.init : {
 		_prog_img_beg = .;
 		*(.init);
@@ -90,9 +90,12 @@ SECTIONS
 	_prog_img_end = .;
 
 	/DISCARD/ : {
+		*(*)
+/*
 		*(.note)
 		*(.note.ABI-tag)
 		*(.comment)
 		*(.eh_frame)
+*/
 	}
 }
