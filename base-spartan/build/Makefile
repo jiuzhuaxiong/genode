@@ -57,7 +57,7 @@ export SPECS
 #
 # Find out about the target directories to build
 #
-DST_DIRS := $(filter-out all config kernel hello_test iso clean,$(MAKECMDGOALS))
+DST_DIRS := $(filter-out all config kernel while_test hello_test iso clean,$(MAKECMDGOALS))
 #DST_DIRS := $(filter-out all config kernel clean iso,$(MAKECMDGOALS))
 
 ifeq ($(MAKECMDGOALS),)
@@ -67,7 +67,7 @@ endif
 #
 # Default rule: build all directories specified as make arguments
 #
-all $(DST_DIRS): config kernel hello_test iso
+all $(DST_DIRS): config kernel while_test hello_test iso
 	@true
 
 # Configure the kernel specific options
@@ -137,6 +137,9 @@ kernel:
 		VPATH=$(CONTRIB_DIR)/kernel
 #	cp $(BUILD_BASE_DIR)/spartan/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot
 
+while_test:
+	$(MAKE) -C $(BUILD_BASE_DIR)/../src/tests/while/
+	cp $(BUILD_BASE_DIR)/../src/tests/while/while $(BUILD_BASE_DIR)/isofiles/boot
 
 hello_test:
 	$(MAKE) -C $(BUILD_BASE_DIR)/../src/tests/simple_serial_print/

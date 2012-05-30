@@ -19,10 +19,10 @@ LD_SCRIPT = genode.ld
 LDFLAGS   = -Wl,-T$(LD_SCRIPT)
 #LDFLAGS   = -T$(LD_SCRIPT)
 
-all: hello
+all: while
 
-hello: hello.cc
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -static crt0.s $(SPARTAN_LIBC_DIR)/arch/$(UARCH)/src/syscall.S hello.cc -o $@
+while: while.cc
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -static crt0.s while.cc -o $@
 
 #
 # Merge kernel and hello program into a single elf image
@@ -33,4 +33,4 @@ hello: hello.cc
 # "Error 28: Selected item cannot fit into memory"
 #
 clean:
-	rm -f hello
+	rm -f while

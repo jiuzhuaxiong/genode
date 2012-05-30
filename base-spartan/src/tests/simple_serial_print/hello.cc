@@ -102,6 +102,8 @@ extern "C" int _main(void)
 	arg.ioaddr = (void*) 0x3F8;
 	arg.size = 8;
 
+	while(1);
+
 //	__malloc_init();
 //	__async_init();
 	
