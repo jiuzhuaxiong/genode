@@ -129,15 +129,18 @@ kernel:
 	mkdir -p spartan/test/print
 	mkdir -p spartan/test/thread
 	mkdir -p spartan/test/debug
-	$(MAKE) $(VERBOSE_DIR) -C spartan/ -f $(CONTRIB_DIR)/kernel/Makefile \
+	$(MAKE) $(VERBOSE_DIR) -C $(CONTRIB_DIR)/kernel
+	$(MAKE) -C $(CONTRIB_DIR)/uspace/lib/c
+	cp $(CONTRIB_DIR)/kernel/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot
+#	$(MAKE) $(VERBOSE_DIR) -C spartan/ -f $(CONTRIB_DIR)/kernel/Makefile \
 		-I $(CONTRIB_DIR)/kernel \
 		VPATH=$(CONTRIB_DIR)/kernel
-	cp $(BUILD_BASE_DIR)/spartan/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot
+#	cp $(BUILD_BASE_DIR)/spartan/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot
+
 
 hello_test:
-#	$(MAKE) -C $(CONTRIB_DIR)/uspace
-	$(MAKE) -C $(BUILD_BASE_DIR)/../src
-	cp $(BUILD_BASE_DIR)/../src/hello $(BUILD_BASE_DIR)/isofiles/boot
+	$(MAKE) -C $(BUILD_BASE_DIR)/../src/tests/simple_serial_print/
+	cp $(BUILD_BASE_DIR)/../src/tests/simple_serial_print/hello $(BUILD_BASE_DIR)/isofiles/boot
 
 iso:
 	genisoimage -f -l -R -hide-rr-moved -jcharset utf8 \
@@ -151,5 +154,5 @@ iso:
 
 clean:
 	rm -rf spartan* $(BUILD_BASE_DIR)/isofiles/boot/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot/hello
-	$(MAKE) $(VERBOSE_DIR) -C $(BUILD_BASE_DIR)/../src clean
+#	$(MAKE) $(VERBOSE_DIR) -C $(BUILD_BASE_DIR)/../src clean
 
