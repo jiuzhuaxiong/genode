@@ -2,8 +2,6 @@ BASE_DIR = ../../..
 SPARTAN_DIR = $(BASE_DIR)/contrib
 SPARTAN_LIBC_DIR = $(SPARTAN_DIR)/uspace/lib/c
 
-include $(SPARTAN_DIR)/Makefile.config
-
 CXXFLAGS  = -I$(SPARTAN_LIBC_DIR)/include -nostdlib -nostdinc -fpermissive -fno-exceptions
 #CXXFLAGS += -DCONFIG_MAX_THREAD_BITS=10
 #CXXFLAGS += -DCONFIG_CPU_IA32_I586
@@ -21,6 +19,8 @@ LDFLAGS   = -Wl,-T$(LD_SCRIPT)
 #LDFLAGS   = -T$(LD_SCRIPT)
 
 all: hello
+
+include $(SPARTAN_DIR)/Makefile.config
 
 hello: hello.cc
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -static $(CRT0) $(SPARTAN_LIBC_DIR)/arch/$(UARCH)/src/syscall.S hello.cc -o $@

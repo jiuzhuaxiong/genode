@@ -1,13 +1,16 @@
 In order to build the kernel adjust the the GENODE_DIR in etc/build.conf to 
 your setup.
 
-'make config' will use the HelenOS configuration tool to configure the kernel 
+A simple 'make' will do all the work for you from build all neede sources to 
+starting qemu with the generated image in place.
+The thereby carried out single action (which can also be executed alone) are:
+- 'make config' will use the HelenOS configuration tool to configure the kernel 
 settings, saving the settings in the build directory.
 As compiler option use the gcc_native option in order to use the Genode 
 toolchain.
-
-'make kernel' will build the kernel into the build directory.
-
-'make hello_test' will build a testing root task replacement using the libc from HelenOS.
-
-'make iso' will build an iso image from the given environment and execute qemu with it.
+- 'make kernel' will build the kernel and create all needed symlinks in the 
+userspace directory of HelenOS (needed for several includes).
+- 'make hello_test' will build a testing root task replacement printing some 
+text to the serial port.
+- 'make iso' will build an iso image from the given environment and execute 
+qemu with it.
