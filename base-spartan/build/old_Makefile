@@ -1,0 +1,119 @@
+-include etc/build.conf
+
+PWD            := $(shell pwd)
+BUILD_BASE_DIR := $(PWD)
+INSTALL_DIR    := $(PWD)/bin
+
+export REPOSITORIES     ?= $(BASE_DIR:%base=%base-linux) $(BASE_DIR)
+export VERBOSE          ?= @
+export VERBOSE_DIR      ?= --no-print-directory
+export VERBOSE_MK       ?= @
+export ECHO             ?= echo -e
+
+#
+# Convert user-defined directories to absolute directories
+#
+# The 'echo' shell command expands '~' characters to the home directory,
+# 'realpath' converts relative path names to absolute.
+#
+REPOSITORIES := $(realpath $(shell echo $(REPOSITORIES)))
+BASE_DIR     := $(realpath $(shell echo $(BASE_DIR)))
+
+#
+# Configure shell program before executing any shell commands. On Ubuntu the
+# standard shell is dash, which breaks colored output via its built-in echo
+# command.
+#
+export SHELL := $(shell which bash)
+
+select_from_repositories = $(firstword $(foreach REP,$(REPOSITORIES),$(wildcard $(REP)/$(1))))
+
+include $(BASE_DIR)/mk/global.mk
+
+CONTRIB_DIR    := $(call select_from_repositories,contrib)
+
+#
+# Some compilers do not support the compiler arguments that we use with 'gcc'
+# and, consequently, spit errors. Hence, we have to check if the compiler
+# arguments are supported and drop them in the other case. We cache the result
+# of the check in the CC_OPT_CHECKCC variable. The caching improves the build
+# performance by 5 to 10 percent.
+#
+checkcc = $(shell if $(CUSTOM_CC) $(1) -o /dev/null -xc - <<< 'int main(void){return 0;}' &> /dev/null; then echo "$(1)" ; fi ;)
+
+CC_OPT_CHECKCC  = $(call checkcc, -static)
+CC_OPT_CHECKCC += $(call checkcc, -fno-stack-protector)
+
+export CC_OPT_CHECKCC
+
+export LIBGCC_INC_DIR = $(shell dirname `$(CUSTOM_CXX_LIB) -print-libgcc-file-name`)/include
+
+-include $(call select_from_repositories,etc/specs.conf)
+-include $(BUILD_BASE_DIR)/etc/specs.conf
+export SPEC_FILES := $(foreach SPEC,$(SPECS),$(call select_from_repositories,mk/spec-$(SPEC).mk))
+include $(SPEC_FILES)
+export SPECS
+
+#
+# Find out about the target directories to build
+#
+DST_DIRS := $(filter-out all config kernel while_test hello_test iso clean,$(MAKECMDGOALS))
+#DST_DIRS := $(filter-out all config kernel clean iso,$(MAKECMDGOALS))
+
+ifeq ($(MAKECMDGOALS),)
+DST_DIRS := *
+endif
+
+#
+# Default rule: build all directories specified as make arguments
+#
+all $(DST_DIRS): config kernel hello_test iso
+	@true
+
+# Configure the kernel specific options
+config:
+	$(MAKE) $(VERBOSE_DIR) -C $(CONTRIB_DIR) config
+	$(MAKE) $(VERBOSE_DIR) -C $(CONTRIB_DIR) autotool
+	# softlink the include directory from the libc form the HelenOS userspace as include direcotry
+	# has definitely to be chanced because some includes will collide with libc includes from genode
+	ln -s include $(CONTRIB_DIR)/uspace/lib/c/include
+
+#
+# Build the kernel binary and the HelenOS libc (mainly because of needed 
+# linking of the arch specific include directories)
+#
+kernel:
+	mkdir bin
+	$(MAKE) $(VERBOSE_DIR) -C $(CONTRIB_DIR)/kernel
+	$(MAKE) -C $(CONTRIB_DIR)/uspace/lib/c
+	cp $(CONTRIB_DIR)/kernel/kernel.bin $(BUILD_BASE_DIR)/bin/kernel
+#	cp $(CONTRIB_DIR)/kernel/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot
+
+#
+# Build the while test scenario
+#
+while_test:
+	$(MAKE) -C $(BUILD_BASE_DIR)/../src/tests/while/
+	cp $(BUILD_BASE_DIR)/../src/tests/while/while $(BUILD_BASE_DIR)/bin/while
+
+#
+# Build the hello test scenario
+#
+hello_test:
+	$(MAKE) -C $(BUILD_BASE_DIR)/../src/tests/simple_serial_print/
+	cp $(BUILD_BASE_DIR)/../src/tests/simple_serial_print/hello $(BUILD_BASE_DIR)/bin/hello
+
+#
+# Build the iso file and execute qemu with it
+#
+iso:
+	genisoimage -f -l -R -hide-rr-moved -jcharset utf8 \
+		-no-emul-boot -boot-load-size 4 -boot-info-table \
+		-b boot/grub/pc.img \
+		-o "spartan.iso" isofiles
+	qemu -m 256 -serial mon:stdio -cdrom spartan.iso
+
+clean:
+	rm -rf spartan* $(BUILD_BASE_DIR)/isofiles/boot/kernel.bin $(BUILD_BASE_DIR)/isofiles/boot/hello
+#	$(MAKE) $(VERBOSE_DIR) -C $(BUILD_BASE_DIR)/../src clean
+
