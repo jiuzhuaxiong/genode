@@ -15,11 +15,6 @@
 
 	.text
 
-/*
-.section .init, "ax"
-.org 0
-`*/
-
 	.globl _start
 _start:
 	/* XXX Switch to our own stack.  */

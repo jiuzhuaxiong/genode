@@ -1,0 +1,140 @@
+#
+# \brief  spartan-specific test-environment supplements
+# \author Norman Feske
+# \date   2010-08-16
+#
+# This file is meant to be used as '--include' argument for 'tool/run'.
+#
+
+##
+# Get the base-spartan repository
+#
+proc base_spartan_dir {} { return [repository_contains mk/spec-spartan.mk] }
+
+##
+# Read the location of the spartan directory from 'etc/spartan.conf'
+#
+proc spartan_dir { } {
+	global _spartan_dir
+
+	if {![info exists _spartan_dir]} {
+		if {[file exists etc/spartan.conf]} {
+			set _spartan_dir [exec sed -n "/^spartan_DIR/s/^.*=\\s*//p" etc/spartan.conf]
+			if {[file exists $_spartan_dir]} { return $_spartan_dir }
+		}
+
+		set _spartan_dir [base_spartan_dir]/contrib/kernel/kernel.bin
+	}
+
+	return $_spartan_dir
+}
+
+##
+# Return the location of the spartan kernel
+#
+proc spartan { } {
+#	if {[spartan_external]} { return [spartan_dir]/build/spartan/kernel.bin }
+	if {[spartan_external]} { return [spartan_dir]/kernel.bin }
+	return bin/kernel
+}
+
+##
+# Return whether spartan kernel is provided from the outside
+#
+proc spartan_external { } {
+	if {"[spartan_dir]" == "[base_spartan_dir]/contrib/kernel/kernel.bin"} { return 0 }
+	return 1
+}
+
+##################################
+## Test framework API functions ##
+##################################
+
+proc create_boot_directory { } {
+	exec rm -rf   [run_dir]
+	exec mkdir -p [run_dir]/genode
+}
+
+
+proc build_boot_image {binaries} {
+	#
+	# Strip binaries
+	#
+	copy_and_strip_genode_binaries_to_run_dir $binaries
+
+	#
+	# Build kernel if needed
+	#
+	# Once the kernel is exists, it gets never revisited automatically.
+	# Consequently, when changing the kernel sources, the kernel build must be
+	# issued explicitly via 'make kernel'. This way, the rare case of changing
+	# the kernel does not stand in the way of the everyday's work flow of
+	# executing run scripts as quick as possible.
+	#
+	if {![spartan_external] && ![file exists [spartan]]} { build { kernel } }
+
+	exec cp [spartan] [run_dir]/kernel
+
+	#
+	# Generate ELF weaver config
+	#
+	#set fh [open "[run_dir].weaver.xml" "WRONLY CREAT TRUNC"]
+	#puts $fh {<?xml version="1.0"?>}
+	#puts $fh {<!DOCTYPE image SYSTEM "weaver-1.1.dtd">}
+	#puts $fh {<image>}
+	#regsub spartan_kernel $weaver_xml_template "[run_dir]/kernel" weaver_xml_template
+	#regsub core $weaver_xml_template "[run_dir]/genode/core" weaver_xml_template
+	#puts $fh $weaver_xml_template
+	#puts $fh {	<pd name="modules">}
+	#puts $fh "		<memsection name=\"config\" file=\"[run_dir]/genode/config\" direct=\"true\" />"
+	#foreach binary $binaries {
+	#	if {$binary != "core"} {
+	#		puts $fh "		<memsection name=\"$binary\" file=\"[run_dir]/genode/$binary\" direct=\"true\" />" }
+	#}
+	#puts $fh {	</pd>}
+	#puts $fh {</image>}
+	#close $fh
+
+	#
+	# Run ELF Weaver to create a boot image
+	#
+	#set ret [exec "[spartan_dir]/tools/pyelf/elfweaver" merge --output "[run_dir]/image.elf" "[run_dir].weaver.xml"]
+	#if {[regexp "error" $ret dummy]} {
+	#	puts stderr "Elfweaver failed: $ret"
+	#	exit -6
+	#}
+	#exec [cross_dev_prefix]strip [run_dir]/image.elf
+	#exec cp [run_dir]/image.elf [run_dir].elf
+	#exec gzip [run_dir]/image.elf
+
+	#
+	# Keep only the ELF boot image, but remove stripped binaries
+	#
+	exec rm -r [run_dir]/genode
+
+	#
+	# Install GRUB
+	#
+	install_iso_bootloader_to_run_dir
+
+	#
+	# Generate grub config file
+	#
+	# The core binary is part of the 'binaries' list but it must
+	# appear right after 'sigma0' as boot module. Hence the special case.
+	#
+	set fh [open "[run_dir]/boot/grub/menu.lst" "WRONLY CREAT TRUNC"]
+	puts $fh "timeout 0"
+	puts $fh "default 0"
+	puts $fh "hiddenmenu"
+	puts $fh "\ntitle Genode on spartan"
+	puts $fh "kernel /image.elf.gz"
+	puts $fh "vbeset 0x117"
+	close $fh
+
+	create_iso_image_from_run_dir
+}
+
+
+proc run_genode_until {{wait_for_re forever} {timeout_value 0}} {
+	spawn_qemu $wait_for_re $timeout_value }

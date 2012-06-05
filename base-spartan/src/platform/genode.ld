@@ -23,12 +23,7 @@ SECTIONS
 {
 
 	. = 0x1000 + SIZEOF_HEADERS;
-/*
-	.init : {
-		_prog_img_beg = .;
-		*(.init);
-	} : ro
-*/
+
 	.text : {
 		/* begin of program image (link address) */
 
