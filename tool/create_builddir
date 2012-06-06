@@ -36,6 +36,7 @@ usage:
 	@echo "                  'foc_vea9x4'"
 	@echo "                  'foc_panda'"
 	@echo "                  'lx_hybrid_x86'"
+	@echo "                  'spartan_x86'"
 	@echo
 	@echo "  <build-dir>  is the location of the build directory to create"
 	@echo
@@ -124,7 +125,7 @@ endif
 #
 # Add x86 drivers repositories to x86 build directories
 #
-ifeq ($(filter-out foc_x86_32 foc_x86_64 okl4_x86 nova_x86_32 nova_x86_64 pistachio_x86 fiasco_x86,$(PLATFORM)),)
+ifeq ($(filter-out foc_x86_32 foc_x86_64 okl4_x86 nova_x86_32 nova_x86_64 pistachio_x86 fiasco_x86 spartan_x86,$(PLATFORM)),)
 $(BUILD_DIR)/etc/build.conf::
 	@cat $(BUILD_CONF).drivers_x86 >> $@
 endif
@@ -192,6 +193,9 @@ hw_panda_a2::
 lx_hybrid_x86::
 	@echo "CROSS_DEV_PREFIX =" > $(BUILD_DIR)/etc/tools.conf
 	@echo "SPECS += always_hybrid" >> $(BUILD_DIR)/etc/specs.conf
+
+spartan_x86::
+	@echo "SPECS = genode spartan_x86" > $(BUILD_DIR)/etc/specs.conf
 
 $(PLATFORM)::
 	@echo "successfully created build directory at $(BUILD_DIR)"
