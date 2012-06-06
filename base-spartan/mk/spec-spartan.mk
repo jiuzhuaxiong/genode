@@ -30,8 +30,7 @@ MAKEFLAGS += -L
 INC_DIR += $(BUILD_BASE_DIR)/include
 
 CC_OPT_NOSTDINC += -nostdinc
-#CXX_SPARTAN_FLAGS += -fpermissive -fno-exceptions #has to be included somewhere? e.g. CC_CXX_OPT
-CC_CXX_OPT += -fpermissive -fno-exceptions #has to be included somewhere? e.g. CC_CXX_OPT
+CC_CXX_OPT += -fpermissive -fno-exceptions
 CXX_LINK_OPT    += -static -nostdlib -Wl,-nostdlib
 #EXT_OBJECTS     += $(shell $(CUSTOM_CXX_LIB) -print-file-name=libsupc++.a) \
 			$(shell $(CUSTOM_CXX_LIB) -print-file-name=libgcc_eh.a) \
