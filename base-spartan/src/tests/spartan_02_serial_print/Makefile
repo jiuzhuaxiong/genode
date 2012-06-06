@@ -7,8 +7,8 @@ CXXFLAGS  = -I$(SPARTAN_LIBC_DIR)/include -nostdlib -nostdinc -fpermissive -fno-
 #CXXFLAGS += -DCONFIG_CPU_IA32_I586
 #CXXFLAGS += -DCONFIG_KDB_CONS
 
-LD_SCRIPT = ../../genode.ld
-CRT0 = ../../crt0.s
+LD_SCRIPT = ../../platform/genode.ld
+CRT0 = ../../platform/x86/crt0.s
 #LD_SCRIPT = $(SPARTAN_LIBC_DIR)/arch/$(UARCH)/_link.ld
 
 #LDFLAGS   = -Wl,-Ttext=0x01000000 -Wl,-T$(LD_SCRIPT)

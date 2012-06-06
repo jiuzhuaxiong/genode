@@ -50,13 +50,13 @@ proc spartan_external { } {
 ##################################
 
 proc create_boot_directory { } {
+	puts "Creating boot directory at [run_dir]"
 	exec rm -rf   [run_dir]
 	exec mkdir -p [run_dir]/genode
 }
 
 
 proc build_boot_image {binaries} {
-
 	#
 	# Strip binaries
 	#
@@ -85,7 +85,8 @@ proc build_boot_image {binaries} {
 	set fh [open "[run_dir]/boot/grub/menu.lst" "WRONLY CREAT TRUNC"]
 	puts $fh "timeout 0"
 	puts $fh "default 0"
-	puts $fh "\ntitle Genode on Spartan"
+	puts $fh "hiddenmenu"
+	puts $fh "\ntitle Genode on SPARTAN"
 	puts $fh "kernel /kernel"
 	foreach binary $binaries {
 		if {$binary != "core"} {
