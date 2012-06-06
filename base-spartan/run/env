@@ -33,7 +33,6 @@ proc spartan_dir { } {
 # Return the location of the spartan kernel
 #
 proc spartan { } {
-#	if {[spartan_external]} { return [spartan_dir]/build/spartan/kernel.bin }
 	if {[spartan_external]} { return [spartan_dir]/kernel.bin }
 	return bin/kernel
 }
@@ -57,6 +56,7 @@ proc create_boot_directory { } {
 
 
 proc build_boot_image {binaries} {
+
 	#
 	# Strip binaries
 	#
@@ -72,45 +72,7 @@ proc build_boot_image {binaries} {
 	# executing run scripts as quick as possible.
 	#
 	if {![spartan_external] && ![file exists [spartan]]} { build { kernel } }
-
 	exec cp [spartan] [run_dir]/kernel
-
-	#
-	# Generate ELF weaver config
-	#
-	#set fh [open "[run_dir].weaver.xml" "WRONLY CREAT TRUNC"]
-	#puts $fh {<?xml version="1.0"?>}
-	#puts $fh {<!DOCTYPE image SYSTEM "weaver-1.1.dtd">}
-	#puts $fh {<image>}
-	#regsub spartan_kernel $weaver_xml_template "[run_dir]/kernel" weaver_xml_template
-	#regsub core $weaver_xml_template "[run_dir]/genode/core" weaver_xml_template
-	#puts $fh $weaver_xml_template
-	#puts $fh {	<pd name="modules">}
-	#puts $fh "		<memsection name=\"config\" file=\"[run_dir]/genode/config\" direct=\"true\" />"
-	#foreach binary $binaries {
-	#	if {$binary != "core"} {
-	#		puts $fh "		<memsection name=\"$binary\" file=\"[run_dir]/genode/$binary\" direct=\"true\" />" }
-	#}
-	#puts $fh {	</pd>}
-	#puts $fh {</image>}
-	#close $fh
-
-	#
-	# Run ELF Weaver to create a boot image
-	#
-	#set ret [exec "[spartan_dir]/tools/pyelf/elfweaver" merge --output "[run_dir]/image.elf" "[run_dir].weaver.xml"]
-	#if {[regexp "error" $ret dummy]} {
-	#	puts stderr "Elfweaver failed: $ret"
-	#	exit -6
-	#}
-	#exec [cross_dev_prefix]strip [run_dir]/image.elf
-	#exec cp [run_dir]/image.elf [run_dir].elf
-	#exec gzip [run_dir]/image.elf
-
-	#
-	# Keep only the ELF boot image, but remove stripped binaries
-	#
-	exec rm -r [run_dir]/genode
 
 	#
 	# Install GRUB
@@ -118,18 +80,17 @@ proc build_boot_image {binaries} {
 	install_iso_bootloader_to_run_dir
 
 	#
-	# Generate grub config file
-	#
-	# The core binary is part of the 'binaries' list but it must
-	# appear right after 'sigma0' as boot module. Hence the special case.
+	# Generate bootstrap config
 	#
 	set fh [open "[run_dir]/boot/grub/menu.lst" "WRONLY CREAT TRUNC"]
 	puts $fh "timeout 0"
 	puts $fh "default 0"
-	puts $fh "hiddenmenu"
-	puts $fh "\ntitle Genode on spartan"
-	puts $fh "kernel /image.elf.gz"
-	puts $fh "vbeset 0x117"
+	puts $fh "\ntitle Genode on Spartan"
+	puts $fh "kernel /kernel"
+	foreach binary $binaries {
+		if {$binary != "core"} {
+			puts $fh "module /genode/$binary" } }
+	puts $fh "vbeset 0x117 506070"
 	close $fh
 
 	create_iso_image_from_run_dir
