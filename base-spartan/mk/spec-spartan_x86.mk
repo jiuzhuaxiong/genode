@@ -5,8 +5,6 @@
 SPECS += x86_64 spartan
 #SPECS += pci ps2 vesa
 
-LD_SCRIPT    ?= $(call select_from_repositories,src/platform/genode.ld)
-CXX_LINK_OPT += -Wl,-T$(LD_SCRIPT)
 #
 # Linker options specific for x86
 #
