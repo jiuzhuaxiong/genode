@@ -1,0 +1,360 @@
+=== modified file 'Makefile'
+--- Makefile	2011-09-07 00:12:22 +0000
++++ Makefile	2012-06-07 13:01:39 +0000
+@@ -29,28 +29,30 @@
+ # Just for this Makefile. Sub-makes will run in parallel if requested.
+ .NOTPARALLEL:
+ 
++O ?= $(shell pwd)
++
+ CSCOPE = cscope
+ CHECK = tools/check.sh
+-CONFIG = tools/config.py
+-AUTOTOOL = tools/autotool.py
++CONFIG = O=$(O) tools/config.py
++AUTOTOOL = O=$(O) tools/autotool.py
+ SANDBOX = autotool
+ 
+ CONFIG_RULES = HelenOS.config
+ 
+-COMMON_MAKEFILE = Makefile.common
+-COMMON_HEADER = common.h
++COMMON_MAKEFILE = $(O)/Makefile.common
++COMMON_HEADER = $(O)/common.h
+ COMMON_HEADER_PREV = $(COMMON_HEADER).prev
+ 
+-CONFIG_MAKEFILE = Makefile.config
+-CONFIG_HEADER = config.h
++CONFIG_MAKEFILE = $(O)/Makefile.config
++CONFIG_HEADER = $(O)/config.h
+ 
+ .PHONY: all precheck cscope autotool config_auto config_default config distclean clean check releasefile release
+ 
+ all: $(COMMON_MAKEFILE) $(COMMON_HEADER) $(CONFIG_MAKEFILE) $(CONFIG_HEADER)
+ 	cp -a $(COMMON_HEADER) $(COMMON_HEADER_PREV)
+-	$(MAKE) -C kernel PRECHECK=$(PRECHECK)
+-	$(MAKE) -C uspace PRECHECK=$(PRECHECK)
+-	$(MAKE) -C boot PRECHECK=$(PRECHECK)
++	$(MAKE) -C kernel PRECHECK=$(PRECHECK) O=$(O)
++#	$(MAKE) -C uspace PRECHECK=$(PRECHECK)
++#	$(MAKE) -C boot PRECHECK=$(PRECHECK)
+ 
+ precheck: clean
+ 	$(MAKE) all PRECHECK=y
+@@ -100,7 +102,7 @@
+ 
+ clean:
+ 	rm -fr $(SANDBOX)
+-	$(MAKE) -C kernel clean
++	$(MAKE) -C kernel clean O=$(O)
+ 	$(MAKE) -C uspace clean
+ 	$(MAKE) -C boot clean
+ 
+
+=== modified file 'kernel/Makefile'
+--- kernel/Makefile	2012-03-30 17:39:25 +0000
++++ kernel/Makefile	2012-06-07 12:51:32 +0000
+@@ -29,16 +29,17 @@
+ ## Configuration
+ #
+ 
+-ROOT_PATH = ..
++ROOT_PATH = $(shell pwd)/..
++BUILD_DIR = $(O)/kernel
+ 
+ VERSION_DEF = $(ROOT_PATH)/version
+ 
+-COMMON_MAKEFILE = $(ROOT_PATH)/Makefile.common
+-COMMON_HEADER = $(ROOT_PATH)/common.h
+-COMMON_HEADER_ARCH = arch/$(KARCH)/include/common.h
++COMMON_MAKEFILE = $(O)/Makefile.common
++COMMON_HEADER = $(O)/common.h
++COMMON_HEADER_ARCH = $(BUILD_DIR)/generic/include/arch/common.h
+ 
+-CONFIG_MAKEFILE = $(ROOT_PATH)/Makefile.config
+-CONFIG_HEADER = $(ROOT_PATH)/config.h
++CONFIG_MAKEFILE = $(O)/Makefile.config
++CONFIG_HEADER = $(O)/config.h
+ 
+ -include $(VERSION_DEF)
+ -include $(COMMON_MAKEFILE)
+@@ -47,27 +48,32 @@
+ ## Common names
+ #
+ 
+-DEPEND = Makefile.depend
++DEPEND = $(BUILD_DIR)/Makefile.depend
+ DEPEND_PREV = $(DEPEND).prev
+-RAW = kernel.raw
+-BIN = kernel.bin
+-MAP = kernel.map
+-JOB = kernel.job
++RAW = $(BUILD_DIR)/kernel.raw
++BIN = $(BUILD_DIR)/kernel.bin
++MAP = $(BUILD_DIR)/kernel.map
++JOB = $(BUILD_DIR)/kernel.job
+ MAP_PREV = $(MAP).prev
+-DISASM = kernel.disasm
+-DUMP = kernel.dump
+-REAL_MAP = generic/src/debug/real_map
+-
+-ABI_INCLUDE = generic/include/abi
+-ARCH_INCLUDE = generic/include/arch
+-GENARCH_INCLUDE = generic/include/genarch
++DISASM = $(BUILD_DIR)/kernel.disasm
++DUMP = $(BUILD_DIR)/kernel.dump
++REAL_MAP = $(BUILD_DIR)/generic/src/debug/real_map
++
++ABI_INCLUDE = $(BUILD_DIR)/generic/include/abi
++ARCH_INCLUDE = $(BUILD_DIR)/generic/include/arch
++GENARCH_INCLUDE = $(BUILD_DIR)/generic/include/genarch
++
++SRC_DIR = genarch/src arch/$(KARCH)/src generic/src test
++OBJ_DIR = $(addprefix $(BUILD_DIR)/,$(shell find -L $(SRC_DIR) -type d))
++OBJ_DIR_TAGS   = $(addsuffix /build.tag,$(OBJ_DIR))
++GENERIC_HEADER = $(addprefix $(BUILD_DIR)/,$(shell find generic/include -name *.h))
+ 
+ GENMAP = tools/genmap.py
+ JOBFILE = $(ROOT_PATH)/tools/jobfile.py
+ 
+-LINK = arch/$(KARCH)/_link.ld
+-EMPTY_MAP = generic/src/debug/empty_map.o
+-SIZEOK_MAP = generic/src/debug/sizeok_map.o
++LINK = $(BUILD_DIR)/arch/$(KARCH)/_link.ld
++EMPTY_MAP = $(BUILD_DIR)/generic/src/debug/empty_map.o
++SIZEOK_MAP = $(BUILD_DIR)/generic/src/debug/sizeok_map.o
+ 
+ .PHONY: all clean
+ 
+@@ -76,12 +82,14 @@
+ 
+ clean:
+ 	rm -f $(DEPEND) $(DEPEND_PREV) $(RAW) $(BIN) $(MAP) $(JOB) $(MAP_PREV) $(DISASM) $(DUMP) $(REAL_MAP).* $(ABI_INCLUDE) $(ARCH_INCLUDE) $(GENARCH_INCLUDE) arch/*/_link.ld arch/*/include/common.h
+-	find generic/src/ arch/*/src/ genarch/src/ test/ -name '*.o' -follow -exec rm \{\} \;
++	find $(BUILD_DIR) -name '*.o' -follow -exec rm \{\} \;
++	if [ ! $(BUILD_DIR) -ef $(ROOT_PATH)/kernel ]; then rm -rf $(BUILD_DIR); fi
++
+ 
+ ## Common compiler flags
+ #
+ 
+-INCLUDES = generic/include
++INCLUDES = $(BUILD_DIR)/generic/include
+ 
+ ifeq ($(CONFIG_OPTIMIZE_FOR_SIZE),y)
+ 	OPTIMIZATION = s
+@@ -356,18 +364,22 @@
+ 	INSTRUMENTED_SOURCES =
+ endif
+ 
+-GENERIC_OBJECTS := $(addsuffix .o,$(basename $(GENERIC_SOURCES)))
+-ARCH_OBJECTS := $(addsuffix .o,$(basename $(ARCH_SOURCES)))
+-GENARCH_OBJECTS := $(addsuffix .o,$(basename $(GENARCH_SOURCES)))
++GENERIC_OBJECTS := $(addprefix $(BUILD_DIR)/,$(addsuffix .o,$(basename $(GENERIC_SOURCES))))
++ARCH_OBJECTS := $(addprefix $(BUILD_DIR)/,$(addsuffix .o,$(basename $(ARCH_SOURCES))))
++GENARCH_OBJECTS := $(addprefix $(BUILD_DIR)/,$(addsuffix .o,$(basename $(GENARCH_SOURCES))))
+ 
+ LFLAGS_LTO := $(addprefix -Xlinker ,$(LFLAGS))
+ 
+ ifeq ($(CONFIG_SYMTAB),y)
+-	SYMTAB_OBJECTS := generic/src/debug/real_map.o
++	SYMTAB_OBJECTS := $(BUILD_DIR)/generic/src/debug/real_map.o
+ else
+ 	SYMTAB_OBJECTS :=
+ endif
+ 
++$(BUILD_DIR):
++	mkdir -p $@
++	mkdir -p $@/arch/$(KARCH)/src
++
+ $(BIN): $(RAW)
+ 	$(OBJCOPY) -O $(BFD) $< $@
+ 
+@@ -388,22 +400,22 @@
+ 	$(STRIP) $(RAW)
+ endif
+ 
+-$(LINK): $(LINK).in $(DEPEND)
++$(LINK): arch/$(KARCH)/_link.ld.in $(DEPEND)
+ 	$(GCC) $(DEFS) $(GCC_CFLAGS) -D__ASM__ -D__LINKER__ -E -x c $< | grep -v "^\#" > $@
+ 
+-%.o: %.S $(DEPEND)
++$(BUILD_DIR)/%.o: %.S $(DEPEND)
+ 	$(GCC) $(DEFS) $(GCC_CFLAGS) -D__ASM__ -c -o $@ $<
+ ifeq ($(PRECHECK),y)
+ 	$(JOBFILE) $(JOB) $< $@ as asm/preproc $(DEFS) $(GCC_CFLAGS) -D__ASM__
+ endif
+ 
+-%.o: %.s $(DEPEND)
++$(BUILD_DIR)/%.o: %.s $(DEPEND)
+ 	$(AS) $(AFLAGS) -o $@ $<
+ ifeq ($(PRECHECK),y)
+ 	$(JOBFILE) $(JOB) $< $@ as asm $(DEFS) $(CFLAGS) $(EXTRA_FLAGS)
+ endif
+ 
+-%.o: %.c $(DEPEND)
++$(BUILD_DIR)/%.o: %.c $(DEPEND)
+ 	$(CC) $(DEFS) $(CFLAGS) $(EXTRA_FLAGS) $(FPU_NO_CFLAGS) $(if $(findstring $<,$(INSTRUMENTED_SOURCES)),$(INSTRUMENTATION)) -c -o $@ $<
+ ifeq ($(PRECHECK),y)
+ 	$(JOBFILE) $(JOB) $< $@ cc core $(DEFS) $(CFLAGS) $(EXTRA_FLAGS) $(FPU_NO_CFLAGS)
+@@ -434,18 +446,30 @@
+ 	$(OBJDUMP) -t $(ARCH_OBJECTS) $(GENARCH_OBJECTS) $(GENERIC_OBJECTS) > $(DUMP)
+ 	$(GENMAP) $(MAP_PREV) $(DUMP) $@
+ 
+-$(DEPEND): $(ABI_INCLUDE) $(ARCH_INCLUDE) $(GENARCH_INCLUDE) $(COMMON_HEADER_ARCH)
++$(DEPEND): $(BUILD_DIR) $(ABI_INCLUDE) $(ARCH_INCLUDE) $(GENARCH_INCLUDE) $(COMMON_HEADER_ARCH) $(GENERIC_HEADER) $(OBJ_DIR_TAGS)
+ 	makedepend -f - -- $(DEPEND_DEFS) $(CFLAGS) -- $(ARCH_SOURCES) $(GENARCH_SOURCES) $(GENERIC_SOURCES) > $@ 2> /dev/null
+ 	-[ -f $(DEPEND_PREV) ] && diff -q $(DEPEND_PREV) $@ && mv -f $(DEPEND_PREV) $@
+ 
+-$(ABI_INCLUDE): ../abi/include/
+-	ln -sfn ../../$< $@
+-
+-$(ARCH_INCLUDE): arch/$(KARCH)/include/
+-	ln -sfn ../../$< $@
+-
+-$(GENARCH_INCLUDE): genarch/include/
+-	ln -sfn ../../$< $@
++$(OBJ_DIR_TAGS):
++	mkdir -p $(dir $@)
++	touch $@
++
++$(ABI_INCLUDE): $(ROOT_PATH)/abi/include/
++	mkdir -p $(BUILD_DIR)/generic/include
++	ln -sfn $< $@
++
++$(ARCH_INCLUDE): $(ROOT_PATH)/kernel/arch/$(KARCH)/include/
++	mkdir -p $(BUILD_DIR)/generic/include
++	ln -sfn $< $@
++
++$(GENARCH_INCLUDE): $(ROOT_PATH)/kernel/genarch/include/
++	mkdir -p $(BUILD_DIR)/generic/include
++	ln -sfn $< $@
+ 
+ $(COMMON_HEADER_ARCH): $(COMMON_HEADER)
+-	ln -sfn ../../../$< $@
++	mkdir -p $(BUILD_DIR)/arch/$(KARCH)/include
++	ln -sfn $< $@
++
++$(BUILD_DIR)/generic/include/%.h: $(ROOT_PATH)/kernel/generic/include/%.h
++	mkdir -p $(dir $@)
++	ln -s $< $@
+
+=== modified file 'tools/autotool.py'
+--- tools/autotool.py	2012-04-07 17:49:01 +0000
++++ tools/autotool.py	2012-06-06 14:54:50 +0000
+@@ -598,10 +598,16 @@
+ def main():
+ 	config = {}
+ 	common = {}
+-	
++
++	# Check whether external build-directory is set
++	try:
++		BUILD_DIR = os.environ['O'] + '/'
++	except:
++		BUILD_DIR = ''
++
+ 	# Read and check configuration
+-	if os.path.exists(CONFIG):
+-		read_config(CONFIG, config)
++	if os.path.exists(BUILD_DIR + CONFIG):
++		read_config(BUILD_DIR + CONFIG, config)
+ 	else:
+ 		print_error(["Configuration file %s not found! Make sure that the" % CONFIG,
+ 		             "configuration phase of HelenOS build went OK. Try running",
+@@ -755,8 +761,8 @@
+ 	finally:
+ 		sandbox_leave(owd)
+ 	
+-	create_makefile(MAKEFILE, common)
+-	create_header(HEADER, maps)
++	create_makefile(BUILD_DIR + MAKEFILE, common)
++	create_header(BUILD_DIR + HEADER, maps)
+ 	
+ 	return 0
+ 
+
+=== modified file 'tools/config.py'
+--- tools/config.py	2011-12-02 17:29:43 +0000
++++ tools/config.py	2012-06-06 15:13:14 +0000
+@@ -360,7 +360,7 @@
+ 		config[varname_height] = mode[2]
+ 		rules.append((varname_height, 'choice', 'Default framebuffer height', None, None))
+ 
+-def create_output(mkname, mcname, config, rules):
++def create_output(builddir, mkname, mcname, config, rules):
+ 	"Create output configuration"
+ 	
+ 	timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+@@ -382,8 +382,8 @@
+ 	else:
+ 		revision = None
+ 	
+-	outmk = open(mkname, 'w')
+-	outmc = open(mcname, 'w')
++	outmk = open(builddir + mkname, 'w')
++	outmc = open(builddir + mcname, 'w')
+ 	
+ 	outmk.write('#########################################\n')
+ 	outmk.write('## AUTO-GENERATED FILE, DO NOT EDIT!!! ##\n')
+@@ -505,7 +505,13 @@
+ 	profile = None
+ 	config = {}
+ 	rules = []
+-	
++
++	# Check whether external build-directory is set
++	try:
++		BUILD_DIR = os.environ['O'] + '/'
++	except:
++		BUILD_DIR = ''
++
+ 	# Parse rules file
+ 	parse_rules(RULES_FILE, rules)
+ 	
+@@ -514,14 +520,14 @@
+ 	if len(sys.argv) >= 4:
+ 		profile = parse_profile_name(sys.argv[3])
+ 		read_presets(profile, config)
+-	elif os.path.exists(MAKEFILE):
+-		read_config(MAKEFILE, config)
++	elif os.path.exists(BUILD_DIR + MAKEFILE):
++		read_config(BUILD_DIR + MAKEFILE, config)
+ 	
+ 	# Default mode: check values and regenerate configuration files
+ 	if (len(sys.argv) >= 3) and (sys.argv[2] == 'default'):
+ 		if (infer_verify_choices(config, rules)):
+ 			preprocess_config(config, rules)
+-			create_output(MAKEFILE, MACROS, config, rules)
++			create_output(BUILD_DIR, MAKEFILE, MACROS, config, rules)
+ 			return 0
+ 	
+ 	# Hands-off mode: check values and regenerate configuration files,
+@@ -535,7 +541,7 @@
+ 		
+ 		if (infer_verify_choices(config, rules)):
+ 			preprocess_config(config, rules)
+-			create_output(MAKEFILE, MACROS, config, rules)
++			create_output(BUILD_DIR, MAKEFILE, MACROS, config, rules)
+ 			return 0
+ 		
+ 		sys.stderr.write("Configuration error: The presets are ambiguous\n")
+@@ -617,7 +623,7 @@
+ 					continue
+ 			
+ 			if value == 0:
+-				profile = choose_profile(PRESETS_DIR, MAKEFILE, screen, config)
++				profile = choose_profile(PRESETS_DIR, BUILD_DIR + MAKEFILE, screen, config)
+ 				if profile != None:
+ 					read_presets(profile, config)
+ 				position = 1
+@@ -645,7 +651,7 @@
+ 		xtui.screen_done(screen)
+ 	
+ 	preprocess_config(config, rules)
+-	create_output(MAKEFILE, MACROS, config, rules)
++	create_output(BUILD_DIR, MAKEFILE, MACROS, config, rules)
+ 	return 0
+ 
+ if __name__ == '__main__':
+
