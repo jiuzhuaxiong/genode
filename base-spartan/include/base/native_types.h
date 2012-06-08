@@ -2,11 +2,13 @@
 #define _INCLUDE__BASE__NATIVE_TYPES_H_
 
 #include <base/native_capability.h>
+#include <base/stdint.h>
 
 namespace Genode {
 	typedef volatile int Native_lock;
-	typedef          int Native_thread_id;
-	typedef          int Native_thread;
+	typedef          addr_t Native_thread_id;
+	typedef          addr_t Native_thread;
+	typedef addr_t Native_task;
 
 	struct Cap_dst_policy
 	{
@@ -18,6 +20,12 @@ namespace Genode {
 
 	typedef Native_capability_tpl<Cap_dst_policy> Native_capability;
 	typedef int Native_connection_state;
+}
+
+namespace Spartan {
+	enum {
+		INVALID_THREAD_ID = ~0UL,
+	};
 }
 
 #endif /* _INCLUDE__BASE__NATIVE_TYPES_H_ */
