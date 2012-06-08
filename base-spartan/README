@@ -1,8 +1,7 @@
 This repository contains the implementation of Genode for the SPARTAN
 kernel.
 
-For this is work in progress this repository is not fully integrated into the 
-Genode build process. As long as this is the fact use the provided 
-'build'-directory for building.
-But beforehand please execute 'make prepare' here to obtain the needed sources 
-from HelenOS and patch them automatically.
+After using 'make prepare' please refer to the create_builddir script in 
+order to build the system.
+Currently included tests running automatically with the 'make run/*' command 
+are the 'hello' and 'printf' test.
