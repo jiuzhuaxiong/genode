@@ -3,6 +3,7 @@ SRC_CC += syscalls.cc
 SPARTAN_SYS_INC += syscall.h \
                    sys/types.h \
                    abi/ddi/arg.h \
+		   abi/proc/uarg.h \
                    abi/syscall.h
 
 all: $(addprefix $(BUILD_BASE_DIR)/include/,$(SPARTAN_SYS_INC))

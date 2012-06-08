@@ -2,13 +2,12 @@
 #define SPARTAN_SYSCALLS
 
 #include <base/stdint.h>
+#include <base/native_types.h>
 
 namespace Spartan
 {
 
 #include <sys/types.h>
-
-typedef uint64_t task_id_t;
 
 #define __SYSCALL0(id) \
 	__syscall(0, 0, 0, 0, 0, 0, id)
@@ -37,7 +36,9 @@ typedef uint64_t task_id_t;
 	void io_port_enable(Genode::addr_t pio_addr, Genode::size_t size);
 	void exit(int status);
 
-	task_id_t task_get_id(void);
+	Genode::Native_task task_get_id(void);
+	Genode::Native_thread thread_create(void* ip, void* sp,
+			const char* name);
 }
 
 #endif /* SPARTAN_SYSCALL */

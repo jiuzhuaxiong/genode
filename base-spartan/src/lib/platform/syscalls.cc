@@ -1,4 +1,5 @@
 #include <spartan/syscalls.h>
+#include <util/string.h>
 
 using namespace Genode;
 
@@ -6,6 +7,7 @@ extern "C" {
 #include <sys/types.h>
 #include <abi/ddi/arg.h>
 #include <abi/syscall.h>
+#include <abi/proc/uarg.h>
 }
 
 using namespace Spartan;
@@ -26,18 +28,37 @@ void Spartan::io_port_enable(Genode::addr_t pio_addr, Genode::size_t size)
 	__SYSCALL1(SYS_IOSPACE_ENABLE, (sysarg_t) &arg);
 }
 
-task_id_t Spartan::task_get_id(void)
+
+Native_task Spartan::task_get_id(void)
 {
+	Native_task task_id;
 #ifdef __32_BITS
-	task_id_t task_id;
 	(void) __SYSCALL1(SYS_TASK_GET_ID, (sysarg_t) &task_id);
-	return task_id;
 #endif  /* __32_BITS__ */
 
 #ifdef __64_BITS__
-	return (task_id_t) __SYSCALL0(SYS_TASK_GET_ID);
+	task_id = (Native_task) __SYSCALL0(SYS_TASK_GET_ID);
 #endif  /* __64_BITS__ */
+	return task_id;
 }
+
+Native_thread Spartan::thread_create(void *ip, void *sp, const char *name)
+{
+	uspace_arg_t uarg;
+	Native_thread tid;
+	int rc;
+
+	uarg.uspace_entry = ip;
+	uarg.uspace_stack = sp;
+	uarg.uspace_uarg = &uarg;
+
+	rc = __SYSCALL4(SYS_THREAD_CREATE, (sysarg_t) &uarg, (sysarg_t) name,
+			(sysarg_t) Genode::strlen(name), (sysarg_t) &tid);
+
+	return rc? INVALID_THREAD_ID : tid;
+}
+
+
 
 void Spartan::exit(int status)
 {

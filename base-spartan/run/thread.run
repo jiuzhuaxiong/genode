@@ -1,0 +1,9 @@
+build "tests/spartan_05_thread"
+
+create_boot_directory
+
+build_boot_image "thread"
+
+append qemu_args "-m 64 -serial mon:stdio"
+
+run_genode_until forever
