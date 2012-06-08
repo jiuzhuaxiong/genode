@@ -30,10 +30,10 @@ MAKEFLAGS += -L
 INC_DIR += $(BUILD_BASE_DIR)/include
 
 CC_OPT_NOSTDINC += -nostdinc
-CC_CXX_OPT += -fpermissive -fno-exceptions
+#CC_CXX_OPT += -fpermissive -fno-exceptions
 CXX_LINK_OPT    += -static -nostdlib -Wl,-nostdlib
-#EXT_OBJECTS     += $(shell $(CUSTOM_CXX_LIB) -print-file-name=libsupc++.a) \
-			$(shell $(CUSTOM_CXX_LIB) -print-file-name=libgcc_eh.a) \
+EXT_OBJECTS     += $(shell $(CUSTOM_CXX_LIB) -print-file-name=libsupc++.a) \
+                   $(shell $(CUSTOM_CXX_LIB) -print-file-name=libgcc_eh.a) \
 			$(shell $(CUSTOM_CXX_LIB) -print-libgcc-file-name)
 
 #

@@ -17,8 +17,14 @@
  * under the terms of the GNU General Public License version 2.
  */
 
+#include <base/crt0.h>
+
 extern int main(void);
 
+int genode___cxa_atexit(void (*func)(void*), void *arg, void *dso)
+{
+	return 0;
+}
 /**
  * Dummy default arguments for main function
  */
@@ -32,6 +38,9 @@ extern "C" int _main()
 {
 	/* call real main function */
 //	int ret = main(genode_argc, genode_argv);
+	void (**func)();
+	for (func = &_ctors_end; func != &_ctors_start; (*--func)());
+
 	int ret = main();
 
 	return ret;

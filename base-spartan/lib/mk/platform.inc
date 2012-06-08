@@ -1,3 +1,5 @@
+SRC_CC += syscalls.cc
+
 SPARTAN_SYS_INC += syscall.h \
                    sys/types.h \
                    abi/ddi/arg.h \
@@ -12,3 +14,5 @@ $(BUILD_BASE_DIR)/include/abi/%: $(REP_DIR)/contrib/abi/include/%
 $(BUILD_BASE_DIR)/include/%: $(SPARTAN_LIBC_DIR)/include/%
 	$(VERBOSE)mkdir -p $(dir $@)
 	$(VERBOSE)cp $< $@
+
+vpath syscalls.cc $(REP_DIR)/src/lib/platform
