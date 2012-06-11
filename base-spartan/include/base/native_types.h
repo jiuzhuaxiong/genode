@@ -5,10 +5,24 @@
 #include <base/stdint.h>
 
 namespace Genode {
+	/* TODO nasty work around
+	 * declaration taken from helenos/abi/include/ipc.ipc.h
+	 */
+	enum {
+		IPC_CALL_LEN = 6,
+	};
+
 	typedef volatile int Native_lock;
 	typedef          addr_t Native_thread_id;
 	typedef          addr_t Native_thread;
-	typedef addr_t Native_task;
+	typedef          addr_t Native_task;
+
+	typedef          addr_t Native_ipc_callid;
+	typedef struct {
+		addr_t args[IPC_CALL_LEN];
+		Native_thread_id in_task_id;
+		addr_t in_phone_hash;
+	} Native_ipc_call;
 
 	struct Cap_dst_policy
 	{
@@ -26,6 +40,7 @@ namespace Spartan {
 	enum {
 		INVALID_THREAD_ID = ~0UL,
 	};
+
 }
 
 #endif /* _INCLUDE__BASE__NATIVE_TYPES_H_ */
