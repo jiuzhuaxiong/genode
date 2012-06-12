@@ -6,6 +6,7 @@ SPARTAN_SYS_INC += syscall.h \
 		   abi/proc/uarg.h \
 		   abi/ipc/ipc.h \
 		   abi/ipc/methods.h \
+		   abi/errno.h \
 		   abi/synch.h \
                    abi/syscall.h
 
