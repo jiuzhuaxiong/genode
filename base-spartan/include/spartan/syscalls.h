@@ -8,6 +8,9 @@ namespace Spartan
 {
 
 #include <sys/types.h>
+#include <abi/ipc/ipc.h>
+#include <abi/ipc/methods.h>
+#include <abi/errno.h>
 
 #define __SYSCALL0(id) \
 	__syscall(0, 0, 0, 0, 0, 0, id)
