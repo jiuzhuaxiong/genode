@@ -15,8 +15,8 @@ extern "C" {
 
 using namespace Spartan;
 
-extern "C" sysarg_t __syscall(const sysarg_t p1, const sysarg_t p2,
-	const sysarg_t p3, const sysarg_t p4, const sysarg_t p5, const sysarg_t p6,
+extern "C" addr_t __syscall(const addr_t p1, const addr_t p2,
+	const addr_t p3, const addr_t p4, const addr_t p5, const addr_t p6,
 	const syscall_t id);
 
 
@@ -28,7 +28,7 @@ void Spartan::io_port_enable(Genode::addr_t pio_addr, Genode::size_t size)
 	arg.ioaddr = (void*)pio_addr;
 	arg.size = size;
 
-	__SYSCALL1(SYS_IOSPACE_ENABLE, (sysarg_t) &arg);
+	__SYSCALL1(SYS_IOSPACE_ENABLE, (addr_t) &arg);
 }
 
 
@@ -36,7 +36,7 @@ Native_task Spartan::task_get_id(void)
 {
 	Native_task task_id;
 #ifdef __32_BITS
-	(void) __SYSCALL1(SYS_TASK_GET_ID, (sysarg_t) &task_id);
+	(void) __SYSCALL1(SYS_TASK_GET_ID, (addr_t) &task_id);
 #endif  /* __32_BITS__ */
 
 #ifdef __64_BITS__
@@ -55,8 +55,8 @@ Native_thread Spartan::thread_create(void *ip, void *sp, const char *name)
 	uarg.uspace_stack = sp;
 	uarg.uspace_uarg = &uarg;
 
-	rc = __SYSCALL4(SYS_THREAD_CREATE, (sysarg_t) &uarg, (sysarg_t) name,
-			(sysarg_t) Genode::strlen(name), (sysarg_t) &tid);
+	rc = __SYSCALL4(SYS_THREAD_CREATE, (addr_t) &uarg, (addr_t) name,
+			(addr_t) Genode::strlen(name), (addr_t) &tid);
 
 	return rc? INVALID_THREAD_ID : tid;
 }
@@ -65,7 +65,7 @@ Native_ipc_callid Spartan::ipc_wait_cycle(Native_ipc_call *call, addr_t usec,
 		unsigned int flags)
 {
 	Native_ipc_callid callid =
-		__SYSCALL3(SYS_IPC_WAIT, (sysarg_t) call, usec, flags);
+		__SYSCALL3(SYS_IPC_WAIT, (addr_t) call, usec, flags);
 
 	/* Handle received answers */
 	/* TODO ?
@@ -113,6 +113,43 @@ int Spartan::ipc_connect_to_me(int phoneid, addr_t arg1, addr_t arg2,
 	return rc;
 }
 
+int Spartan::ipc_connect_me_to(int phoneid, addr_t arg1, addr_t arg2,
+		addr_t arg3)
+{
+	addr_t newphid;
+	int res = ipc_call_sync_3_5(phoneid, IPC_M_CONNECT_ME_TO, arg1, arg2, arg3,
+			0, 0, 0, 0, &newphid);
+//			NULL, NULL, NULL, NULL, &newphid);
+	if (res)
+	return res;
+
+	return newphid;
+}
+
+int Spartan::ipc_call_sync_fast(int phoneid, addr_t method, addr_t arg1,
+		addr_t arg2, addr_t arg3, addr_t *result1, addr_t *result2,
+		addr_t *result3, addr_t *result4, addr_t *result5)
+{
+	Native_ipc_call resdata;
+	int callres = __SYSCALL6(SYS_IPC_CALL_SYNC_FAST, phoneid, method, arg1,
+			arg2, arg3, (addr_t) &resdata);
+	if (callres)
+		return callres;
+
+	if (result1)
+		*result1 = IPC_GET_ARG1(resdata);
+	if (result2)
+		*result2 = IPC_GET_ARG2(resdata);
+	if (result3)
+		*result3 = IPC_GET_ARG3(resdata);
+	if (result4)
+		*result4 = IPC_GET_ARG4(resdata);
+	if (result5)
+		*result5 = IPC_GET_ARG5(resdata);
+
+	return IPC_GET_RETVAL(resdata);
+}
+
 addr_t Spartan::ipc_answer_fast(Native_ipc_callid callid, addr_t retval, addr_t arg1,
 		addr_t arg2, addr_t arg3, addr_t arg4)
 {
@@ -132,8 +169,17 @@ addr_t Spartan::ipc_answer_slow(Native_ipc_callid callid, addr_t retval, addr_t 
 	IPC_SET_ARG4(call, arg4);
 	IPC_SET_ARG5(call, arg5);
 
-	return __SYSCALL2(SYS_IPC_ANSWER_SLOW, callid, (sysarg_t) &call);
+	return __SYSCALL2(SYS_IPC_ANSWER_SLOW, callid, (addr_t) &call);
 }
+
+int Spartan::ipc_forward_fast(Native_ipc_callid callid, int phoneid,
+		addr_t imethod, addr_t arg1,
+		addr_t arg2, unsigned int mode)
+{
+	return __SYSCALL6(SYS_IPC_FORWARD_FAST, callid, phoneid, imethod, arg1,
+		arg2, mode);
+}
+
 
 int Spartan::ipc_hangup(int phoneid)
 {
