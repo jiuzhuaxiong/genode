@@ -7,6 +7,8 @@
 namespace Genode {
 	/* TODO nasty work around
 	 * declaration taken from helenos/abi/include/ipc.ipc.h
+	 * It represents the maximum count of argument that can be passed 
+	 *  with a ipc call
 	 */
 	enum {
 		IPC_CALL_LEN = 6,
@@ -26,9 +28,10 @@ namespace Genode {
 
 	struct Cap_dst_policy
 	{
+		/* Destination - equals a phone*/
 		typedef int Dst;
 		static bool valid(Dst tid) { return false; }
-		static Dst  invalid()      { return 0; }
+		static Dst  invalid()      { return -1; }
 		static void copy(void* dst, Native_capability_tpl<Cap_dst_policy>* src);
 	};
 

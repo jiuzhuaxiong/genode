@@ -27,6 +27,11 @@ namespace Spartan
 #define __SYSCALL6(id, p1, p2, p3, p4, p5, p6) \
 	__syscall(p1, p2, p3, p4, p5, p6, id)
 
+#define ipc_call_sync_3_5(phoneid, method, arg1, arg2, arg3, res1, res2, \
+		res3, res4, res5) \
+	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), (arg3), \
+			(res1), (res2), (res3), (res4), (res5))
+
 /*
  * User-friendly wrappers for ipc_answer_fast() and ipc_answer_slow().
  * They are in the form of ipc_answer_m(), where m is the number of return
@@ -65,11 +70,21 @@ namespace Spartan
 	Genode::Native_ipc_callid 
 		ipc_trywait_for_call(Genode::Native_ipc_call *call);
 
-	/** Request new connection. */
+	/** Request callback connection. */
 	int ipc_connect_to_me(int phoneid, Genode::addr_t arg1,
 			Genode::addr_t arg2, Genode::addr_t arg3,
 			Genode::Native_task *task_id,
 			Genode::addr_t *phonehash);
+	/** Request new connection. */
+	int ipc_connect_me_to(int phoneid, Genode::addr_t arg1,
+			Genode::addr_t arg2, Genode::addr_t arg3);
+
+	/* Fast synchronous call */
+	int ipc_call_sync_fast(int phoneid, Genode::addr_t method,
+			Genode::addr_t arg1, Genode::addr_t arg2,
+			Genode::addr_t arg3, Genode::addr_t *result1,
+			Genode::addr_t *result2, Genode::addr_t *result3,
+			Genode::addr_t *result4, Genode::addr_t *result5);
 
 	/** Answer received call (fast version).
 	 * @return Zero on success.
@@ -88,6 +103,9 @@ namespace Spartan
 			Genode::addr_t arg2, Genode::addr_t arg3,
 			Genode::addr_t arg4, Genode::addr_t arg5);
 
+	int ipc_forward_fast(Genode::Native_ipc_callid callid, int phoneid,
+			Genode::addr_t imethod, Genode::addr_t arg1,
+			Genode::addr_t arg2, unsigned int mode);
 
 	/** Hang up a phone. */
 	int ipc_hangup(int phoneid);
