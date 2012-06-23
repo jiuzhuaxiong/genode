@@ -1,0 +1,9 @@
+build "tests/spartan_nameserv tests/spartan_07_ipc_send_wait"
+
+create_boot_directory
+
+build_boot_image "nameserv ipc_sendwait"
+
+append qemu_args "-m 64 -serial mon:stdio"
+
+run_genode_until forever

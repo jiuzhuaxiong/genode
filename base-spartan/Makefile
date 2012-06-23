@@ -7,8 +7,8 @@
 VERBOSE    ?= @
 ECHO        = @echo
 BZR_URI     = bzr://bzr.helenos.org/mainline
-#BZR_REV     = 1517
-BZR_REV     = 1486
+BZR_REV     = 1530
+#BZR_REV     = 1486
 CONTRIB_DIR = contrib
 PATCHES     = $(shell find patches -name *.patch)
 

@@ -27,10 +27,11 @@ static void entry(void)
  */
 extern "C" int main(void)
 {
-	static char stack[8192];
+	enum { STACK_SIZE = 16384 };
+	static char stack[STACK_SIZE];
 	Genode::printf("This is Genode's printf\n");
 
-	Spartan::thread_create((void*)&entry, &stack, "thread");
+	Spartan::thread_create((void*)&entry, &stack, STACK_SIZE, "thread");
 	while(1)
 		Genode::printf("Thread 0\n");
 
