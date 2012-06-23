@@ -45,7 +45,17 @@ Native_task Spartan::task_get_id(void)
 	return task_id;
 }
 
-Native_thread Spartan::thread_create(void *ip, void *sp, const char *name)
+Native_thread_id Spartan::thread_get_id(void)
+{
+	Native_thread_id thread_id;
+
+	(void) __SYSCALL1(SYS_THREAD_GET_ID, (sysarg_t) &thread_id);
+
+	return thread_id;
+}
+
+Native_thread Spartan::thread_create(void *ip, void *sp, addr_t stack_size,
+		const char *name)
 {
 	uspace_arg_t uarg;
 	Native_thread tid;
@@ -53,6 +63,7 @@ Native_thread Spartan::thread_create(void *ip, void *sp, const char *name)
 
 	uarg.uspace_entry = ip;
 	uarg.uspace_stack = sp;
+	uarg.uspace_stack_size = stack_size;
 	uarg.uspace_uarg = &uarg;
 
 	rc = __SYSCALL4(SYS_THREAD_CREATE, (addr_t) &uarg, (addr_t) name,
@@ -113,15 +124,14 @@ int Spartan::ipc_connect_to_me(int phoneid, addr_t arg1, addr_t arg2,
 	return rc;
 }
 
-int Spartan::ipc_connect_me_to(int phoneid, addr_t arg1, addr_t arg2,
-		addr_t arg3)
+int Spartan::ipc_connect_me_to(int phoneid, addr_t dest_task_id, 
+		addr_t dest_thread_id, 	addr_t arg3)
 {
 	addr_t newphid;
-	int res = ipc_call_sync_3_5(phoneid, IPC_M_CONNECT_ME_TO, arg1, arg2, arg3,
-			0, 0, 0, 0, &newphid);
-//			NULL, NULL, NULL, NULL, &newphid);
+	int res = ipc_call_sync_3_5(phoneid, IPC_M_CONNECT_ME_TO, dest_task_id, 
+			dest_thread_id, arg3, 0, 0, 0, 0, &newphid);
 	if (res)
-	return res;
+		return res;
 
 	return newphid;
 }
@@ -180,6 +190,44 @@ int Spartan::ipc_forward_fast(Native_ipc_callid callid, int phoneid,
 		arg2, mode);
 }
 
+/*
+int ipc_data_write_start(async_exch_t *exch, const void *src, size_t size)
+{
+	if (exch == NULL)
+		return ENOENT;
+
+	return async_req_2_0(exch, IPC_M_DATA_WRITE, (sysarg_t) src,
+		(sysarg_t) size);
+}
+*/
+
+int Spartan::ipc_data_write_start_synch(int phoneid, const void *src, size_t size)
+{
+	return ipc_call_sync_2_0(phoneid, IPC_M_DATA_WRITE, (sysarg_t) src,
+		(sysarg_t) size);
+}
+
+bool Spartan::ipc_data_write_receive_timeout(Native_ipc_callid *callid,
+		Native_ipc_call *call, Native_thread_id *in_thread_id,
+		addr_t *size, addr_t usec)
+{
+	*callid = ipc_wait_for_call_timeout(call, usec);
+	/*TODO dummy until handled correctly */
+	*in_thread_id = 0;
+
+	if (IPC_GET_IMETHOD(*call) != IPC_M_DATA_WRITE)
+		return false;
+
+	if (size)
+		*size = (addr_t) IPC_GET_ARG2(*call);
+
+	return true;
+}
+
+int Spartan::ipc_data_write_finalize(Native_ipc_callid callid, void *dst, addr_t size)
+{
+	return ipc_answer_2(callid, EOK, (sysarg_t) dst, (sysarg_t) size);
+}
 
 int Spartan::ipc_hangup(int phoneid)
 {

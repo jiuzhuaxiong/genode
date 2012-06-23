@@ -1,4 +1,4 @@
-build "tests/spartan_06_ipc_pingpong/nameserv tests/spartan_06_ipc_pingpong/ping tests/spartan_06_ipc_pingpong/pong"
+build "tests/spartan_nameserv tests/spartan_06_ipc_pingpong/ping tests/spartan_06_ipc_pingpong/pong"
 
 create_boot_directory
 

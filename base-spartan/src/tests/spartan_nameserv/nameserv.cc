@@ -14,7 +14,7 @@
 #include <base/printf.h>
 #include <spartan/syscalls.h>
 
-#include "../../mini_env.h"
+#include "../mini_env.h"
 
 enum {
 	MAX_CONN_COUNT = 64,
@@ -147,7 +147,7 @@ extern "C" int main(void)
 					"\n\t  in_task_id = %lu, in_phone_hash "
 					"= %lu\n", IPC_GET_ARG1(call), callid, 
 					call.in_task_id, call.in_phone_hash);
-				if(int pos = connection_exists_taskid(IPC_GET_ARG1(call))) {
+				if(int pos = connection_exists_taskid(IPC_GET_ARG1(call)) >= 0) {
 					Spartan::ipc_forward_fast(callid, 
 						_phone[pos], IPC_GET_ARG1(call),
 						IPC_GET_ARG2(call), 0, 
