@@ -30,17 +30,13 @@ namespace Spartan
 #define ipc_call_sync_2_0(phoneid, method, arg1, arg2) \
 	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), 0, 0, 0, 0, \
 		0, 0)
+#define ipc_call_sync_3_0(phoneid, method, arg1, arg2, arg3) \
+	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), (arg3), 0, 0, 0, \
+		0, 0)
 #define ipc_call_sync_3_5(phoneid, method, arg1, arg2, arg3, res1, res2, \
 		res3, res4, res5) \
 	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), (arg3), \
 		(res1), (res2), (res3), (res4), (res5))
-
-/* ASYNCH */
-/*
-#define ipc_req_2_0(exch, method, arg1, arg2) \
-	ipc_req_fast(exch, method, arg1, arg2, 0, 0, NULL, NULL, NULL, \
-		NULL, NULL)
-*/
 
 /*
  * User-friendly wrappers for ipc_answer_fast() and ipc_answer_slow().
@@ -82,14 +78,21 @@ namespace Spartan
 		ipc_trywait_for_call(Genode::Native_ipc_call *call);
 
 	/** Request callback connection. */
-	int ipc_connect_to_me(int phoneid, Genode::addr_t arg1,
+	int ipc_connect_to_me(int phoneid, Genode::Native_thread_id my_threadid,
 			Genode::addr_t arg2, Genode::addr_t arg3,
 			Genode::Native_task *task_id,
 			Genode::addr_t *phonehash);
 	/** Request new connection. */
 	int ipc_connect_me_to(int phoneid, Genode::addr_t dest_task_id,
-			Genode::addr_t dest_thread_id, Genode::addr_t arg3);
+			Genode::Native_thread_id dest_threadid,
+			Genode::Native_thread_id my_threadid);
 
+	int ipc_clone_connection(int phoneid, Genode::Native_task dst_task_id,
+			Genode::Native_thread_id dst_thread_id, int clone_phone);
+
+	/**************************
+	 * Synchronoous Framework *
+	 **************************/
 	/* Fast synchronous call */
 	int ipc_call_sync_fast(int phoneid, Genode::addr_t method,
 			Genode::addr_t arg1, Genode::addr_t arg2,
@@ -97,14 +100,20 @@ namespace Spartan
 			Genode::addr_t *result2, Genode::addr_t *result3,
 			Genode::addr_t *result4, Genode::addr_t *result5);
 
-	/** Pseudo-synchronous message sending - fast version.
-	 * Send message asynchronously and return only after the reply arrives.
-	 * TODO problems with asynch_exch_t
-	 */
-//	Genode::addr_t ipc_req_fast(async_exch_t *exch, sysarg_t imethod, sysarg_t arg1,
-//sysarg_t arg2, sysarg_t arg3, sysarg_t arg4, sysarg_t *r1, sysarg_t *r2,
-//sysarg_t *r3, sysarg_t *r4, sysarg_t *r5
 
+	/*************************
+	 * Asynchronous Framwork *
+	 *************************/
+	/** Fast asynchronous call. */
+	Genode::Native_ipc_callid ipc_call_async_fast(int phoneid, Genode::addr_t imethod,
+		Genode::addr_t arg1, Genode::addr_t arg2, Genode::addr_t arg3,
+		Genode::addr_t arg4);
+//, void *priv, 	ipc_async_callback_t callback, bool can_preempt);
+
+
+	/***************
+	 * IPC answers *
+	 ***************/
 	/** Answer received call (fast version).
 	 * @return Zero on success.
 	 * @return Value from @ref errno.h on failure.

@@ -22,19 +22,11 @@ Genode::Native_task task_id_nameserv;
 
 bool register_with_nameserv()
 {
-	phone_nameserv = Spartan::ipc_connect_to_me(0, 0, 0, 0,
+	phone_nameserv = Spartan::ipc_connect_to_me(0, Spartan::thread_get_id(), 0, 0,
 		&task_id_nameserv, &phonehash_nameserv);
 	return phonehash_nameserv ? true : false;
 }
 
-Genode::addr_t accept_connection(Genode::Native_ipc_callid new_callid,
-		Genode::addr_t new_phonehash, Genode::Native_task new_task_id,
-		int new_phone)
-{
-
-	Genode::printf("pong:\taccepting incomming connection\n");
-	return Spartan::ipc_answer_0(new_callid, 0);
-}
 
 Genode::addr_t reject_connection(Genode::Native_ipc_callid callid)
 {
@@ -42,6 +34,14 @@ Genode::addr_t reject_connection(Genode::Native_ipc_callid callid)
 	return Spartan::ipc_answer_0(callid, -1);
 }
 
+Genode::addr_t accept_connection(Genode::Native_ipc_callid new_callid,
+		Genode::addr_t new_phonehash, Genode::Native_task new_task_id,
+		int new_phone)
+{
+	Genode::printf("pong:\taccepting incomming connection with "
+		"task_id=%lu\n", new_task_id);
+	return Spartan::ipc_answer_0(new_callid, 0);
+}
 /**
  * Main program, called by the _main() function
  */
@@ -50,6 +50,7 @@ extern "C" int main(void)
 	Genode::Native_ipc_callid	callid;
 	Genode::Native_ipc_call		call;
 	Genode::Native_task		my_task = Spartan::task_get_id();
+	Genode::Native_thread_id	my_threadid = Spartan::thread_get_id();
 	Genode::addr_t			retval;
 
 	Genode::printf("pong:\tpong started\n");
@@ -59,6 +60,7 @@ extern "C" int main(void)
 	else
 		Genode::printf("pong:\tcould not register with nameserv.\n");
 
+	while(1) {
 	callid = Spartan::ipc_wait_for_call_timeout(&call, 0);
 	Genode::printf("pong:\treceived incomming call\n"
 			"\t   IMETHOD=%lu, ARG1=%lu, ARG2=%lu, ARG3=%lu,"
@@ -92,11 +94,12 @@ extern "C" int main(void)
 			break;
 		case IPC_M_CONNECT_ME_TO:
 			Genode::printf("pong:\treceived connection request to "
-				" task=%lu with callid = %lu,\n\t   "
-				"in_task_id = %lu, in_phone_hash = %lu\n",
-				IPC_GET_ARG1(call), callid, call.in_task_id,
-				call.in_phone_hash);
-			if(my_task == IPC_GET_ARG1(call)) {
+				" task=%lu & thread=%lu with callid = %lu,\n\t   "
+				"in_task_id = %lu, in_thread_id=%lu, "
+				"in_phone_hash = %lu\n",
+				IPC_GET_ARG1(call), IPC_GET_ARG2(call), callid,
+				call.in_task_id, IPC_GET_ARG3(call), call.in_phone_hash);
+			if(my_task == IPC_GET_ARG1(call) && my_threadid == IPC_GET_ARG2(call)) {
 				retval = accept_connection(callid, 
 					call.in_phone_hash, call.in_task_id,
 					IPC_GET_ARG5(call));
@@ -115,13 +118,19 @@ extern "C" int main(void)
 					"IPC_M_CONNECT_ME_TO to task %lu "
 					"request but do not kow it\n",
 					IPC_GET_ARG1(call));
+			break;
+		case IPC_M_CONNECTION_CLONE: {
+			int phone_ping = IPC_GET_ARG1(call);
+			Spartan::ipc_answer_0(callid, 0);
+			Spartan::ipc_call_async_fast(phone_ping, 11, 1,2,3,4);
+			break;
+					     }
 		default:
 			retval = reject_connection(callid);
 			Genode::printf("pong:\tunhandled method %lu received",
 				IPC_GET_IMETHOD(call));
 	}
-
-	while(1);
+	}
 
 	Spartan::exit(0);
 }

@@ -44,8 +44,8 @@ $(CONTRIB_DIR):
 # for resolving the dependencies of 'update_contrib_subdirs'
 $(REAL_CONTRIB_DIR)/%:
 	$(ECHO) "Checking out revision $(BZR_REV)"
-	$(VERBOSE)bzr checkout $(BZR_URI) $(REAL_CONTRIB_DIR)
-#	$(VERBOSE)bzr checkout -r $(BZR_REV) $(BZR_URI) $(REAL_CONTRIB_DIR)
+#	$(VERBOSE)bzr checkout $(BZR_URI) $(REAL_CONTRIB_DIR)
+	$(VERBOSE)bzr checkout -r $(BZR_REV) $(BZR_URI) $(REAL_CONTRIB_DIR)
 
 # used phony to always update the SVN on 'make prepare'
 # (before updating, we need to revert our custom patches)
@@ -61,6 +61,5 @@ apply_patches:
 # if $(CONTRIB_DIR) is a symlink, leave $(REAL_CONTRIB_DIR) alone
 clean::
 	$(VERBOSE)rm -rf $(CONTRIB_DIR)
-	$(MAKE) -C $(REAL_DIR)build clean
 
 .NOTPARALLEL:
