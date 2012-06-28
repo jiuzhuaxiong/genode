@@ -18,6 +18,8 @@
 
 enum {
 	PHONE_NAMESERV = 0,
+	TASK_PONG = 4,
+	THREAD_PONG = 7
 };
 
 int		phone_nameserv, phone_pong;
@@ -26,16 +28,23 @@ Genode::Native_task task_id_nameserv;
 
 bool register_with_nameserv()
 {
-	phone_nameserv = Spartan::ipc_connect_to_me(PHONE_NAMESERV, 0, 0, 0,
-			&task_id_nameserv, &phonehash_nameserv);
+	phone_nameserv = Spartan::ipc_connect_to_me(PHONE_NAMESERV, 
+			Spartan::thread_get_id(), 0, 0, &task_id_nameserv, 
+			&phonehash_nameserv);
 	return phonehash_nameserv ? true : false;
 }
 
 bool connect_to_pong()
 {
-	phone_pong = Spartan::ipc_connect_me_to(PHONE_NAMESERV, 4, 0, 0);
+	phone_pong = Spartan::ipc_connect_me_to(PHONE_NAMESERV, TASK_PONG, THREAD_PONG,
+			Spartan::thread_get_id());
 
 	return phone_pong>0 ? true : false;
+}
+
+int clone_pong_to_pong()
+{
+	return Spartan::ipc_clone_connection(phone_pong, TASK_PONG, THREAD_PONG, phone_pong);
 }
 
 /**
@@ -45,6 +54,7 @@ extern "C" int main(void)
 {
 	Genode::Native_ipc_callid	callid;
 	Genode::Native_ipc_call		call;
+	int ret;
 
 	Genode::printf("ping:\tping started\n");
 
@@ -57,6 +67,9 @@ extern "C" int main(void)
 		Genode::printf("ping:\tsuccessfully connected with pong\n");
 	else
 		Genode::printf("ping:\tcould not connect to pong\n");
+
+	ret = clone_pong_to_pong();
+	Genode::printf("ping:\tclone_pong_to_pong() returned %lx\n", ret);
 
 	callid = Spartan::ipc_wait_for_call_timeout(&call, 0);
 	if(call.in_phone_hash == phonehash_nameserv)

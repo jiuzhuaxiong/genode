@@ -23,12 +23,13 @@ enum {
 Genode::addr_t			_phone_hash[MAX_CONN_COUNT];
 Genode::Native_ipc_callid	_callid[MAX_CONN_COUNT];
 Genode::Native_task		_task_id[MAX_CONN_COUNT];
+Genode::Native_thread_id	_thread_id[MAX_CONN_COUNT];
 int				_phone[MAX_CONN_COUNT];
 int				_call_counter = 0;
 
 bool insert_new_connection(Genode::Native_ipc_callid new_callid,
 		Genode::addr_t new_phonehash, Genode::Native_task new_task_id,
-		int new_phone)
+		Genode::Native_thread_id new_thread_id, int new_phone)
 {
 	/** return false if new call would exceed
 	 * maximum connection counts
@@ -40,6 +41,7 @@ bool insert_new_connection(Genode::Native_ipc_callid new_callid,
 	_callid[_call_counter] = new_callid;
 	_phone_hash[_call_counter] = new_phonehash;
 	_task_id[_call_counter] = new_task_id;
+	_thread_id[_call_counter] = new_thread_id;
 	_phone[_call_counter] = new_phone;
 	_call_counter++;
 
@@ -57,10 +59,11 @@ int connection_exists_phonehash(Genode::addr_t phonehash)
 	return -1;
 }
 
-int connection_exists_taskid(Genode::Native_task task_id)
+int connection_exists_task_thread_id(Genode::Native_task task_id,
+		Genode::Native_thread_id thread_id)
 {
 	for(int i=0; i<_call_counter; i++)
-		if(_task_id[i] == task_id)
+		if((_task_id[i] == task_id) && (_thread_id[i] = thread_id))
 			return i;
 
 	return -1;
@@ -82,7 +85,7 @@ int delete_connection(Genode::addr_t phonehash)
 
 Genode::addr_t accept_connection(Genode::Native_ipc_callid new_callid,
 		Genode::addr_t new_phonehash, Genode::Native_task new_task_id,
-		int new_phone)
+		Genode::Native_thread_id new_thread_id, int new_phone)
 {
 	Genode::addr_t	retval;
 
@@ -91,7 +94,7 @@ Genode::addr_t accept_connection(Genode::Native_ipc_callid new_callid,
 
 	if(retval == EOK) /* connection is established succefully */
 		retval = insert_new_connection(new_callid, new_phonehash,
-			new_task_id, new_phone);
+			new_task_id, new_thread_id, new_phone);
 
 	return retval>=0 ? 0 : retval;
 }
@@ -131,7 +134,7 @@ extern "C" int main(void)
 					call.in_phone_hash);
 				retval = accept_connection(callid, 
 					call.in_phone_hash, call.in_task_id, 
-					IPC_GET_ARG5(call));
+					IPC_GET_ARG1(call), IPC_GET_ARG5(call));
 				if(retval == EOK) 
 					Genode::printf("nameserv:\tconnection "
 						"established to task %lu\n", 
@@ -143,11 +146,13 @@ extern "C" int main(void)
 				break;
 			case IPC_M_CONNECT_ME_TO:
 				Genode::printf("nameserv:\treceived connection "
-					"request to task=%lu with callid = %lu,"
-					"\n\t  in_task_id = %lu, in_phone_hash "
-					"= %lu\n", IPC_GET_ARG1(call), callid, 
-					call.in_task_id, call.in_phone_hash);
-				if(int pos = connection_exists_taskid(IPC_GET_ARG1(call)) >= 0) {
+					"request to task=%lu & thread=%lu with "
+					"callid=%lu,\n\t  in_task_id=%lu, "
+					"in_thread_id=%lu, in_phone_hash=%lu\n",
+					IPC_GET_ARG1(call), IPC_GET_ARG2(call), 
+					callid, call.in_task_id,
+					IPC_GET_ARG3(call),  call.in_phone_hash);
+				if(int pos = connection_exists_task_thread_id(IPC_GET_ARG1(call), IPC_GET_ARG2(call)) >= 0) {
 					Spartan::ipc_forward_fast(callid, 
 						_phone[pos], IPC_GET_ARG1(call),
 						IPC_GET_ARG2(call), 0, 

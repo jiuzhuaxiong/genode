@@ -69,7 +69,7 @@ Native_thread Spartan::thread_create(void *ip, void *sp, addr_t stack_size,
 	rc = __SYSCALL4(SYS_THREAD_CREATE, (addr_t) &uarg, (addr_t) name,
 			(addr_t) Genode::strlen(name), (addr_t) &tid);
 
-	return rc? INVALID_THREAD_ID : tid;
+	return rc? INVALID_ID : tid;
 }
 
 Native_ipc_callid Spartan::ipc_wait_cycle(Native_ipc_call *call, addr_t usec, 
@@ -111,12 +111,14 @@ Native_ipc_callid Spartan::ipc_trywait_for_call(Native_ipc_call *call)
 	return callid;
 }
 
-int Spartan::ipc_connect_to_me(int phoneid, addr_t arg1, addr_t arg2, 
-		addr_t arg3, Native_task *task_id, addr_t *phonehash)
+int Spartan::ipc_connect_to_me(int phoneid, Native_thread_id my_threadid,
+		addr_t arg2, addr_t arg3, Native_task *task_id, 
+		addr_t *phonehash)
 {
 	Native_ipc_call data;
 	int rc = __SYSCALL6(SYS_IPC_CALL_SYNC_FAST, phoneid,
-			IPC_M_CONNECT_TO_ME, arg1, arg2, arg3, (addr_t) &data);
+			IPC_M_CONNECT_TO_ME, my_threadid, arg2, arg3, 
+			(addr_t) &data);
 	if (rc == 0) {
 		*task_id = data.in_task_id;
 		*phonehash = IPC_GET_ARG5(data);
@@ -125,17 +127,49 @@ int Spartan::ipc_connect_to_me(int phoneid, addr_t arg1, addr_t arg2,
 }
 
 int Spartan::ipc_connect_me_to(int phoneid, addr_t dest_task_id, 
-		addr_t dest_thread_id, 	addr_t arg3)
+		Native_thread_id dest_threadid, Native_thread_id my_threadid)
 {
 	addr_t newphid;
 	int res = ipc_call_sync_3_5(phoneid, IPC_M_CONNECT_ME_TO, dest_task_id, 
-			dest_thread_id, arg3, 0, 0, 0, 0, &newphid);
+			dest_threadid, my_threadid, 0, 0, 0, 0, &newphid);
 	if (res)
 		return res;
 
 	return newphid;
 }
 
+int Spartan::ipc_clone_connection(int phoneid, Genode::Native_task dst_task_id,
+		Genode::Native_thread_id dst_thread_id, int clone_phone)
+{
+	return ipc_call_async_fast(phoneid, IPC_M_CONNECTION_CLONE, (addr_t)clone_phone,
+		dst_task_id, dst_thread_id, 0);
+}
+
+/**************************
+ * Synchronous Framework *
+ **************************/
+
+/** Fast synchronous call.
+ *
+ * Only three payload arguments can be passed using this function. However,
+ * this function is faster than the generic ipc_call_sync_slow() because
+ * the payload is passed directly in registers.
+ *
+ * @param phoneid Phone handle for the call.
+ * @param method  Requested method.
+ * @param arg1    Service-defined payload argument.
+ * @param arg2    Service-defined payload argument.
+ * @param arg3    Service-defined payload argument.
+ * @param result1 If non-NULL, the return ARG1 will be stored there.
+ * @param result2 If non-NULL, the return ARG2 will be stored there.
+ * @param result3 If non-NULL, the return ARG3 will be stored there.
+ * @param result4 If non-NULL, the return ARG4 will be stored there.
+ * @param result5 If non-NULL, the return ARG5 will be stored there.
+ *
+ * @return Negative values representing IPC errors.
+ * @return Otherwise the RETVAL of the answer.
+ *
+ */
 int Spartan::ipc_call_sync_fast(int phoneid, addr_t method, addr_t arg1,
 		addr_t arg2, addr_t arg3, addr_t *result1, addr_t *result2,
 		addr_t *result3, addr_t *result4, addr_t *result5)
@@ -160,6 +194,47 @@ int Spartan::ipc_call_sync_fast(int phoneid, addr_t method, addr_t arg1,
 	return IPC_GET_RETVAL(resdata);
 }
 
+/*************************
+ * Asynchronous Framwork *
+ *************************/
+
+/** Fast asynchronous call.
+ *
+ * This function can only handle four arguments of payload. It is, however,
+ * faster than the more generic ipc_call_async_slow().
+ *
+ * Note that this function is a void function.
+ *
+ * During normal operation, answering this call will trigger the callback.
+ * In case of fatal error, the callback handler is called with the proper
+ * error code. If the call cannot be temporarily made, it is queued.
+ *
+ * @param phoneid     Phone handle for the call.
+ * @param imethod     Requested interface and method.
+ * @param arg1        Service-defined payload argument.
+ * @param arg2        Service-defined payload argument.
+ * @param arg3        Service-defined payload argument.
+ * @param arg4        Service-defined payload argument.
+ * @param private     Argument to be passed to the answer/error callback.
+ * @param callback    Answer or error callback.
+ * @param can_preempt If true, the current fibril will be preempted in
+ *                    case the kernel temporarily refuses to accept more
+ *                    asynchronous calls.
+ *
+ */
+Native_ipc_callid Spartan::ipc_call_async_fast(int phoneid, addr_t imethod, addr_t arg1,
+		addr_t arg2, addr_t arg3, addr_t arg4)
+//, void *priv, ipc_async_callback_t callback, bool can_preempt)
+{
+	Native_ipc_callid callid = __SYSCALL6(SYS_IPC_CALL_ASYNC_FAST, phoneid,
+			imethod, arg1, arg2, arg3, arg4);
+
+	return callid;
+}
+
+/***************
+ * IPC answers *
+ ***************/
 addr_t Spartan::ipc_answer_fast(Native_ipc_callid callid, addr_t retval, addr_t arg1,
 		addr_t arg2, addr_t arg3, addr_t arg4)
 {

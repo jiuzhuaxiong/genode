@@ -27,13 +27,9 @@ namespace Genode {
 			size_t _size;
 			char   _msg_start[];  /* symbol marks start of message */
 
-			Native_task		_task_id;
-			Native_thread		_thread_id;
-			addr_t			_phone_hash;
-			Native_ipc_callid 	_callid;
-
 		public:
 
+			Native_ipc_callid callid;
 			/*
 			 * Begin of actual message buffer
 			 */
@@ -48,18 +44,7 @@ namespace Genode {
 			 * Return address of message buffer
 			 */
 			inline void *addr() { return &_msg_start[0]; };
-
-			void set_task_id(Native_task id) { _task_id = id; }
-			void set_thread_id(Native_thread id) { _thread_id = id; }
-			void set_phone_hash(addr_t ph) { _phone_hash = ph; }
-			void set_callid(Native_ipc_callid id) { _callid = id; }
-
-			Native_task snd_task_id() { return _task_id; }
-			Native_thread snd_thread_id() { return _thread_id; }
-			addr_t snd_phone_hash() { return _phone_hash; }
-			Native_ipc_callid callid() { return _callid; }
 	};
-
 
 	/**
 	 * Instance of IPC message buffer with specified buffer size

@@ -56,13 +56,10 @@ namespace Genode {
 			 */
 			struct Raw { Dst dst; long local_name; };
 
-		private:
+		protected:
 
 			Dst  _dst;
 			long _local_name;
-
-		protected:
-
 			/**
 			 * Constructor for a local capability
 			 *
