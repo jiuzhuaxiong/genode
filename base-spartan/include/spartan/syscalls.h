@@ -150,6 +150,12 @@ namespace Spartan
 
 	/** Hang up a phone. */
 	int ipc_hangup(int phoneid);
+
+	/***************
+	 * Timer calls *
+	 ***************/
+	int usleep(Genode::addr_t usec);
+	void udelay(Genode::addr_t time);
 }
 
 #endif /* SPARTAN_SYSCALL */

@@ -36,8 +36,8 @@ bool register_with_nameserv()
 	Genode::Native_task	task_id_nameserv;
 	Genode::addr_t		phonehash_nameserv;
 
-	Spartan::ipc_connect_to_me(PHONE_NAMESERV, 0, 0, 0,
-			&task_id_nameserv, &phonehash_nameserv);
+	Spartan::ipc_connect_to_me(PHONE_NAMESERV, Spartan::thread_get_id(), 0,
+			0, &task_id_nameserv, &phonehash_nameserv);
 	return phonehash_nameserv ? true : false;
 }
 

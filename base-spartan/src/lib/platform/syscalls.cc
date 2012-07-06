@@ -112,12 +112,12 @@ Native_ipc_callid Spartan::ipc_trywait_for_call(Native_ipc_call *call)
 }
 
 int Spartan::ipc_connect_to_me(int phoneid, Native_thread_id my_threadid,
-		addr_t arg2, addr_t arg3, Native_task *task_id, 
+		addr_t arg1, addr_t arg3, Native_task *task_id, 
 		addr_t *phonehash)
 {
 	Native_ipc_call data;
 	int rc = __SYSCALL6(SYS_IPC_CALL_SYNC_FAST, phoneid,
-			IPC_M_CONNECT_TO_ME, my_threadid, arg2, arg3, 
+			IPC_M_CONNECT_TO_ME, arg1, my_threadid, arg3, 
 			(addr_t) &data);
 	if (rc == 0) {
 		*task_id = data.in_task_id;
@@ -278,8 +278,8 @@ int ipc_data_write_start(async_exch_t *exch, const void *src, size_t size)
 
 int Spartan::ipc_data_write_start_synch(int phoneid, const void *src, size_t size)
 {
-	return ipc_call_sync_2_0(phoneid, IPC_M_DATA_WRITE, (sysarg_t) src,
-		(sysarg_t) size);
+	return ipc_call_sync_3_0(phoneid, IPC_M_DATA_WRITE, (sysarg_t) src,
+		thread_get_id(), (sysarg_t) size);
 }
 
 bool Spartan::ipc_data_write_receive_timeout(Native_ipc_callid *callid,
@@ -307,6 +307,20 @@ int Spartan::ipc_data_write_finalize(Native_ipc_callid callid, void *dst, addr_t
 int Spartan::ipc_hangup(int phoneid)
 {
 	return __SYSCALL1(SYS_IPC_HANGUP, phoneid);
+}
+
+/*8*************
+ * Timer calls *
+ ***************/
+int Spartan::usleep(addr_t usec)
+{
+	(void) __SYSCALL1(SYS_THREAD_USLEEP, usec);
+	return 0;
+}
+
+void Spartan::udelay(addr_t time)
+{
+	(void) __SYSCALL1(SYS_THREAD_UDELAY, (sysarg_t) time);
 }
 
 void Spartan::exit(int status)
