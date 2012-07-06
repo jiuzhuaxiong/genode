@@ -14,7 +14,8 @@
 #include <base/printf.h>
 #include <base/ipc.h>
 #include <base/native_types.h>
-#include <base/blocking.h>
+#include <base/ipc_call.h>
+#include <base/ipc_manager_thread.h>
 
 #include <spartan/syscalls.h>
 
@@ -23,6 +24,8 @@ using namespace Genode;
 enum {
 	PHONE_CORE = 0,
 };
+
+Ipc_manager_thread	ipc_manager;
 
 /*****************
  ** Ipc_ostream **
@@ -76,37 +79,51 @@ Ipc_ostream::Ipc_ostream(Native_capability dst, Msgbuf_base *snd_msg)
 void Ipc_istream::_wait()
 {
 	static bool		connected = false;
+/*
 	Native_ipc_call		call;
 	Native_thread_id	in_thread_id;
+*/
+	Ipc_call		call;
 	addr_t			size;
 
 	/* 
 	 * Wait for an incomming connection request if strea, is not connected
 	 */
-	if(!connected) {
+	while(!connected) {
 		addr_t retval;
+/*
 		Native_ipc_call		rec_call;
 		Native_thread_id	rec_thread_id;
 
 		_rcv_msg->callid = Spartan::ipc_wait_for_call_timeout(&rec_call, 0);
-
-		switch(IPC_GET_IMETHOD(rec_call)) {
+*/
+		call = ipc_manager.wait_for_call(Spartan::thread_get_id());
+		printf("Ipc_istream:\tgot call with callid %lu\n", call.callid());
+		switch(call.call_method()) {
 			// TODO replace IPC_M_CONNECT_ME_TO call with cloning of connection
 			case IPC_M_CONNECT_ME_TO:
+				/* Call is not for me -> reject request */
+				if(call.dest_task_id() != Spartan::task_get_id()
+					&& call.dest_thread_id() != Spartan::thread_get_id()) {
+						Spartan::ipc_answer_0(call.callid(), -1);
+						continue;
+				}
+
 				/* Accept the connection
 				 * TODO: make shure the sender has the right Capability ?
 				 */
-				retval = Spartan::ipc_answer_0(_rcv_msg->callid, 0);
+				retval = Spartan::ipc_answer_0(call.callid(), 0);
 				if(retval == 0) {
-					_dst.snd_task_id = rec_call.in_task_id;
-					_dst.snd_thread_id = rec_thread_id;
+					_rcv_msg->callid = call.callid();
+					_dst.snd_task_id = call.snd_task_id();
+					_dst.snd_thread_id = call.snd_thread_id();
 					_dst.snd_phonehash = 0;
 
 					connected = true;
 				}
 				break;
 			default:
-				/* no connection call -> reject connection */
+				/* no connection call -> reject call */
 				 Spartan::ipc_answer_0(_rcv_msg->callid, -1);
 		}
 	}
@@ -114,18 +131,20 @@ void Ipc_istream::_wait()
 	/*
 	 * Wait for IPC message
 	 */
-	if(!Spartan::ipc_data_write_receive_timeout(&_rcv_msg->callid, &call, 	//
-				&in_thread_id, &size, 0)			//
-		|| (call.in_task_id != _dst.snd_task_id)		//
-		|| (in_thread_id != _dst.snd_thread_id)			//
+	call = ipc_manager.wait_for_call(Spartan::thread_get_id());
+	if(call.call_method() != IPC_M_DATA_WRITE				//
+		|| (call.snd_task_id() != _dst.snd_task_id)			//
+		|| (call.snd_thread_id() != _dst.snd_thread_id)				//
 		|| ((_dst.snd_phonehash != 0) &&
-			(call.in_phone_hash != _dst.snd_phonehash))) {
+			(call.snd_phonehash() != _dst.snd_phonehash))) {
 		/* unknown sender */
 		Spartan::ipc_answer_0(_rcv_msg->callid, -1);			//
 		return;								// TODO
 	}									// ->
+	_rcv_msg->callid = call.callid();
+	size = call.call_arg3();
 	if(_dst.snd_phonehash == 0)
-		_dst.snd_phonehash = call.in_phone_hash;
+		_dst.snd_phonehash = call.snd_phonehash();
 										// has to be replaced with
 	/* Retrieve the message */						// worker thread specific code
 	Spartan::ipc_data_write_finalize(_rcv_msg->callid, _rcv_msg->buf, size);	//

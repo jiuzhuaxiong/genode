@@ -134,11 +134,11 @@ extern "C" int main(void)
 					call.in_phone_hash);
 				retval = accept_connection(callid, 
 					call.in_phone_hash, call.in_task_id, 
-					IPC_GET_ARG1(call), IPC_GET_ARG5(call));
+					IPC_GET_ARG2(call), IPC_GET_ARG5(call));
 				if(retval == EOK) 
 					Genode::printf("nameserv:\tconnection "
-						"established to task %lu\n", 
-						call.in_task_id);
+						"established to task %lu, thread %lu\n", 
+						call.in_task_id, IPC_GET_ARG2(call));
 				else
 					Genode::printf("nameserv:\tcould not "
 						"establish connection. "
@@ -155,7 +155,7 @@ extern "C" int main(void)
 				if(int pos = connection_exists_task_thread_id(IPC_GET_ARG1(call), IPC_GET_ARG2(call)) >= 0) {
 					Spartan::ipc_forward_fast(callid, 
 						_phone[pos], IPC_GET_ARG1(call),
-						IPC_GET_ARG2(call), 0, 
+						IPC_GET_ARG2(call), IPC_GET_ARG3(call),
 						IPC_FF_NONE);
 					break;
 				}
