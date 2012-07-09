@@ -30,10 +30,28 @@ class Ipc_call
 		addr_t			call_arg5() { return IPC_GET_ARG5(_call); }
 
 		Native_task 		snd_task_id() { return _call.in_task_id; }
-		Native_thread_id 	snd_thread_id() { return call_arg3(); }
+		Native_thread_id 	snd_thread_id()
+					{
+						if(call_method() == 7)
+							return call_arg5();
+						else
+							return call_arg3();
+					}
 		addr_t			snd_phonehash() { return _call.in_phone_hash; }
-		Native_task		dest_task_id() { return call_arg1(); }
-		Native_thread_id	dest_thread_id() { return call_arg2(); }
+		Native_task		dest_task_id()
+					{
+						if(call_method() == 7)
+							return call_arg3();
+						else
+							return call_arg1();
+					}
+		Native_thread_id	dest_thread_id()
+					{
+						if(call_method() == 7)
+							return call_arg4();
+						else
+							return call_arg2();
+					}
 
 		bool operator == (Ipc_call other)
 		{

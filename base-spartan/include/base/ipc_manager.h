@@ -30,6 +30,7 @@ class Ipc_call_queue
 		Ipc_call	*_call_list[QUEUE_SIZE];
 
 		int		_get_first_free_slot();
+
 	public:
 		explicit Ipc_call_queue();
 
@@ -37,7 +38,8 @@ class Ipc_call_queue
 		int		call_count(Native_thread_id rcv_thread_id);
 		int		max_count(void) { return QUEUE_SIZE; }
 		int		insert_new(Ipc_call new_call);
-		Ipc_call	get_first(Native_thread_id rcv_thread_id);
+		Ipc_call	get_first(Native_task rcv_task_id,
+					Native_thread_id rcv_thread_id);
 		Ipc_call	get_last(void);
 };
 
@@ -46,21 +48,30 @@ class Ipc_call_queue
  * Other threads obtain calls from this class
  * There is a maximum of one single Ipc_manager_thread per task
  */
-class Ipc_manager_thread
+class Ipc_manager
 {
+	enum { STACK_SIZE = 16384 };
+
 	private:
 		Native_thread_id	_thread_id;
 		bool			_initialized;
 		Ipc_call_queue		_call_queue;
 
+		explicit Ipc_manager()
+		: _thread_id(Spartan::INVALID_ID), _initialized(false) {}
+		explicit Ipc_manager(const Ipc_manager&) {}
+		~Ipc_manager();
+//		Ipc_manager_thread& operator=(const Ipc_manager_thread&) {}
+
 		bool			_create();
-		void			_wait_for_call();
 
 	public:
-		explicit Ipc_manager_thread()
-		: _thread_id(Spartan::INVALID_ID), _initialized(false) {}
-		~Ipc_manager_thread();
-
+		static Ipc_manager*	singleton()
+		{
+			static Ipc_manager manager;
+			return &manager;
+		}
+		void		loop_answerbox();
 		/* Aks for number of stored calls for a specific thread */
 		addr_t		get_call_count(Native_thread_id rcv_thread_id);
 
@@ -68,8 +79,10 @@ class Ipc_manager_thread
 		 *  thread, if any exists
 		 * returns true if an incoming call is stored in the supplied
 		 *  structures, else returnes false*/
-		Ipc_call	get_next_call(Native_thread_id rcv_thread_id);
-		Ipc_call	wait_for_call(Native_thread_id rcv_thread_id);
+		Ipc_call	get_next_call(Native_task rcv_task_id,
+					Native_thread_id rcv_thread_id);
+		Ipc_call	wait_for_call(Native_task rcv_task_id,
+					Native_thread_id rcv_thread_id);
 };
 
 #endif /* _MANGER_THREAD_H_ */

@@ -78,13 +78,6 @@ Native_ipc_callid Spartan::ipc_wait_cycle(Native_ipc_call *call, addr_t usec,
 	Native_ipc_callid callid =
 		__SYSCALL3(SYS_IPC_WAIT, (addr_t) call, usec, flags);
 
-	/* Handle received answers */
-	/* TODO ?
-	if (callid & IPC_CALLID_ANSWERED) {
-		handle_answer(callid, call);
-		dispatch_queued_calls();
-	}
-	*/
 	return callid;
 }
 
@@ -194,6 +187,58 @@ int Spartan::ipc_call_sync_fast(int phoneid, addr_t method, addr_t arg1,
 	return IPC_GET_RETVAL(resdata);
 }
 
+/** Synchronous call transmitting 5 arguments of payload.
+ *
+ * @param phoneid Phone handle for the call.
+ * @param imethod Requested interface and method.
+ * @param arg1    Service-defined payload argument.
+ * @param arg2    Service-defined payload argument.
+ * @param arg3    Service-defined payload argument.
+ * @param arg4    Service-defined payload argument.
+ * @param arg5    Service-defined payload argument.
+ * @param result1 If non-NULL, storage for the first return argument.
+ * @param result2 If non-NULL, storage for the second return argument.
+ * @param result3 If non-NULL, storage for the third return argument.
+ * @param result4 If non-NULL, storage for the fourth return argument.
+ * @param result5 If non-NULL, storage for the fifth return argument.
+ *
+ * @return Negative values representing IPC errors.
+ * @return Otherwise the RETVAL of the answer.
+ *
+ */
+int Spartan::ipc_call_sync_slow(int phoneid, addr_t method, addr_t arg1,
+		addr_t arg2, addr_t arg3, addr_t arg4, addr_t arg5,
+		addr_t *result1, addr_t *result2, addr_t *result3,
+		addr_t *result4, addr_t *result5)
+{
+	Native_ipc_call resdata;
+
+	IPC_SET_IMETHOD(resdata, method);
+	IPC_SET_ARG1(resdata, arg1);
+	IPC_SET_ARG2(resdata, arg2);
+	IPC_SET_ARG3(resdata, arg3);
+	IPC_SET_ARG4(resdata, arg4);
+	IPC_SET_ARG5(resdata, arg5);
+
+	int callres = __SYSCALL3(SYS_IPC_CALL_SYNC_SLOW, phoneid, 
+		(sysarg_t) &resdata, (sysarg_t) &resdata);
+	if (callres)
+		return callres;
+
+	if (result1)
+		*result1 = IPC_GET_ARG1(resdata);
+	if (result2)
+		*result2 = IPC_GET_ARG2(resdata);
+	if (result3)
+		*result3 = IPC_GET_ARG3(resdata);
+	if (result4)
+		*result4 = IPC_GET_ARG4(resdata);
+	if (result5)
+		*result5 = IPC_GET_ARG5(resdata);
+
+	return IPC_GET_RETVAL(resdata);
+}
+
 /*************************
  * Asynchronous Framwork *
  *************************/
@@ -265,23 +310,15 @@ int Spartan::ipc_forward_fast(Native_ipc_callid callid, int phoneid,
 		arg2, mode);
 }
 
-/*
-int ipc_data_write_start(async_exch_t *exch, const void *src, size_t size)
+int Spartan::ipc_data_write_start_synch(int phoneid, Native_task dst_task,
+		Native_thread_id dst_thread, const void *src, size_t size)
 {
-	if (exch == NULL)
-		return ENOENT;
-
-	return async_req_2_0(exch, IPC_M_DATA_WRITE, (sysarg_t) src,
-		(sysarg_t) size);
-}
-*/
-
-int Spartan::ipc_data_write_start_synch(int phoneid, const void *src, size_t size)
-{
-	return ipc_call_sync_3_0(phoneid, IPC_M_DATA_WRITE, (sysarg_t) src,
-		thread_get_id(), (sysarg_t) size);
+	return ipc_call_sync_5_0(phoneid, IPC_M_DATA_WRITE, (sysarg_t) src,
+			(sysarg_t) size, (sysarg_t) dst_task,
+			(sysarg_t) dst_thread, thread_get_id());
 }
 
+/* SHOULD NOT BE USED ANYMORE */
 bool Spartan::ipc_data_write_receive_timeout(Native_ipc_callid *callid,
 		Native_ipc_call *call, Native_thread_id *in_thread_id,
 		addr_t *size, addr_t usec)
