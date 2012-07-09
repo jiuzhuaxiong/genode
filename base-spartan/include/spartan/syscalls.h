@@ -37,6 +37,9 @@ namespace Spartan
 		res3, res4, res5) \
 	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), (arg3), \
 		(res1), (res2), (res3), (res4), (res5))
+#define ipc_call_sync_5_0(phoneid, method, arg1, arg2, arg3, arg4, arg5) \
+	ipc_call_sync_slow((phoneid), (method), (arg1), (arg2), (arg3), (arg4), \
+		(arg5), 0, 0, 0, 0, 0)
 
 /*
  * User-friendly wrappers for ipc_answer_fast() and ipc_answer_slow().
@@ -99,6 +102,12 @@ namespace Spartan
 			Genode::addr_t arg3, Genode::addr_t *result1,
 			Genode::addr_t *result2, Genode::addr_t *result3,
 			Genode::addr_t *result4, Genode::addr_t *result5);
+	int ipc_call_sync_slow(int phoneid, Genode::addr_t method, 
+			Genode::addr_t arg1, Genode::addr_t arg2,
+			Genode::addr_t arg3, Genode::addr_t arg4,
+			Genode::addr_t arg5, Genode::addr_t *result1,
+			Genode::addr_t *result2, Genode::addr_t *result3,
+			Genode::addr_t *result4, Genode::addr_t *result5);
 
 
 	/*************************
@@ -137,8 +146,8 @@ namespace Spartan
 
 	/** Wrappers for IPC_M_DATA_WRITE calls. */
 //	int ipc_data_write_start(async_exch_t *exch, const void *src, size_t size);
-	/* TODO add thread_id to all operations */
-	int ipc_data_write_start_synch(int phoneid, const void *src, size_t size);
+	int ipc_data_write_start_synch(int phoneid, Genode::Native_task dst_task,
+			Genode::Native_thread_id dst_thread, const void *src, size_t size);
 	/** Wrapper for receiving the IPC_M_DATA_WRITE calls */
 	bool ipc_data_write_receive_timeout(Genode::Native_ipc_callid *callid,
 			Genode::Native_ipc_call *call, 
