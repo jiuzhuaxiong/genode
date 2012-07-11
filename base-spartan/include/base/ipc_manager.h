@@ -39,7 +39,8 @@ class Ipc_call_queue
 		int		max_count(void) { return QUEUE_SIZE; }
 		int		insert_new(Ipc_call new_call);
 		Ipc_call	get_first(Native_task rcv_task_id,
-					Native_thread_id rcv_thread_id);
+					Native_thread_id rcv_thread_id,
+					addr_t imethod=0);
 		Ipc_call	get_last(void);
 };
 
@@ -80,9 +81,11 @@ class Ipc_manager
 		 * returns true if an incoming call is stored in the supplied
 		 *  structures, else returnes false*/
 		Ipc_call	get_next_call(Native_task rcv_task_id,
-					Native_thread_id rcv_thread_id);
+					Native_thread_id rcv_thread_id,
+					addr_t imethod=0);
 		Ipc_call	wait_for_call(Native_task rcv_task_id,
-					Native_thread_id rcv_thread_id);
+					Native_thread_id rcv_thread_id,
+					addr_t imethod=0);
 };
 
 #endif /* _MANGER_THREAD_H_ */

@@ -58,7 +58,6 @@ Ipc_call_queue::insert_new(Ipc_call new_call)
 	if(insert_pos >= 0) {
 		Lock::Guard lock_guard(_queue_lock);
 
-		printf("Ipc_call_queue:\t inserting into _call_queue at pos %i\n", insert_pos);
 		/* insert call at obtained position */
 		_call_queue[insert_pos] = new_call;
 		/* mark obtained position as used */
@@ -74,7 +73,8 @@ Ipc_call_queue::insert_new(Ipc_call new_call)
 }
 
 Ipc_call
-Ipc_call_queue::get_first(Native_task rcv_task_id, Native_thread_id rcv_thread_id)
+Ipc_call_queue::get_first(Native_task rcv_task_id,
+		Native_thread_id rcv_thread_id, addr_t imethod)
 {
 	Ipc_call	ret_call = Ipc_call();
 
@@ -83,7 +83,8 @@ Ipc_call_queue::get_first(Native_task rcv_task_id, Native_thread_id rcv_thread_i
 	for(int pos=0; pos<_call_count; pos++)
 		/* check if the selected call matches */
 		if((_call_list[pos]->dest_task_id() == rcv_task_id)
-				&&(_call_list[pos]->dest_thread_id() == rcv_thread_id)) {
+				&& (_call_list[pos]->dest_thread_id() == rcv_thread_id)
+				&& (_call_list[pos]->call_method()==imethod || imethod==0)) {
 			/* calculate position in saving queue */
 			int save_pos = _call_list[pos]-_call_queue;
 			/* save call to be returned */
@@ -96,6 +97,7 @@ Ipc_call_queue::get_first(Native_task rcv_task_id, Native_thread_id rcv_thread_i
 				_call_list[i] = _call_list[i+1];
 			/* decrease call count */
 			_call_count--;
+
 			break;
 		}
 
@@ -197,26 +199,27 @@ Ipc_manager::get_call_count(Native_thread_id rcv_thread_id)
 
 Ipc_call
 Ipc_manager::get_next_call(Native_task rcv_task_id, 
-		Native_thread_id rcv_thread_id)
+		Native_thread_id rcv_thread_id,
+		addr_t imethod)
 {
 	Ipc_call	call;
 
 	_create();
 
-	call = _call_queue.get_first(rcv_task_id, rcv_thread_id);
+	call = _call_queue.get_first(rcv_task_id, rcv_thread_id, imethod);
 
 	return call;
 }
 
 Ipc_call
 Ipc_manager::wait_for_call(Native_task rcv_task_id,
-		Native_thread_id rcv_thread_id)
+		Native_thread_id rcv_thread_id, addr_t imethod)
 {
 	Ipc_call	call = get_next_call(rcv_task_id, rcv_thread_id);
 
-	while(call.callid() == 0) {
+	while((call.callid() == 0)) {
 		Spartan::usleep(10000);
-		call = get_next_call(rcv_task_id, rcv_thread_id);
+		call = get_next_call(rcv_task_id, rcv_thread_id, imethod);
 	}
 
 	return call;

@@ -33,6 +33,7 @@ class Ipc_call
 		Native_thread_id 	snd_thread_id()
 					{
 						if(call_method() == 7)
+							/* IPC_M_DATA_WRITE */
 							return call_arg5();
 						else
 							return call_arg3();
@@ -41,16 +42,32 @@ class Ipc_call
 		Native_task		dest_task_id()
 					{
 						if(call_method() == 7)
+							/* IPC_M_DATA_WRITE */
 							return call_arg3();
+						else if(call_method() == 1)
+							/* IPC_M_CONNECTION_CLONE */
+							return call_arg2();
 						else
 							return call_arg1();
 					}
 		Native_thread_id	dest_thread_id()
 					{
 						if(call_method() == 7)
+							/* IPC_M_DATA_WRITE */
 							return call_arg4();
+						else if(call_method() == 1)
+							/* IPC_M_CONNECTION_CLONE */
+							return call_arg3();
 						else
 							return call_arg2();
+					}
+
+		int			cloned_phone()
+					{
+						if(call_method() == 1)
+							return call_arg1();
+						else
+							return -1;
 					}
 
 		bool operator == (Ipc_call other)
