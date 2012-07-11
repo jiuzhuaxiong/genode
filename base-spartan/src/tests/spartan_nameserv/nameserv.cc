@@ -12,12 +12,15 @@
  */
 
 #include <base/printf.h>
+#include <base/ipc_call.h>
 #include <spartan/syscalls.h>
 
 #include "../mini_env.h"
 
 enum {
 	MAX_CONN_COUNT = 64,
+
+	IPC_CONNECTION_REQUEST = 30,
 };
 
 Genode::addr_t			_phone_hash[MAX_CONN_COUNT];
@@ -81,6 +84,53 @@ int delete_connection(Genode::addr_t phonehash)
 			_call_counter--;
 	}
 	return pos;
+}
+
+/* implemente the connection cloning protocoll */
+int answer_connection_request(Ipc_call call)
+{
+	int dst_pos, retval, snd_phone;
+	/* return error if method of call is wrong */
+	if(call.call_method() != IPC_CONNECTION_REQUEST)
+		return -1;
+
+	/* look up requested destination */
+	dst_pos = connection_exists_task_thread_id(call.dest_task_id(),
+			call.dest_thread_id());
+	if(dst_pos >= 0) {
+		/* we own a phone tp the destination */
+		retval = Spartan::ipc_answer_0(call.callid(), 0);
+		if(retval != 0)
+			return -1;
+
+		int snd_pos = connection_exists_task_thread_id(call.snd_task_id(),
+			call.snd_thread_id());
+		if (snd_pos < 0) {
+		/* we own no phone to the sender */
+			Genode::Native_ipc_callid	callid;
+			Genode::Native_ipc_call		call;
+
+			callid = Spartan::ipc_wait_for_call_timeout(&call, 0);
+			if(IPC_GET_IMETHOD(call) != IPC_M_CONNECT_TO_ME)
+				return -1;
+			retval = Spartan::ipc_answer_0(callid, 0);
+			snd_phone = IPC_GET_ARG5(call);
+		}
+		else
+			snd_phone = _phone[snd_pos];
+	}
+	else
+	{
+		/* the requested destination is not known */
+		retval = Spartan::ipc_answer_0(call.callid(), -1);
+		return 0;
+	}
+	if(retval != 0)
+		/* some error occured */
+		return retval;
+
+	return Spartan::ipc_clone_connection(snd_phone, _task_id[dst_pos],
+			_thread_id[dst_pos], _phone[dst_pos]);
 }
 
 Genode::addr_t accept_connection(Genode::Native_ipc_callid new_callid,
@@ -157,12 +207,15 @@ extern "C" int main(void)
 						_phone[pos], IPC_GET_ARG1(call),
 						IPC_GET_ARG2(call), IPC_GET_ARG3(call),
 						IPC_FF_NONE);
-					break;
 				}
 				else
 					Genode::printf("nameserv:\tno task with"
 						" id %lu known\n",
 						IPC_GET_ARG1(call));
+				break;
+			case 30: /* IPC_CONNECTION_REQUEST */
+				answer_connection_request(Ipc_call(callid, call));
+				break;
 			default:
 				retval = reject_connection(callid);
 				Genode::printf("nameserv:\tconnection rejected "

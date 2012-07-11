@@ -73,6 +73,7 @@ int main()
 
 	if(!register_with_nameserv()) {
 		Genode::printf("Could not register with nameserv!\n");
+		return 0;
 	}
 
 	/* create sender thread, sending to destination (us) */
