@@ -346,6 +346,21 @@ int Spartan::ipc_hangup(int phoneid)
 	return __SYSCALL1(SYS_IPC_HANGUP, phoneid);
 }
 
+/***************
+ * Futex calls *
+ ***************/
+
+int Spartan::futex_sleep(volatile int *futex)
+{
+	return __SYSCALL1(SYS_FUTEX_SLEEP, (sysarg_t) futex);
+}
+
+int Spartan::futex_wakeup(volatile int *futex)
+{
+	return __SYSCALL1(SYS_FUTEX_WAKEUP, (sysarg_t) futex);
+}
+
+
 /*8*************
  * Timer calls *
  ***************/

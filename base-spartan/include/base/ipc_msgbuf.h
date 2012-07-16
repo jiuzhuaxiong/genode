@@ -22,10 +22,20 @@ namespace Genode {
 	 */
 	class Msgbuf_base
 	{
+		public:
+			enum {
+				MAX_CAP_ARGS = 4,
+			};
+
 		protected:
 
 			size_t _size;
 			char   _msg_start[];  /* symbol marks start of message */
+
+			/* Capabilities to be send / received */
+//			Dst    _caps[MAX_CAP_ARGS];
+			/* Number of capabilities to be send / received */
+//			addr_t _cap_count;
 
 		public:
 
@@ -44,6 +54,31 @@ namespace Genode {
 			 * Return address of message buffer
 			 */
 			inline void *addr() { return &_msg_start[0]; };
+
+			/**
+			 * Reset all capabilities in buffer
+			 */
+/*
+			inline void cap_reset { _cap_count = 0; };
+			inline addr_r cap_count { return _cap_count; };
+			inline bool cap_append(Native_capability cap)
+			{
+				if(_cap_count >= MAX_CAP_ARGS)
+					return false;
+
+				_caps[_cap_count++] = cap;
+				return true;
+			}
+			bool cap_get(insigned i, Native_capability *cap)
+			{
+				if(i < _cap_count) {
+					*cap = _caps[i];
+					return true;
+				}
+
+				return false;
+			}
+*/
 	};
 
 	/**

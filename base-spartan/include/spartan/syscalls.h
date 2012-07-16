@@ -161,6 +161,12 @@ namespace Spartan
 	int ipc_hangup(int phoneid);
 
 	/***************
+	 * Futex calls *
+	 ***************/
+	int futex_sleep(volatile int *futex);
+	int futex_wakeup(volatile int *futex);
+
+	/***************
 	 * Timer calls *
 	 ***************/
 	int usleep(Genode::addr_t usec);
