@@ -125,7 +125,7 @@ Ipc_ostream::Ipc_ostream(Native_capability dst, Msgbuf_base *snd_msg)
 
 void Ipc_istream::_wait()
 {
-	static bool		connected = false;
+//	static bool		connected = false;
 	Ipc_call		call;
 	addr_t			size;
 
@@ -188,8 +188,10 @@ void Ipc_istream::_wait()
 	}
 	_rcv_msg->callid = call.callid();
 	size = call.call_arg2();
-	if(_dst.snd_phonehash == 0)
-		_dst.snd_phonehash = call.snd_phonehash();
+
+	_dst.snd_task_id = call.snd_task_id();
+	_dst.snd_thread_id = call.snd_thread_id();
+	_dst.snd_phonehash = call.snd_phonehash();
 
 	/* Retrieve the message */
 	int ret = Spartan::ipc_data_write_finalize(_rcv_msg->callid, _rcv_msg->buf, size);
@@ -217,21 +219,66 @@ Ipc_istream::~Ipc_istream() { }
 /****************
  ** Ipc_client **
  ****************/
-/*
+
 void Ipc_client::_call()
 {
-
+	Ipc_ostream::_send();
+	Ipc_istream::_wait();
 }
 
 Ipc_client::Ipc_client(Native_capability const &srv,
                        Msgbuf_base *snd_msg, Msgbuf_base *rcv_msg)
 : Ipc_istream(rcv_msg), Ipc_ostream(srv, snd_msg), _result(0)
 { }
-*/
+
+
 /****************
  ** Ipc_server **
  ****************/
 
+void Ipc_server::_prepare_next_reply_wait()
+{
+	/* now we have a request to reply */
+	_reply_needed = true;
+
+	/* leave space for return value at the beginning of the msgbuf */
+	_write_offset = 2*sizeof(umword_t);
+
+	/* receive buffer offset */
+	_read_offset = sizeof(umword_t);
+}
+
+void Ipc_server::_wait()
+{
+	/* wait for new server request */
+	Ipc_istream::_wait();
+
+	/* define destination of next reply */
+	Ipc_destination dest = {Ipc_istream::_dst.snd_task_id,
+			Ipc_istream::_dst.snd_thread_id,
+			Spartan::task_get_id(),
+			Spartan::thread_get_id(),
+			Ipc_ostream::_dst.dst().snd_phone,
+			Ipc_ostream::_dst.dst().snd_phonehash};
+	Ipc_ostream::_dst = Native_capability( dest, Ipc_ostream::_dst.local_name() );
+
+	_prepare_next_reply_wait();
+}
+
+void Ipc_server::_reply()
+{
+	Ipc_ostream::_send();
+
+	_prepare_next_reply_wait();
+}
+
+void Ipc_server::_reply_wait()
+{
+	if (_reply_needed)
+		_reply();
+	else
+		_wait();
+}
 
 Ipc_server::Ipc_server(Genode::Msgbuf_base *snd_msg, Genode::Msgbuf_base *rcv_msg)
 :
@@ -239,5 +286,3 @@ Ipc_server::Ipc_server(Genode::Msgbuf_base *snd_msg, Genode::Msgbuf_base *rcv_ms
 	Ipc_ostream(Native_capability(), snd_msg)
 {}
 
-void Ipc_server::_wait()
-{}

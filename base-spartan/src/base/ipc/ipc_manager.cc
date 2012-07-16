@@ -218,7 +218,6 @@ Ipc_manager::wait_for_call(Native_task rcv_task_id,
 	Ipc_call	call = get_next_call(rcv_task_id, rcv_thread_id);
 
 	while((call.callid() == 0)) {
-		Spartan::usleep(10000);
 		call = get_next_call(rcv_task_id, rcv_thread_id, imethod);
 	}
 
