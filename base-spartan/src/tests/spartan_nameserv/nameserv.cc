@@ -130,7 +130,7 @@ int answer_connection_request(Ipc_call call)
 		return retval;
 
 	return Spartan::ipc_clone_connection(snd_phone, _task_id[dst_pos],
-			_thread_id[dst_pos], _phone[dst_pos]);
+			_thread_id[dst_pos], 1, _phone[dst_pos]);
 }
 
 Genode::addr_t accept_connection(Genode::Native_ipc_callid new_callid,
@@ -184,11 +184,11 @@ extern "C" int main(void)
 					call.in_phone_hash);
 				retval = accept_connection(callid, 
 					call.in_phone_hash, call.in_task_id, 
-					IPC_GET_ARG2(call), IPC_GET_ARG5(call));
+					IPC_GET_ARG1(call), IPC_GET_ARG5(call));
 				if(retval == EOK) 
 					Genode::printf("nameserv:\tconnection "
 						"established to task %lu, thread %lu\n", 
-						call.in_task_id, IPC_GET_ARG2(call));
+						call.in_task_id, IPC_GET_ARG1(call));
 				else
 					Genode::printf("nameserv:\tcould not "
 						"establish connection. "
