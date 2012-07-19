@@ -91,7 +91,8 @@ namespace Spartan
 			Genode::Native_thread_id my_threadid);
 
 	int ipc_clone_connection(int phoneid, Genode::Native_task dst_task_id,
-			Genode::Native_thread_id dst_thread_id, int clone_phone);
+			Genode::Native_thread_id dst_thread_id, long cap_id,
+			int clone_phone);
 
 	/**************************
 	 * Synchronoous Framework *

@@ -42,7 +42,7 @@ int request_connection(int snd_phone, Native_task dst_task_id,
 	int		ret;
 	Ipc_call	call;
 	ret = Spartan::ipc_call_sync_3_0(snd_phone, IPC_CONNECTION_REQUEST,
-			dst_task_id, dst_thread_id, Spartan::thread_get_id());
+			Spartan::thread_get_id(), dst_task_id, dst_thread_id);
 
 	/* connection endpoint is not known */
 	if(ret<0)
@@ -66,6 +66,28 @@ int request_connection(int snd_phone, Native_task dst_task_id,
 	return ret;
 }
 
+int _send_capability(Native_capability dest_cap, Native_capability snd_cap)
+{
+	return Spartan::ipc_clone_connection(dest_cap.dst().snd_phone, 
+			dest_cap.dst().rcv_task_id, dest_cap.dst().rcv_thread_id,
+			snd_cap.local_name(), snd_cap.dst().snd_phone);
+}
+
+bool _receive_capability(Msgbuf_base *rcv_msg)
+{
+	Ipc_call call = Ipc_manager::singleton()->wait_for_call(
+			Spartan::task_get_id(), Spartan::thread_get_id(),
+			IPC_M_CONNECTION_CLONE);
+
+	Ipc_destination dest = {0, 0, 0, 0, call.cloned_phone(), 0};
+	Native_capability  cap = Native_capability(dest, call.capability_id());
+	Spartan::ipc_answer_0(call.callid(), 0);
+
+	printf("_receive_capability:\tincomming phone = %i\n", cap.dst().snd_phone);
+
+	return rcv_msg->cap_append(cap);
+}
+
 
 /*****************
  ** Ipc_ostream **
@@ -73,6 +95,10 @@ int request_connection(int snd_phone, Native_task dst_task_id,
 
 void Ipc_ostream::_send()
 {
+	/* insert number of capabilities to be send into msgbuf */
+	printf("Ipc_ostream:\tbefore: _snd_msg->buf[0]=%i, _snd_msg->cap_count()=%lu\n", _snd_msg->buf[0], _snd_msg->cap_count());
+	_snd_msg->buf[0] = _snd_msg->cap_count();
+	printf("Ipc_ostream:\tafter:  _snd_msg->buf[0]=%i\n", _snd_msg->buf[0]);
 	/* perform IPC send operation
 	 *
 	 * Check whether the phone_id is valid and send the message
@@ -84,6 +110,14 @@ void Ipc_ostream::_send()
 		PERR("ipc error in _send.");
 		throw Genode::Ipc_error();
 	}
+	/* After sending the message itself, send all pending 
+	 * capabilities (clone phones) */
+	for(addr_t i=0; i<_snd_msg->cap_count(); i++) {
+		Native_capability snd_cap;
+		if(!_snd_msg->cap_get_by_order(i, &snd_cap))
+			continue;
+		_send_capability(_dst, snd_cap);
+	}
 
 	_write_offset = sizeof(umword_t);
 }
@@ -94,6 +128,9 @@ Ipc_ostream::Ipc_ostream(Native_capability dst, Msgbuf_base *snd_msg)
 	Ipc_marshaller(&snd_msg->buf[0], snd_msg->size()),
 	_snd_msg(snd_msg), _dst(dst)
 {
+	/* write dummy for later to be inserted
+	 * number of capabilities to be send */
+	_write_to_buf((addr_t)0);
 	/*
 	 * Establish connection to the other task before communicating
 	 */
@@ -183,7 +220,7 @@ void Ipc_istream::_wait()
 		*/
 		/* unknown sender */
 		printf("Ipc_istream:\twrong call method (call.call_method()!=IPC_M_DATA_WRITE)!\n");
-		Spartan::ipc_answer_0(_rcv_msg->callid, -1);
+		Spartan::ipc_answer_0(call.callid(), -1);
 		return;
 	}
 	_rcv_msg->callid = call.callid();
@@ -196,6 +233,12 @@ void Ipc_istream::_wait()
 	/* Retrieve the message */
 	int ret = Spartan::ipc_data_write_finalize(_rcv_msg->callid, _rcv_msg->buf, size);
 	printf("Ipc_istream:\twrite finalize returned %i\n", ret);
+
+	/* extract all retrieved capailities */
+	printf("Ipc_istream:\t_rcv_msg->buf[0] = %i\n", _rcv_msg->buf[0]);
+	for(int i=0; i<_rcv_msg->buf[0]; i++) {
+		_receive_capability(_rcv_msg);
+	}
 
 	/* reset unmarshaller */
 	_read_offset = sizeof(umword_t);

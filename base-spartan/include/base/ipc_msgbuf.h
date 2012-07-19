@@ -15,6 +15,8 @@
 #ifndef _INCLUDE__BASE__IPC_MSGBUF_H_
 #define _INCLUDE__BASE__IPC_MSGBUF_H_
 
+#include <base/printf.h>
+
 namespace Genode {
 
 	/**
@@ -33,9 +35,9 @@ namespace Genode {
 			char   _msg_start[];  /* symbol marks start of message */
 
 			/* Capabilities to be send / received */
-//			Dst    _caps[MAX_CAP_ARGS];
+			Native_capability _caps[MAX_CAP_ARGS];
 			/* Number of capabilities to be send / received */
-//			addr_t _cap_count;
+			addr_t _cap_count;
 
 		public:
 
@@ -58,10 +60,11 @@ namespace Genode {
 			/**
 			 * Reset all capabilities in buffer
 			 */
-/*
-			inline void cap_reset { _cap_count = 0; };
-			inline addr_r cap_count { return _cap_count; };
-			inline bool cap_append(Native_capability cap)
+
+			inline void cap_reset() { _cap_count = 0; };
+			inline addr_t cap_count() { return _cap_count; };
+			inline addr_t max_cap_count() { return MAX_CAP_ARGS; };
+			bool cap_append(Native_capability cap)
 			{
 				if(_cap_count >= MAX_CAP_ARGS)
 					return false;
@@ -69,7 +72,7 @@ namespace Genode {
 				_caps[_cap_count++] = cap;
 				return true;
 			}
-			bool cap_get(insigned i, Native_capability *cap)
+			bool cap_get_by_order(unsigned i, Native_capability *cap)
 			{
 				if(i < _cap_count) {
 					*cap = _caps[i];
@@ -78,7 +81,17 @@ namespace Genode {
 
 				return false;
 			}
-*/
+			bool cap_get_by_id(Native_capability *cap, long id)
+			{
+				for(addr_t i=0; i<_cap_count; i++)
+					if(id == _caps[i].local_name()) {
+						*cap = _caps[i];
+						return true;
+					}
+
+				*cap = Native_capability();
+				return false;
+			}
 	};
 
 	/**

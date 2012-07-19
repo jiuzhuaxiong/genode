@@ -105,12 +105,12 @@ Native_ipc_callid Spartan::ipc_trywait_for_call(Native_ipc_call *call)
 }
 
 int Spartan::ipc_connect_to_me(int phoneid, Native_thread_id my_threadid,
-		addr_t arg1, addr_t arg3, Native_task *task_id, 
+		addr_t arg2, addr_t arg3, Native_task *task_id, 
 		addr_t *phonehash)
 {
 	Native_ipc_call data;
 	int rc = __SYSCALL6(SYS_IPC_CALL_SYNC_FAST, phoneid,
-			IPC_M_CONNECT_TO_ME, arg1, my_threadid, arg3, 
+			IPC_M_CONNECT_TO_ME, my_threadid, arg2, arg3, 
 			(addr_t) &data);
 	if (rc == 0) {
 		*task_id = data.in_task_id;
@@ -123,8 +123,8 @@ int Spartan::ipc_connect_me_to(int phoneid, addr_t dest_task_id,
 		Native_thread_id dest_threadid, Native_thread_id my_threadid)
 {
 	addr_t newphid;
-	int res = ipc_call_sync_3_5(phoneid, IPC_M_CONNECT_ME_TO, dest_task_id, 
-			dest_threadid, my_threadid, 0, 0, 0, 0, &newphid);
+	int res = ipc_call_sync_3_5(phoneid, IPC_M_CONNECT_ME_TO, my_threadid,
+			dest_task_id, dest_threadid, 0, 0, 0, 0, &newphid);
 	if (res)
 		return res;
 
@@ -132,10 +132,12 @@ int Spartan::ipc_connect_me_to(int phoneid, addr_t dest_task_id,
 }
 
 int Spartan::ipc_clone_connection(int phoneid, Genode::Native_task dst_task_id,
-		Genode::Native_thread_id dst_thread_id, int clone_phone)
+		Genode::Native_thread_id dst_thread_id, long cap_id,
+		int clone_phone)
 {
-	return ipc_call_async_fast(phoneid, IPC_M_CONNECTION_CLONE, (addr_t)clone_phone,
-		dst_task_id, dst_thread_id, 0);
+	return ipc_call_async_fast(phoneid, IPC_M_CONNECTION_CLONE,
+			(addr_t)clone_phone, dst_task_id, dst_thread_id,
+			(addr_t) cap_id);
 }
 
 /**************************

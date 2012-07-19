@@ -53,7 +53,7 @@ static void sender_thread_entry()
 	int a = 1, b = 2, c = 3;
 
 	Genode::printf("sending a=%d, b=%d, c=%d\n", a, b, c);
-	os << a << b << c << Genode::IPC_SEND;
+	os << a << b << c << os.dst() << Genode::IPC_SEND;
 
 	while(1);
 }
@@ -69,7 +69,9 @@ int main()
 	static Genode::Ipc_istream is(&rcvbuf);
 
 	/* make input stream capability known */
-	receiver_cap = is; //Genode::Untyped_capability(is.dst(), is.local_name());
+	receiver_cap = is;
+	/* set id of capability so it can be marshalled */
+	receiver_cap = Genode::Untyped_capability(is.dst(), 2);
 
 	if(!register_with_nameserv()) {
 		Genode::printf("Could not register with nameserv!\n");
@@ -84,7 +86,8 @@ int main()
 
 	/* wait for incoming IPC */
 	int a = 0, b = 0, c = 0;
-	is >> Genode::IPC_WAIT >> a >> b >> c;
+	Genode::Native_capability cap;
+	is >> Genode::IPC_WAIT >> a >> b >> c >> cap;
 	Genode::printf("received a=%d, b=%d, c=%d\n", a, b, c);
 
 	while(1);
