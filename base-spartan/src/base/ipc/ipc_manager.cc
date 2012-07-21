@@ -6,121 +6,6 @@
 
 using namespace Genode;
 
-Ipc_call_queue::Ipc_call_queue()
-: _call_count(0)
-{
-	for(int i=0; i<QUEUE_SIZE; i++) {
-		_call_list[i] = 0;
-		_used[i] = false;
-	}
-}
-
-int
-Ipc_call_queue::_get_first_free_slot()
-{
-	Lock::Guard lock_guard(_queue_lock);
-
-	if(_call_count >= QUEUE_SIZE) {
-		return FULL_IPC_QUEUE;
-	}
-
-	/* spot first unused position */
-	int pos = 0;
-	while(_used[pos] && pos<QUEUE_SIZE)
-		pos++;
-
-	if(pos+1 == QUEUE_SIZE)
-		pos = FULL_IPC_QUEUE;
-
-	return pos;
-}
-
-int
-Ipc_call_queue::call_count(Native_thread_id rcv_thread_id)
-{
-	Lock::Guard	lock_guard(_queue_lock);
-	int		count = 0;;
-
-	for(int i=0; i<_call_count; i++)
-		if(_call_list[i]->dest_thread_id() == rcv_thread_id)
-			count++;
-
-	return count;
-}
-
-int
-Ipc_call_queue::insert_new(Ipc_call new_call)
-{
-	/* obtain free position in saving queue */
-	printf("Ipc_call_queue:\tstarting to insert new call\n");
-	int insert_pos = _get_first_free_slot();
-
-	if(insert_pos >= 0) {
-		Lock::Guard lock_guard(_queue_lock);
-
-		/* insert call at obtained position */
-		_call_queue[insert_pos] = new_call;
-		/* mark obtained position as used */
-		_used[insert_pos] = true;
-		/* insert call in call list */
-		_call_list[_call_count] = _call_queue + insert_pos;
-		/* increase call count */
-		_call_count++;
-		printf("Ipc_call_queue:\t inserted new _call_list. callcount=%i\n", _call_count);
-	}
-
-	return insert_pos >= 0 ? 0 : insert_pos;
-}
-
-Ipc_call
-Ipc_call_queue::get_first(Native_task rcv_task_id,
-		Native_thread_id rcv_thread_id, addr_t imethod)
-{
-	Ipc_call	ret_call = Ipc_call();
-
-	Lock::Guard lock_guard(_queue_lock);
-	/* iterate through call list to find first matching call */
-	for(int pos=0; pos<_call_count; pos++)
-		/* check if the selected call matches */
-		if((_call_list[pos]->dest_task_id() == rcv_task_id)
-				&& (_call_list[pos]->dest_thread_id() == rcv_thread_id)
-				&& (_call_list[pos]->call_method()==imethod || imethod==0)) {
-			/* calculate position in saving queue */
-			int save_pos = _call_list[pos]-_call_queue;
-			/* save call to be returned */
-			ret_call = _call_queue[save_pos];
-			/* mark position unused */
-			_used[save_pos] = false;
-
-			/* move all later dropped in calls one forward */
-			for(int i=pos; i<_call_count; i++)
-				_call_list[i] = _call_list[i+1];
-			/* decrease call count */
-			_call_count--;
-
-			break;
-		}
-
-	return ret_call;
-}
-
-Ipc_call
-Ipc_call_queue::get_last(void)
-{
-	Ipc_call	ret_call = Ipc_call();
-
-	Lock::Guard lock_guard(_queue_lock);
-	if(_call_count <= 0)
-		return ret_call;
-
-	int save_pos = _call_list[_call_count]-_call_queue;
-	ret_call = _call_queue[save_pos];
-	_used[save_pos] = false;
-	_call_count--;
-
-	return ret_call;
-}
-
 void _manager_thread_entry()
 {
 	static bool		initialized = false;
@@ -131,18 +16,6 @@ void _manager_thread_entry()
 	}
 }
 
-
-Ipc_manager::~Ipc_manager()
-{
-	Ipc_call del_call;
-	/* Answer every pending call with error code TASK_KILLED */
-	while((del_call = _call_queue.get_last()) != Ipc_call()) {
-		Spartan::ipc_answer_0(del_call.callid(), TASK_KILLED);
-	}
-	/* TODO
-	 * kill the thread if exist
-	 */
-}
 
 bool
 Ipc_manager::_create()
@@ -159,6 +32,36 @@ Ipc_manager::_create()
 	return _initialized;
 }
 
+int
+Ipc_manager::_get_thread(Native_thread_id thread_id)
+{
+	Lock::Guard lock(_thread_lock);
+	for(addr_t i=0; i<_thread_count; i++)
+		if(_threads[i]->thread_id() == thread_id)
+			return i;
+
+	return -1;
+}
+
+Thread_utcb*
+Ipc_manager::my_thread()
+{
+	int pos;
+	Native_thread_id thread_id = Spartan::thread_get_id();
+
+	printf("Ipc_manager:\tlooking for thread with id %lu\n", thread_id);
+	if((pos = _get_thread(thread_id)) < 0)
+		return 0;
+
+	return _threads[pos];
+}
+
+void
+Ipc_manager::wait_for_calls()
+{
+	_create();
+}
+
 void
 Ipc_manager::loop_answerbox()
 {
@@ -171,56 +74,55 @@ Ipc_manager::loop_answerbox()
 	/* loop forever and grab all incomming calls */
 	while(1) {
 		Genode::Native_ipc_callid	callid = 0;
-		Genode::Native_ipc_call		call;
-		callid = Spartan::ipc_wait_for_call_timeout(&call, 0);
+		Genode::Native_ipc_call		n_call;
+		callid = Spartan::ipc_wait_for_call_timeout(&n_call, 0);
 
 		printf("Ipc_manager:\treceived incomming call\n"
 			"\t\tIMETHOD=%lu, ARG1=%lu(destination task), "
 			"ARG2=%lu(destination thread), ARG3=%lu(sending thread), "
-			"ARG4=%lu, ARG5=%lu\n", IPC_GET_IMETHOD(call),
-			IPC_GET_ARG1(call), IPC_GET_ARG2(call),
-			IPC_GET_ARG3(call), IPC_GET_ARG4(call),
-			IPC_GET_ARG5(call));
+			"ARG4=%lu, ARG5=%lu\n", IPC_GET_IMETHOD(n_call),
+			IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call),
+			IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call),
+			IPC_GET_ARG5(n_call));
+
+		Ipc_call call = Ipc_call(callid, n_call);
+		int thread_pos;
+		if((thread_pos = _get_thread(call.dest_thread_id())) < 0) {
+			/* there is no such thread */
+			printf("Ipc_manager:\trejecting call\n");
+			Spartan::ipc_answer_0(callid, -1);
+			continue;
+		}
 
 		int ret;
-		if((ret = _call_queue.insert_new(Ipc_call(callid, call))) != 0 ) {
-			/* the call could not be inserted */
+		if((ret = _threads[thread_pos]->insert_call(call)) < 0) {
+			/* could not insert call */
 			printf("Ipc_manager:\trejecting call\n");
 			Spartan::ipc_answer_0(callid, ret);
 		}
 	}
 }
 
-addr_t
-Ipc_manager::get_call_count(Native_thread_id rcv_thread_id)
+bool
+Ipc_manager::register_thread(Thread_utcb* new_thread)
 {
-	return _call_queue.call_count(rcv_thread_id);
+	if(_thread_count >= MAX_THREAD_COUNT)
+		return false;
+
+	printf("Ipc_manager:\tregistering new thread with thread_id=%lu\n", new_thread->thread_id());
+	Lock::Guard lock(_thread_lock);
+	_threads[_thread_count++] = new_thread;
+	return true;
 }
 
-Ipc_call
-Ipc_manager::get_next_call(Native_task rcv_task_id, 
-		Native_thread_id rcv_thread_id,
-		addr_t imethod)
+void
+Ipc_manager::unregister_thread()
 {
-	Ipc_call	call;
+	Native_thread_id thread_id = Spartan::thread_get_id();
 
-	_create();
-
-	call = _call_queue.get_first(rcv_task_id, rcv_thread_id, imethod);
-
-	return call;
-}
-
-Ipc_call
-Ipc_manager::wait_for_call(Native_task rcv_task_id,
-		Native_thread_id rcv_thread_id, addr_t imethod)
-{
-	Ipc_call	call = get_next_call(rcv_task_id, rcv_thread_id);
-
-	while((call.callid() == 0)) {
-		call = get_next_call(rcv_task_id, rcv_thread_id, imethod);
-	}
-
-	return call;
+	Lock::Guard lock(_thread_lock);
+	int pos = _get_thread(thread_id);
+	for(int i=pos; i<(_thread_count-1); i++)
+		_threads[i] = _threads[i+1];
 }
 

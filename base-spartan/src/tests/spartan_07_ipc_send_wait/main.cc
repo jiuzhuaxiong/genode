@@ -17,6 +17,8 @@
 /* Genode includes */
 #include <base/ipc.h>
 #include <base/ipc_msgbuf.h>
+#include <base/ipc_manager.h>
+#include <base/thread_utcb.h>
 
 /* Spartan syscall includes */
 #include <spartan/syscalls.h>
@@ -46,9 +48,11 @@ bool register_with_nameserv()
  */
 static void sender_thread_entry()
 {
+	Genode::Thread_utcb thread;
+	Genode::Ipc_manager::singleton()->register_thread(&thread);
 	static Genode::Msgbuf<256> sndbuf;
-
 	static Genode::Ipc_ostream os(receiver_cap, &sndbuf);
+
 
 	int a = 1, b = 2, c = 3;
 
@@ -64,9 +68,11 @@ static void sender_thread_entry()
  */
 int main()
 {
-
+	Genode::Thread_utcb thread;
 	static Genode::Msgbuf<256> rcvbuf;
 	static Genode::Ipc_istream is(&rcvbuf);
+
+	Genode::Ipc_manager::singleton()->register_thread(&thread);
 
 	/* make input stream capability known */
 	receiver_cap = is;
