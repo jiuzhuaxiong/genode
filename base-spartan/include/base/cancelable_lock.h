@@ -25,7 +25,6 @@ namespace Genode {
 		private:
 
 			Native_lock	_native_lock;
-			addr_t		_locked_thread_count;
 
 		public:
 
