@@ -3,92 +3,92 @@
 
 #include <spartan/syscalls.h>
 
-using namespace Genode;
+namespace Genode {
+	class Ipc_call
+	{
+		private:
+			Native_ipc_callid	_callid;
+			Native_ipc_call		_call;
 
-class Ipc_call
-{
-	private:
-		Native_ipc_callid	_callid;
-		Native_ipc_call		_call;
+		public:
+			explicit Ipc_call()
+			: _callid(0) {}
+			explicit Ipc_call(Native_ipc_callid callid,
+					Native_ipc_call call)
+			: _callid(callid), _call(call) {}
 
-	public:
-		explicit Ipc_call()
-		: _callid(0) {}
-		explicit Ipc_call(Native_ipc_callid callid,
-				Native_ipc_call call)
-		: _callid(callid), _call(call) {}
-
-		Native_ipc_callid callid() { return _callid; }
-		Native_ipc_call call() { return _call; }
+			Native_ipc_callid callid() { return _callid; }
+			Native_ipc_call call() { return _call; }
 
 
-		addr_t		call_method() { return IPC_GET_IMETHOD(_call); }
-		addr_t		call_arg1() { return IPC_GET_ARG1(_call); }
-		addr_t		call_arg2() { return IPC_GET_ARG2(_call); }
-		addr_t		call_arg3() { return IPC_GET_ARG3(_call); }
-		addr_t		call_arg4() { return IPC_GET_ARG4(_call); }
-		addr_t		call_arg5() { return IPC_GET_ARG5(_call); }
+			addr_t		call_method() { return IPC_GET_IMETHOD(_call); }
+			addr_t		call_arg1() { return IPC_GET_ARG1(_call); }
+			addr_t		call_arg2() { return IPC_GET_ARG2(_call); }
+			addr_t		call_arg3() { return IPC_GET_ARG3(_call); }
+			addr_t		call_arg4() { return IPC_GET_ARG4(_call); }
+			addr_t		call_arg5() { return IPC_GET_ARG5(_call); }
 
-		Native_task 		snd_task_id() { return _call.in_task_id; }
-		Native_thread_id 	snd_thread_id()
+			Native_task 		snd_task_id() { return _call.in_task_id; }
+			Native_thread_id 	snd_thread_id()
+						{
+							switch(call_method()) {
+							case IPC_M_DATA_WRITE:
+								return call_arg5();
+							default:
+								return call_arg1();
+							}
+						}
+			addr_t			snd_phonehash() { return _call.in_phone_hash; }
+			Native_task		dest_task_id()
+						{
+							switch(call_method()) {
+							case IPC_M_DATA_WRITE:
+								return call_arg3();
+							default:
+								return call_arg2();
+							}
+						}
+			Native_thread_id	dest_thread_id()
+						{
+							switch(call_method()) {
+							case IPC_M_DATA_WRITE:
+								return call_arg4();
+							default:
+								return call_arg3();
+							}
+						}
+
+			int		cloned_phone()
 					{
 						switch(call_method()) {
-						case IPC_M_DATA_WRITE:
-							return call_arg5();
-						default:
+						case IPC_M_CONNECTION_CLONE:
 							return call_arg1();
+						default:
+							return -1;
 						}
 					}
-		addr_t			snd_phonehash() { return _call.in_phone_hash; }
-		Native_task		dest_task_id()
+			long		capability_id()
 					{
 						switch(call_method()) {
-						case IPC_M_DATA_WRITE:
+						case IPC_M_CONNECTION_CLONE:
 							return call_arg3();
 						default:
-							return call_arg2();
-						}
-					}
-		Native_thread_id	dest_thread_id()
-					{
-						switch(call_method()) {
-						case IPC_M_DATA_WRITE:
-							return call_arg4();
-						default:
-							return call_arg3();
+							return -1;
 						}
 					}
 
-		int		cloned_phone()
-				{
-					switch(call_method()) {
-					case IPC_M_CONNECTION_CLONE:
-						return call_arg1();
-					default:
-						return -1;
-					}
-				}
-		long		capability_id()
-				{
-					switch(call_method()) {
-					case IPC_M_CONNECTION_CLONE:
-						return call_arg3();
-					default:
-						return -1;
-					}
-				}
-
-		bool operator == (Ipc_call other)
-		{
-			return ( (_callid == other.callid())
-					&& (snd_task_id() == other.snd_task_id())
-					&& (snd_thread_id() == other.snd_thread_id())
-					&& (snd_phonehash() == other.snd_phonehash())
-					&& (dest_task_id() == other.dest_task_id())
-					&& (dest_thread_id() == other.dest_thread_id()));
-		}
-		bool operator != (Ipc_call other) { return !(*this == other); }
-};
+			bool operator == (Ipc_call other)
+			{
+				return ( (_callid == other.callid())
+						&& (snd_task_id() == other.snd_task_id())
+						&& (snd_thread_id() == other.snd_thread_id())
+						&& (snd_phonehash() == other.snd_phonehash())
+						&& (dest_task_id() == other.dest_task_id())
+						&& (dest_thread_id() == other.dest_thread_id()));
+			}
+			bool operator != (Ipc_call other) { return !(*this == other); }
+	};
+}
 
 #endif /* _IPC_CALL_H_*/
 

@@ -87,7 +87,7 @@ int delete_connection(Genode::addr_t phonehash)
 }
 
 /* implemente the connection cloning protocoll */
-int answer_connection_request(Ipc_call call)
+int answer_connection_request(Genode::Ipc_call call)
 {
 	int dst_pos, retval, snd_phone;
 	/* return error if method of call is wrong */
@@ -214,12 +214,12 @@ extern "C" int main(void)
 						IPC_GET_ARG1(call));
 				break;
 			case 30: /* IPC_CONNECTION_REQUEST */
-				answer_connection_request(Ipc_call(callid, call));
+				answer_connection_request(Genode::Ipc_call(callid, call));
 				break;
 			default:
 				retval = reject_connection(callid);
-				Genode::printf("nameserv:\tconnection rejected "
-					"with returncode %lu\n", retval);
+				Genode::printf("nameserv:\tconnection from task %lu rejected "
+					"with returncode %lu\n", retval, call.in_task_id);
 		}
 	}
 

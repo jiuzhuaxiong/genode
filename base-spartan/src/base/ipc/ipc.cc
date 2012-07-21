@@ -57,8 +57,7 @@ int request_connection(int snd_phone, Native_task dst_task_id,
 			return -1;
 	}
 
-	call = Ipc_manager::singleton()->wait_for_call(Spartan::task_get_id(),
-			Spartan::thread_get_id(), IPC_M_CONNECTION_CLONE);
+	call = Ipc_manager::singleton()->my_thread()->wait_for_call(IPC_M_CONNECTION_CLONE);
 	ret = call.cloned_phone();
 	Spartan::ipc_answer_0(call.callid(), 0);
 
@@ -75,8 +74,7 @@ int _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
-	Ipc_call call = Ipc_manager::singleton()->wait_for_call(
-			Spartan::task_get_id(), Spartan::thread_get_id(),
+	Ipc_call call = Ipc_manager::singleton()->my_thread()->wait_for_call(
 			IPC_M_CONNECTION_CLONE);
 
 	Ipc_destination dest = {0, 0, 0, 0, call.cloned_phone(), 0};
@@ -206,8 +204,7 @@ void Ipc_istream::_wait()
 	/*
 	 * Wait for IPC message
 	 */
-	call = Ipc_manager::singleton()->wait_for_call(Spartan::task_get_id(),
-			Spartan::thread_get_id());
+	call = Ipc_manager::singleton()->my_thread()->wait_for_call();
 	printf("Ipc_istream:\tgot call with callid %lu\n", call.callid());
 	if(call.call_method() != IPC_M_DATA_WRITE) {
 		/* since connection cloning is used we do not know who is supposed/allowed
