@@ -33,28 +33,19 @@ namespace Genode {
 						{
 							switch(call_method()) {
 							case IPC_M_DATA_WRITE:
-								return call_arg5();
+								return call_arg4();
 							default:
 								return call_arg1();
 							}
 						}
 			addr_t			snd_phonehash() { return _call.in_phone_hash; }
-			Native_task		dest_task_id()
+			Native_thread_id	dest_thread_id()
 						{
 							switch(call_method()) {
 							case IPC_M_DATA_WRITE:
 								return call_arg3();
 							default:
 								return call_arg2();
-							}
-						}
-			Native_thread_id	dest_thread_id()
-						{
-							switch(call_method()) {
-							case IPC_M_DATA_WRITE:
-								return call_arg4();
-							default:
-								return call_arg3();
 							}
 						}
 
@@ -67,23 +58,37 @@ namespace Genode {
 							return -1;
 						}
 					}
+			Native_thread_id	target_thread_id()
+						{
+							switch(call_method()) {
+							case IPC_M_CONNECTION_CLONE:
+								return call_arg3();
+							default:
+								return Spartan::INVALID_ID;
+							}
+						}
 			long		capability_id()
 					{
 						switch(call_method()) {
 						case IPC_M_CONNECTION_CLONE:
-							return call_arg3();
+							return call_arg4();
 						default:
 							return -1;
+						}
+					}
+			addr_t		msg_size()
+					{
+						switch(call_method()) {
+						case IPC_M_DATA_WRITE:
+							return call_arg2();
+						default:
+							return Spartan::INVALID_ID;
 						}
 					}
 
 			bool operator == (Ipc_call other)
 			{
 				return ( (_callid == other.callid())
-						&& (snd_task_id() == other.snd_task_id())
-						&& (snd_thread_id() == other.snd_thread_id())
-						&& (snd_phonehash() == other.snd_phonehash())
-						&& (dest_task_id() == other.dest_task_id())
 						&& (dest_thread_id() == other.dest_thread_id()));
 			}
 			bool operator != (Ipc_call other) { return !(*this == other); }
