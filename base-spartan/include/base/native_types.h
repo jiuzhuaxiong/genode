@@ -62,12 +62,8 @@ namespace Genode {
 	};
 */
 	struct Ipc_destination {
-		Native_task		rcv_task_id;
-		Native_thread_id	rcv_thread_id;
-		Native_task		snd_task_id;
-		Native_thread_id	snd_thread_id;
-		int			snd_phone;
-		addr_t			snd_phonehash;
+		Native_thread_id rcv_thread_id;
+		int              snd_phone;
 	};
 
 	struct Cap_dst_policy
@@ -78,12 +74,8 @@ namespace Genode {
 		static Dst  invalid()
 		{
 			Dst dest;
-			dest.rcv_task_id = Spartan::INVALID_ID;
 			dest.rcv_thread_id = Spartan::INVALID_ID;
-			dest.snd_task_id = Spartan::INVALID_ID;
-			dest.snd_thread_id = Spartan::INVALID_ID;
 			dest.snd_phone = 0;
-			dest.snd_phonehash = 0;
 			return dest;
 		}
 		static void copy(void* dst, Native_capability_tpl<Cap_dst_policy>* src);

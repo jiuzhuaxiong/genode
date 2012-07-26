@@ -33,6 +33,10 @@ namespace Spartan
 #define ipc_call_sync_3_0(phoneid, method, arg1, arg2, arg3) \
 	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), (arg3), 0, 0, 0, \
 		0, 0)
+#define ipc_call_sync_2_5(phoneid, method, arg1, arg2, res1, res2, \
+		res3, res4, res5) \
+	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), 0, \
+		(res1), (res2), (res3), (res4), (res5))
 #define ipc_call_sync_3_5(phoneid, method, arg1, arg2, arg3, res1, res2, \
 		res3, res4, res5) \
 	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), (arg3), \
@@ -40,6 +44,10 @@ namespace Spartan
 #define ipc_call_sync_5_0(phoneid, method, arg1, arg2, arg3, arg4, arg5) \
 	ipc_call_sync_slow((phoneid), (method), (arg1), (arg2), (arg3), (arg4), \
 		(arg5), 0, 0, 0, 0, 0)
+
+#define ipc_call_async_5_0(phoneid, method, arg1, arg2, arg3, arg4, arg5) \
+	ipc_call_async_slow((phoneid), (method), (arg1), (arg2), (arg3), (arg4), \
+		(arg5))
 
 /*
  * User-friendly wrappers for ipc_answer_fast() and ipc_answer_slow().
@@ -86,12 +94,11 @@ namespace Spartan
 			Genode::Native_task *task_id,
 			Genode::addr_t *phonehash);
 	/** Request new connection. */
-	int ipc_connect_me_to(int phoneid, Genode::addr_t dest_task_id,
-			Genode::Native_thread_id dest_threadid,
+	int ipc_connect_me_to(int phoneid, Genode::Native_thread_id dest_threadid,
 			Genode::Native_thread_id my_threadid);
 
-	int ipc_clone_connection(int phoneid, Genode::Native_task dst_task_id,
-			Genode::Native_thread_id dst_thread_id, long cap_id,
+	int ipc_clone_connection(int phoneid, Genode::Native_thread_id dst_thread_id,
+			long cap_id, Genode::Native_thread_id phone_target_thread,
 			int clone_phone);
 
 	/**************************
@@ -115,11 +122,13 @@ namespace Spartan
 	 * Asynchronous Framwork *
 	 *************************/
 	/** Fast asynchronous call. */
-	Genode::Native_ipc_callid ipc_call_async_fast(int phoneid, Genode::addr_t imethod,
-		Genode::addr_t arg1, Genode::addr_t arg2, Genode::addr_t arg3,
-		Genode::addr_t arg4);
-//, void *priv, 	ipc_async_callback_t callback, bool can_preempt);
-
+	Genode::Native_ipc_callid ipc_call_async_fast(int phoneid,
+		Genode::addr_t imethod, Genode::addr_t arg1,
+		Genode::addr_t arg2, Genode::addr_t arg3, Genode::addr_t arg4);
+	Genode::Native_ipc_callid ipc_call_async_slow(int phoneid, 
+		Genode::addr_t imethod, Genode::addr_t arg1, 
+		Genode::addr_t arg2, Genode::addr_t arg3, Genode::addr_t arg4,
+		Genode::addr_t arg5);
 
 	/***************
 	 * IPC answers *
@@ -146,17 +155,21 @@ namespace Spartan
 			Genode::addr_t arg2, unsigned int mode);
 
 	/** Wrappers for IPC_M_DATA_WRITE calls. */
-//	int ipc_data_write_start(async_exch_t *exch, const void *src, size_t size);
-	int ipc_data_write_start_synch(int phoneid, Genode::Native_task dst_task,
-			Genode::Native_thread_id dst_thread, const void *src, size_t size);
-	/** Wrapper for receiving the IPC_M_DATA_WRITE calls */
-	bool ipc_data_write_receive_timeout(Genode::Native_ipc_callid *callid,
-			Genode::Native_ipc_call *call, 
-			Genode::Native_thread_id *in_thread_id,
-			Genode::addr_t *size, Genode::addr_t usec);
+	int ipc_data_write_start_synch(int phoneid, 
+			Genode::Native_thread_id dst_thread, const void *src,
+			size_t size, bool is_reply=false);
+	int ipc_data_write_start_asynch(int phoneid, 
+			Genode::Native_thread_id dst_thread, const void *src,
+			size_t size, bool is_reply=false);
 	/** Wrapper for answering the IPC_M_DATA_WRITE calls */
 	int ipc_data_write_finalize(Genode::Native_ipc_callid callid,
 			void *dst, Genode::addr_t size);
+
+	/** Wrapper for receiving the IPC_M_DATA_READ calls */
+	int ipc_data_read_start_synch(int phoneid, Genode::Native_task dst_task,
+			Genode::Native_thread_id dst_thread, void *dst, size_t size);
+	int ipc_data_read_finalize(Genode::Native_ipc_callid callid,
+			const void *src, size_t size);
 
 	/** Hang up a phone. */
 	int ipc_hangup(int phoneid);

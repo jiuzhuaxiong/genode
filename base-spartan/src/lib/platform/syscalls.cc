@@ -119,24 +119,23 @@ int Spartan::ipc_connect_to_me(int phoneid, Native_thread_id my_threadid,
 	return rc;
 }
 
-int Spartan::ipc_connect_me_to(int phoneid, addr_t dest_task_id, 
-		Native_thread_id dest_threadid, Native_thread_id my_threadid)
+int Spartan::ipc_connect_me_to(int phoneid, Native_thread_id dest_threadid,
+		Native_thread_id my_threadid)
 {
 	addr_t newphid;
-	int res = ipc_call_sync_3_5(phoneid, IPC_M_CONNECT_ME_TO, my_threadid,
-			dest_task_id, dest_threadid, 0, 0, 0, 0, &newphid);
+	int res = ipc_call_sync_2_5(phoneid, IPC_M_CONNECT_ME_TO, my_threadid,
+			dest_threadid, 0, 0, 0, 0, &newphid);
 	if (res)
 		return res;
 
 	return newphid;
 }
 
-int Spartan::ipc_clone_connection(int phoneid, Genode::Native_task dst_task_id,
-		Genode::Native_thread_id dst_thread_id, long cap_id,
-		int clone_phone)
+int Spartan::ipc_clone_connection(int phoneid, Native_thread_id dst_thread_id,
+		long cap_id, Native_thread_id phone_target_thread, int clone_phone)
 {
 	return ipc_call_async_fast(phoneid, IPC_M_CONNECTION_CLONE,
-			(addr_t)clone_phone, dst_task_id, dst_thread_id,
+			(addr_t)clone_phone, dst_thread_id, phone_target_thread,
 			(addr_t) cap_id);
 }
 
@@ -269,14 +268,53 @@ int Spartan::ipc_call_sync_slow(int phoneid, addr_t method, addr_t arg1,
  *                    asynchronous calls.
  *
  */
-Native_ipc_callid Spartan::ipc_call_async_fast(int phoneid, addr_t imethod, addr_t arg1,
-		addr_t arg2, addr_t arg3, addr_t arg4)
-//, void *priv, ipc_async_callback_t callback, bool can_preempt)
+Genode::Native_ipc_callid Spartan::ipc_call_async_fast(int phoneid, 
+		addr_t imethod, addr_t arg1, addr_t arg2, addr_t arg3, 
+		addr_t arg4)
 {
-	Native_ipc_callid callid = __SYSCALL6(SYS_IPC_CALL_ASYNC_FAST, phoneid,
-			imethod, arg1, arg2, arg3, arg4);
+	return __SYSCALL6(SYS_IPC_CALL_ASYNC_FAST, phoneid, imethod, arg1, arg2,
+			arg3, arg4);
+}
 
-	return callid;
+/** Asynchronous call transmitting the entire payload.
+ *
+ * Note that this function is a void function.
+ *
+ * During normal operation, answering this call will trigger the callback.
+ * In case of fatal error, the callback handler is called with the proper
+ * error code. If the call cannot be temporarily made, it is queued.
+ *
+ * @param phoneid     Phone handle for the call.
+ * @param imethod     Requested interface and method.
+ * @param arg1        Service-defined payload argument.
+ * @param arg2        Service-defined payload argument.
+ * @param arg3        Service-defined payload argument.
+ * @param arg4        Service-defined payload argument.
+ * @param arg5        Service-defined payload argument.
+ * @param private     Argument to be passed to the answer/error callback.
+ * @param callback    Answer or error callback.
+ * @param can_preempt If true, the current fibril will be preempted in
+ *                    case the kernel temporarily refuses to accept more
+ *                    asynchronous calls.
+ *
+ */
+Genode::Native_ipc_callid ipc_call_async_slow(int phoneid, sysarg_t imethod, sysarg_t arg1,
+		sysarg_t arg2, sysarg_t arg3, sysarg_t arg4, sysarg_t arg5)
+{
+	/* TODO malloc needed
+	 * is it save to use here?
+	Native_ipc_call *call = malloc(sizeof(Native_ipc_call));
+	IPC_SET_IMETHODI(call, imethod);
+	IPC_SET_ARG1(call, arg1);
+	IPC_SET_ARG2(call, arg2);
+	IPC_SET_ARG3(call, arg3);
+	IPC_SET_ARG4(call, arg4);
+	IPC_SET_ARG5(call, arg5);
+
+	Native_ipc_callid callid = __SYSCALL6(SYS_IPC_CALL_ASYNC_SLOW, phoneid,
+			(sysarg_t) call);
+	*/
+	return 0; /* TODO dummy */
 }
 
 /***************
@@ -312,35 +350,40 @@ int Spartan::ipc_forward_fast(Native_ipc_callid callid, int phoneid,
 		arg2, mode);
 }
 
-int Spartan::ipc_data_write_start_synch(int phoneid, Native_task dst_task,
-		Native_thread_id dst_thread, const void *src, size_t size)
+int Spartan::ipc_data_write_start_synch(int phoneid, Native_thread_id dst_thread,
+		const void *src, size_t size, bool is_reply)
 {
+	addr_t rep = is_reply ? 1 : 0;
 	return ipc_call_sync_5_0(phoneid, IPC_M_DATA_WRITE, (sysarg_t) src,
-			(sysarg_t) size, (sysarg_t) dst_task,
-			(sysarg_t) dst_thread, thread_get_id());
+			(sysarg_t) size, (sysarg_t) dst_thread, 
+			thread_get_id(), rep);
 }
 
-/* SHOULD NOT BE USED ANYMORE */
-bool Spartan::ipc_data_write_receive_timeout(Native_ipc_callid *callid,
-		Native_ipc_call *call, Native_thread_id *in_thread_id,
-		addr_t *size, addr_t usec)
+int Spartan::ipc_data_write_start_asynch(int phoneid, Native_thread_id dst_thread,
+		const void *src, size_t size, bool is_reply)
 {
-	*callid = ipc_wait_for_call_timeout(call, usec);
-	/*TODO dummy until handled correctly */
-	*in_thread_id = 0;
-
-	if (IPC_GET_IMETHOD(*call) != IPC_M_DATA_WRITE)
-		return false;
-
-	if (size)
-		*size = (addr_t) IPC_GET_ARG2(*call);
-
-	return true;
+	addr_t rep = is_reply ? 1 : 0;
+	return ipc_call_async_5_0(phoneid, IPC_M_DATA_WRITE, (sysarg_t) src,
+			(sysarg_t) size, (sysarg_t) dst_thread, 
+			thread_get_id(), rep);
 }
 
 int Spartan::ipc_data_write_finalize(Native_ipc_callid callid, void *dst, addr_t size)
 {
 	return ipc_answer_2(callid, EOK, (sysarg_t) dst, (sysarg_t) size);
+}
+
+int ipc_data_read_start_synch(int phoneid, Native_task dst_task,
+		Native_thread_id dst_thread, void *dst, size_t size)
+{
+	return ipc_call_sync_5_0(phoneid, IPC_M_DATA_READ, (sysarg_t) dst,
+		(sysarg_t) size, (sysarg_t) dst_task,
+		(sysarg_t) dst_thread, thread_get_id());
+}
+
+int ipc_data_read_finalize(Native_ipc_callid callid, const void *src, size_t size)
+{
+	return ipc_answer_2(callid, EOK, (sysarg_t) src, (sysarg_t) size);
 }
 
 int Spartan::ipc_hangup(int phoneid)
