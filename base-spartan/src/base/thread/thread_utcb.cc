@@ -44,3 +44,29 @@ Thread_utcb::wait_for_call(addr_t imethod)
 
 	return call;
 }
+
+bool
+Thread_utcb::insert_reply(Ipc_call call)
+{
+	if(_answer_used)
+		return false;
+
+	Lock::Guard lock(_answer_lock);
+	_ipc_answer = call;
+	_answer_used = true;
+
+	return true;
+}
+
+Ipc_call
+Thread_utcb::get_reply()
+{
+	if(!_answer_used)
+		return Ipc_call();
+
+	Lock::Guard lock(_answer_lock);
+	Ipc_call answer = _ipc_answer;
+	_answer_used = false;
+
+	return answer;
+}

@@ -41,6 +41,9 @@ namespace Spartan
 		res3, res4, res5) \
 	ipc_call_sync_fast((phoneid), (method), (arg1), (arg2), (arg3), \
 		(res1), (res2), (res3), (res4), (res5))
+#define ipc_call_sync_4_0(phoneid, method, arg1, arg2, arg3, arg4) \
+	ipc_call_sync_slow((phoneid), (method), (arg1), (arg2), (arg3), (arg4), \
+		0, 0, 0, 0, 0, 0)
 #define ipc_call_sync_5_0(phoneid, method, arg1, arg2, arg3, arg4, arg5) \
 	ipc_call_sync_slow((phoneid), (method), (arg1), (arg2), (arg3), (arg4), \
 		(arg5), 0, 0, 0, 0, 0)
@@ -166,7 +169,7 @@ namespace Spartan
 			void *dst, Genode::addr_t size);
 
 	/** Wrapper for receiving the IPC_M_DATA_READ calls */
-	int ipc_data_read_start_synch(int phoneid, Genode::Native_task dst_task,
+	int ipc_data_read_start_synch(int phoneid,
 			Genode::Native_thread_id dst_thread, void *dst, size_t size);
 	int ipc_data_read_finalize(Genode::Native_ipc_callid callid,
 			const void *src, size_t size);

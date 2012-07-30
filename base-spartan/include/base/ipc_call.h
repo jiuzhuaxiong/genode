@@ -33,6 +33,7 @@ namespace Genode {
 						{
 							switch(call_method()) {
 							case IPC_M_DATA_WRITE:
+							case IPC_M_DATA_READ:
 								return call_arg4();
 							default:
 								return call_arg1();
@@ -43,6 +44,7 @@ namespace Genode {
 						{
 							switch(call_method()) {
 							case IPC_M_DATA_WRITE:
+							case IPC_M_DATA_READ:
 								return call_arg3();
 							default:
 								return call_arg2();
@@ -80,6 +82,7 @@ namespace Genode {
 					{
 						switch(call_method()) {
 						case IPC_M_DATA_WRITE:
+						case IPC_M_DATA_READ:
 							return call_arg2();
 						default:
 							return Spartan::INVALID_ID;

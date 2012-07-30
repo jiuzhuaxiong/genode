@@ -54,7 +54,6 @@ bool _receive_capability(Msgbuf_base *rcv_msg)
 	return rcv_msg->cap_append(cap);
 }
 
-
 /*****************
  ** Ipc_ostream **
  *****************/
@@ -124,11 +123,16 @@ void Ipc_istream::_wait()
 	size = call.msg_size();
 
 	/* Retrieve the message */
-	/* TODO compare sned message size with my own message size
+	/* TODO compare send message size with my own message size
 	 * -> which policy should be implemented?
 	 */
 	int ret = Spartan::ipc_data_write_finalize(_rcv_msg->callid, _rcv_msg->buf, size);
 	printf("Ipc_istream:\twrite finalize returned %i\n", ret);
+
+	/* set dst so it can be used in Ipc_server */
+//	Ipc_destination dest = {call.snd_thread_id(), 0};
+//	_dst = Native_capability(dest, _dst.dst().local_name());
+	_dst.rcv_thread_id = call.snd_thread_id();
 
 	/* extract all retrieved capailities */
 	printf("Ipc_istream:\t_rcv_msg->buf[0] = %i\n", _rcv_msg->buf[0]);
@@ -159,7 +163,29 @@ Ipc_istream::~Ipc_istream() { }
 void Ipc_client::_call()
 {
 	Ipc_ostream::_send();
-	Ipc_istream::_wait();
+	/* TODO remove busy waiting */
+	/*
+	printf("Ipc_client::_call() *my_thread=%i", Ipc_manager::singleton()->my_thread());
+	Ipc_call call = Ipc_manager::singleton()->my_thread()->get_reply();
+	while(call.callid() == 0)
+		Ipc_call call = Ipc_manager::singleton()->my_thread()->get_reply();
+	*/
+	/* request the answer from the server
+	 *
+	 * Check whether the phone_id is valid and request the message
+	 */
+	if(Ipc_ostream::_dst.dst().snd_phone < 1 ||
+		Spartan::ipc_data_read_start_synch(Ipc_ostream::_dst.dst().snd_phone,
+			Ipc_ostream::_dst.dst().rcv_thread_id,
+			Ipc_istream::_rcv_msg->buf, _rcv_msg->size()) != 0 ) {
+		PERR("ipc error in _call.");
+		throw Genode::Ipc_error();
+	}
+	for(int i=0; i<_rcv_msg->buf[0]; i++) {
+		_receive_capability(_rcv_msg);
+	}
+	/* After sending the message itself, send all pending 
+	 * capabilities (clone phones) */
 }
 
 Ipc_client::Ipc_client(Native_capability const &srv,
@@ -199,8 +225,26 @@ void Ipc_server::_wait()
 
 void Ipc_server::_reply()
 {
-	Ipc_ostream::_send();
+//	Ipc_ostream::_send();
+	/* TODO remove busy waiting */
+	Ipc_call call = Ipc_manager::singleton()->my_thread()->get_reply();
+	while(call.callid() == 0)
+		call = Ipc_manager::singleton()->my_thread()->get_reply();
 
+	if(call.call_method() != IPC_M_DATA_READ) {
+		/* unknown sender */
+		printf("Ipc_istream:\twrong call method (call.call_method()!=IPC_M_DATA_READ)!\n");
+		Spartan::ipc_answer_0(call.callid(), -1);
+		return;
+	}
+	addr_t size = call.msg_size();
+
+	/* Send the message */
+	/* TODO compare send message size with my own message size
+	 * -> which policy should be implemented?
+	 */
+	int ret = Spartan::ipc_data_read_finalize(call.callid(), _snd_msg->buf, size);
+	printf("Ipc_istream:\tread finalize returned %i\n", ret);
 	_prepare_next_reply_wait();
 }
 
@@ -208,8 +252,8 @@ void Ipc_server::_reply_wait()
 {
 	if (_reply_needed)
 		_reply();
-	else
-		_wait();
+
+	_wait();
 }
 
 Ipc_server::Ipc_server(Genode::Msgbuf_base *snd_msg, Genode::Msgbuf_base *rcv_msg)

@@ -198,8 +198,8 @@ extern "C" int main(void)
 					call.in_phone_hash);
 				if(int pos = connection_exists_thread_id(IPC_GET_ARG1(call)) >= 0) {
 					Spartan::ipc_forward_fast(callid, 
-						_phone[pos], IPC_GET_ARG1(call),
-						IPC_GET_ARG2(call), IPC_FF_NONE);
+						_phone[pos], 0, 0, 0,
+						IPC_FF_ROUTE_FROM_ME);
 				}
 				else
 					Genode::printf("nameserv:\tno thread with"
