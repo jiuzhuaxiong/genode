@@ -373,15 +373,14 @@ int Spartan::ipc_data_write_finalize(Native_ipc_callid callid, void *dst, addr_t
 	return ipc_answer_2(callid, EOK, (sysarg_t) dst, (sysarg_t) size);
 }
 
-int ipc_data_read_start_synch(int phoneid, Native_task dst_task,
-		Native_thread_id dst_thread, void *dst, size_t size)
+int Spartan::ipc_data_read_start_synch(int phoneid, Native_thread_id dst_thread,
+		void *dst, size_t size)
 {
-	return ipc_call_sync_5_0(phoneid, IPC_M_DATA_READ, (sysarg_t) dst,
-		(sysarg_t) size, (sysarg_t) dst_task,
-		(sysarg_t) dst_thread, thread_get_id());
+	return ipc_call_sync_4_0(phoneid, IPC_M_DATA_READ, (sysarg_t) dst,
+		(sysarg_t) size, (sysarg_t) dst_thread, thread_get_id());
 }
 
-int ipc_data_read_finalize(Native_ipc_callid callid, const void *src, size_t size)
+int Spartan::ipc_data_read_finalize(Native_ipc_callid callid, const void *src, size_t size)
 {
 	return ipc_answer_2(callid, EOK, (sysarg_t) src, (sysarg_t) size);
 }

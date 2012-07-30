@@ -4,6 +4,7 @@
 #include <base/native_types.h>
 #include <base/ipc_call.h>
 #include <base/ipc_call_queue.h>
+#include <base/lock.h>
 
 namespace Genode {
 	enum {
@@ -17,6 +18,10 @@ namespace Genode {
 			Native_thread_id	_thread_id;
 			Ipc_call_queue		_call_queue;
 
+			Ipc_call		_ipc_answer;
+			Lock			_answer_lock;
+			bool			_answer_used;
+
 		public:
 			explicit Thread_utcb()
 			: _task_id(Spartan::task_get_id()),
@@ -28,6 +33,9 @@ namespace Genode {
 			int		insert_call(Ipc_call call);
 			Ipc_call	get_next_call(addr_t imethod=0);
 			Ipc_call	wait_for_call(addr_t imethod=0);
+
+			bool		insert_reply(Ipc_call call);
+			Ipc_call	get_reply();
 	};
 }
 

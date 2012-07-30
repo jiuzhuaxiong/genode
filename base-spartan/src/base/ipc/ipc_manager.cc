@@ -49,7 +49,7 @@ Ipc_manager::my_thread()
 	int pos;
 	Native_thread_id thread_id = Spartan::thread_get_id();
 
-	printf("Ipc_manager:\tlooking for thread with id %lu\n", thread_id);
+//	printf("Ipc_manager:\tlooking for thread with id %lu\n", thread_id);
 	if((pos = _get_thread(thread_id)) < 0)
 		return 0;
 
@@ -94,12 +94,16 @@ Ipc_manager::loop_answerbox()
 			continue;
 		}
 
-		int ret;
-		if((ret = _threads[thread_pos]->insert_call(call)) < 0) {
-			/* could not insert call */
-			printf("Ipc_manager:\trejecting call\n");
-			Spartan::ipc_answer_0(callid, ret);
+		if(call.call_method() != IPC_M_DATA_READ) {
+			int ret;
+			if((ret = _threads[thread_pos]->insert_call(call)) < 0) {
+				/* could not insert call */
+				printf("Ipc_manager:\trejecting call\n");
+				Spartan::ipc_answer_0(callid, ret);
+			}
 		}
+		else
+			while(!_threads[thread_pos]->insert_reply(call));
 	}
 }
 
