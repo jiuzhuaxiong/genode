@@ -181,6 +181,7 @@ void Ipc_client::_call()
 		PERR("ipc error in _call.");
 		throw Genode::Ipc_error();
 	}
+	printf("Ipc_client:\t%i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", _rcv_msg->buf[0], _rcv_msg->buf[1], _rcv_msg->buf[2], _rcv_msg->buf[3], _rcv_msg->buf[4], _rcv_msg->buf[5], _rcv_msg->buf[6], _rcv_msg->buf[7], _rcv_msg->buf[8], _rcv_msg->buf[9], _rcv_msg->buf[10], _rcv_msg->buf[11], _rcv_msg->buf[12], _rcv_msg->buf[13], _rcv_msg->buf[14], _rcv_msg->buf[15], _rcv_msg->buf[16], _rcv_msg->buf[17], _rcv_msg->buf[18], _rcv_msg->buf[19]);
 	for(int i=0; i<_rcv_msg->buf[0]; i++) {
 		_receive_capability(_rcv_msg);
 	}
@@ -243,8 +244,9 @@ void Ipc_server::_reply()
 	/* TODO compare send message size with my own message size
 	 * -> which policy should be implemented?
 	 */
+	printf("Ipc_server:\t%i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", _snd_msg->buf[0], _snd_msg->buf[1], _snd_msg->buf[2], _snd_msg->buf[3], _snd_msg->buf[4], _snd_msg->buf[5], _snd_msg->buf[6], _snd_msg->buf[7], _snd_msg->buf[8], _snd_msg->buf[9], _snd_msg->buf[10], _snd_msg->buf[11], _snd_msg->buf[12], _snd_msg->buf[13], _snd_msg->buf[14], _snd_msg->buf[15], _snd_msg->buf[16], _snd_msg->buf[17], _snd_msg->buf[18], _snd_msg->buf[19]);
 	int ret = Spartan::ipc_data_read_finalize(call.callid(), _snd_msg->buf, size);
-	printf("Ipc_istream:\tread finalize returned %i\n", ret);
+	printf("Ipc_server:\tread finalize returned %i\n", ret);
 	_prepare_next_reply_wait();
 }
 

@@ -30,7 +30,7 @@ namespace Genode {
 
 			Native_task	task_id() { return _task_id; }
 			Native_thread_id thread_id() { return _thread_id; }
-			int		insert_call(Ipc_call call);
+			void		insert_call(Ipc_call call);
 			Ipc_call	get_next_call(addr_t imethod=0);
 			Ipc_call	wait_for_call(addr_t imethod=0);
 
