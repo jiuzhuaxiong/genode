@@ -95,11 +95,12 @@ Ipc_manager::loop_answerbox()
 		}
 
 		if(call.call_method() != IPC_M_DATA_READ) {
-			int ret;
-			if((ret = _threads[thread_pos]->insert_call(call)) < 0) {
+			try {
+				_threads[thread_pos]->insert_call(call);
+			} catch (Ipc_call_queue::Overflow) {
 				/* could not insert call */
 				printf("Ipc_manager:\trejecting call\n");
-				Spartan::ipc_answer_0(callid, ret);
+				Spartan::ipc_answer_0(callid, -1);
 			}
 		}
 		else

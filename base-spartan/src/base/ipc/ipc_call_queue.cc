@@ -3,84 +3,74 @@
 
 using namespace Genode;
 
-Ipc_call_queue::Ipc_call_queue()
-: _call_count(0)
-{
-	for(int i=0; i<QUEUE_SIZE; i++) {
-		_call_list[i] = 0;
-		_used[i] = false;
-	}
-}
-
-int
-Ipc_call_queue::_get_first_free_slot()
-{
-	Lock::Guard lock_guard(_queue_lock);
-
-	if(_call_count >= QUEUE_SIZE) {
-		return FULL_IPC_QUEUE;
-	}
-
-	/* spot first unused position */
-	int pos = 0;
-	while(_used[pos] && pos<QUEUE_SIZE)
-		pos++;
-
-	if(pos+1 == QUEUE_SIZE)
-		pos = FULL_IPC_QUEUE;
-
-	return pos;
-}
-
-int
+void
 Ipc_call_queue::insert_new(Ipc_call new_call)
 {
-	/* obtain free position in saving queue */
 	printf("Ipc_call_queue:\tstarting to insert new call\n");
-	int insert_pos = _get_first_free_slot();
-
-	if(insert_pos >= 0) {
-		Lock::Guard lock_guard(_queue_lock);
-
-		/* insert call at obtained position */
-		_call_queue[insert_pos] = new_call;
-		/* mark obtained position as used */
-		_used[insert_pos] = true;
-		/* insert call in call list */
-		_call_list[_call_count] = _call_queue + insert_pos;
-		/* increase call count */
-		_call_count++;
-		printf("Ipc_call_queue:\t inserted new _call_list. callcount=%i\n", _call_count);
+	/* lock the queue for writing */
+	Lock::Guard write_lock(_write_lock);
+	try {
+		add(new_call);
+		_unchecked_sem.up();
+	} catch (Overflow) {
+		throw Overflow();
 	}
-
-	return insert_pos >= 0 ? 0 : insert_pos;
 }
 
 Ipc_call
 Ipc_call_queue::get_first(addr_t imethod)
 {
-	Ipc_call	ret_call = Ipc_call();
+	Ipc_call ret_call;
+	int      pt = _tail;
+	int      sem_count = 0;
 
-	Lock::Guard lock_guard(_queue_lock);
-	/* iterate through call list to find first matching call */
-	for(int pos=0; pos<_call_count; pos++)
-	/* check if the selected call matches */
-	if((_call_list[pos]->call_method() == imethod) || (imethod == 0)) {
-		/* calculate position in saving queue */
-		int save_pos = _call_list[pos]-_call_queue;
-		/* save call to be returned */
-		ret_call = _call_queue[save_pos];
-		/* mark position unused */
-		_used[save_pos] = false;
+	/* lock the queue for reading
+	 * writing is allowed*/
+	Lock::Guard read_lock(_read_lock);
+	while(1) {
+		/* locks whenever the queue is empty or the call we 
+		 *  are waiting for is not in the queue (pt = _head+1)
+		 * unlocks when a new element has been inserted 
+		 *  thus aquiring the _write_lock is not needed */
+		_unchecked_sem.down();
+	printf("NOM _queue[pt].call_method()=%lu, imethod=%lu\n", _queue[pt].call_method(), imethod);
 
-		/* move all later dropped in calls one forward */
-		for(int i=pos; i<_call_count; i++)
-		_call_list[i] = _call_list[i+1];
-		/* decrease call count */
-		_call_count--;
+		/* check whether the current selected call is the one
+		 * we are looking for */
+		if((_queue[pt].call_method() == imethod) || (imethod == 0)) {
+			ret_call = _queue[pt];
+			break;
+		}
 
-		break;
+		pt = (pt + 1) % QUEUE_SIZE;
+		/* count how many times the semaphore has been decreased */
+		sem_count++;
 	}
+
+	/* lock the complete queue while ordering the queue */
+	Lock::Guard write_lock(_write_lock);
+	printf("PT=%i\n", pt);
+	for (int i=pt; i<_head; i = (i+1)%QUEUE_SIZE) {
+		printf("i=%i, HEAD=%i, TAIL=%i\n", i, _head, _tail);
+		if (pt != _tail) {
+			printf("NOT TAIL=%i\n", _tail);
+			_queue[i] = _queue[(i-1)%QUEUE_SIZE];
+		}
+	}
+	/* decrease _head since there is one call less in the queue */
+	_head = (_head-1)%QUEUE_SIZE;
+	/* since we have taken 1 element from the queue we have to
+	 * decrease the semaphore */
+	_sem.down();
+
+	/* decrease sem_count by 1 to avoid calling _unchecked_sem.down()
+	 * before returning */
+	sem_count--;
+	/* prepare the semaphore for next search by re-increaseing
+	 *  the semaphore so it consists of the exact same
+	 *  count as _sem */
+	for(int i=0; i<sem_count; i++)
+		_unchecked_sem.up();
 
 	return ret_call;
 }
@@ -88,16 +78,11 @@ Ipc_call_queue::get_first(addr_t imethod)
 Ipc_call
 Ipc_call_queue::get_last(void)
 {
-	Ipc_call	ret_call = Ipc_call();
+	/* lock the queue for reading
+	 * writing is still allowed */
+	Lock::Guard read_lock(_read_lock);
 
-	Lock::Guard lock_guard(_queue_lock);
-	if(_call_count <= 0)
-		return ret_call;
+	_unchecked_sem.down();
 
-	int save_pos = _call_list[_call_count]-_call_queue;
-	ret_call = _call_queue[save_pos];
-	_used[save_pos] = false;
-	_call_count--;
-
-	return ret_call;
+	return get();
 }

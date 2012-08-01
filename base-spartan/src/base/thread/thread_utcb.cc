@@ -15,10 +15,10 @@ Thread_utcb::~Thread_utcb()
 	}
 }
 
-int
+void
 Thread_utcb::insert_call(Ipc_call call)
 {
-	return _call_queue.insert_new(call);
+	_call_queue.insert_new(call);
 }
 
 Ipc_call

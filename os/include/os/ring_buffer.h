@@ -33,7 +33,7 @@
 template <typename ET, int QUEUE_SIZE>
 class Ring_buffer
 {
-	private:
+	protected:
 
 		int               _head;
 		int               _tail;
