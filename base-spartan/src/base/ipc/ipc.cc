@@ -83,7 +83,7 @@ void Ipc_ostream::_send()
 		_send_capability(_dst, snd_cap);
 	}
 
-	_write_offset = sizeof(umword_t);
+	_write_offset = sizeof(addr_t);
 }
 
 
@@ -141,7 +141,7 @@ void Ipc_istream::_wait()
 	}
 
 	/* reset unmarshaller */
-	_read_offset = sizeof(umword_t);
+	_read_offset = sizeof(addr_t);
 }
 
 Ipc_istream::Ipc_istream(Msgbuf_base *rcv_msg)
@@ -151,7 +151,7 @@ Ipc_istream::Ipc_istream(Msgbuf_base *rcv_msg)
 	_rcv_msg(rcv_msg)
 {
 	_rcv_cs = 0;
-	_read_offset = sizeof(umword_t);
+	_read_offset = sizeof(addr_t);
 }
 
 Ipc_istream::~Ipc_istream() { }
@@ -181,12 +181,12 @@ void Ipc_client::_call()
 		PERR("ipc error in _call.");
 		throw Genode::Ipc_error();
 	}
-	printf("Ipc_client:\t%i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", _rcv_msg->buf[0], _rcv_msg->buf[1], _rcv_msg->buf[2], _rcv_msg->buf[3], _rcv_msg->buf[4], _rcv_msg->buf[5], _rcv_msg->buf[6], _rcv_msg->buf[7], _rcv_msg->buf[8], _rcv_msg->buf[9], _rcv_msg->buf[10], _rcv_msg->buf[11], _rcv_msg->buf[12], _rcv_msg->buf[13], _rcv_msg->buf[14], _rcv_msg->buf[15], _rcv_msg->buf[16], _rcv_msg->buf[17], _rcv_msg->buf[18], _rcv_msg->buf[19]);
+
+	/* retrieve all send Capabilites */
 	for(int i=0; i<_rcv_msg->buf[0]; i++) {
 		_receive_capability(_rcv_msg);
 	}
-	/* After sending the message itself, send all pending 
-	 * capabilities (clone phones) */
+	_read_offset = sizeof(addr_t);
 }
 
 Ipc_client::Ipc_client(Native_capability const &srv,
@@ -205,10 +205,10 @@ void Ipc_server::_prepare_next_reply_wait()
 	_reply_needed = true;
 
 	/* leave space for return value at the beginning of the msgbuf */
-	_write_offset = 2*sizeof(umword_t);
+	_write_offset = 2*sizeof(addr_t);
 
 	/* receive buffer offset */
-	_read_offset = sizeof(umword_t);
+	_read_offset = sizeof(addr_t);
 }
 
 void Ipc_server::_wait()
@@ -244,7 +244,6 @@ void Ipc_server::_reply()
 	/* TODO compare send message size with my own message size
 	 * -> which policy should be implemented?
 	 */
-	printf("Ipc_server:\t%i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i\n", _snd_msg->buf[0], _snd_msg->buf[1], _snd_msg->buf[2], _snd_msg->buf[3], _snd_msg->buf[4], _snd_msg->buf[5], _snd_msg->buf[6], _snd_msg->buf[7], _snd_msg->buf[8], _snd_msg->buf[9], _snd_msg->buf[10], _snd_msg->buf[11], _snd_msg->buf[12], _snd_msg->buf[13], _snd_msg->buf[14], _snd_msg->buf[15], _snd_msg->buf[16], _snd_msg->buf[17], _snd_msg->buf[18], _snd_msg->buf[19]);
 	int ret = Spartan::ipc_data_read_finalize(call.callid(), _snd_msg->buf, size);
 	printf("Ipc_server:\tread finalize returned %i\n", ret);
 	_prepare_next_reply_wait();
