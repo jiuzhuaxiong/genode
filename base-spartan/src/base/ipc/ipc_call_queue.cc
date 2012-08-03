@@ -3,6 +3,21 @@
 
 using namespace Genode;
 
+/********************
+ * helper functions *
+ ********************/
+bool
+_i_lt_head(int i, int head, int tail)
+{
+	if (tail == head)
+		return false;
+
+	if (tail < head)
+		return i < (head-1);
+	else
+		return i >= tail ? true : i<(head-1);
+}
+
 void
 Ipc_call_queue::insert_new(Ipc_call new_call)
 {
@@ -38,7 +53,6 @@ Ipc_call_queue::get_first(addr_t imethod)
 		/* check whether the current selected call is the one
 		 * we are looking for */
 		if((_queue[pt].call_method() == imethod) || (imethod == 0)) {
-			ret_call = _queue[pt];
 			break;
 		}
 
@@ -47,25 +61,24 @@ Ipc_call_queue::get_first(addr_t imethod)
 		sem_count++;
 	}
 
-	/* lock the complete queue while ordering the queue */
 	Lock::Guard write_lock(_write_lock);
-	printf("PT=%i\n", pt);
-	for (int i=pt; i<_head; i = (i+1)%QUEUE_SIZE) {
-		printf("i=%i, HEAD=%i, TAIL=%i\n", i, _head, _tail);
-		if (pt != _tail) {
-			printf("NOT TAIL=%i\n", _tail);
+	printf("PT=%i, HEAD=%i, TAIL=%i\n", pt, _head, _tail);
+	if(pt == _tail)
+		ret_call = get();
+	else {
+		ret_call = _queue[pt];
+		for (int i=pt; _i_lt_head(i, _head, _tail); i++) {
+//		for (int i=pt; i<(_head-1) ; i++) {
+			printf("i=%i, HEAD=%i, TAIL=%i\n", i, _head, _tail);
 			_queue[i] = _queue[(i-1)%QUEUE_SIZE];
 		}
+		/* decrease _head since there is one call less in the queue */
+		_head = (_head-1)%QUEUE_SIZE;
+		/* since we have taken 1 element from the queue we have to
+		 * decrease the semaphore */
+		_sem.down();
 	}
-	/* decrease _head since there is one call less in the queue */
-	_head = (_head-1)%QUEUE_SIZE;
-	/* since we have taken 1 element from the queue we have to
-	 * decrease the semaphore */
-	_sem.down();
 
-	/* decrease sem_count by 1 to avoid calling _unchecked_sem.down()
-	 * before returning */
-	sem_count--;
 	/* prepare the semaphore for next search by re-increaseing
 	 *  the semaphore so it consists of the exact same
 	 *  count as _sem */
