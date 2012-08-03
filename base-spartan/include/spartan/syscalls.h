@@ -48,6 +48,8 @@ namespace Spartan
 	ipc_call_sync_slow((phoneid), (method), (arg1), (arg2), (arg3), (arg4), \
 		(arg5), 0, 0, 0, 0, 0)
 
+#define ipc_call_async_2(phoneid, method, arg1, arg2) \
+	ipc_call_async_fast((phoneid), (method), (arg1), (arg2), 0, 0)
 #define ipc_call_async_5_0(phoneid, method, arg1, arg2, arg3, arg4, arg5) \
 	ipc_call_async_slow((phoneid), (method), (arg1), (arg2), (arg3), (arg4), \
 		(arg5))
