@@ -19,6 +19,7 @@
 #include <base/ipc_call_queue.h>
 #include <base/ipc_manager.h>
 #include <base/thread_utcb.h>
+#include <base/semaphore.h>
 
 /* Spartan syscall includes */
 #include <spartan/syscalls.h>
@@ -67,6 +68,8 @@ int _connect_to_myself()
 	return ret;
 }
 
+Genode::Semaphore _sem;
+
 /**
  * Sender thread
  */
@@ -76,40 +79,83 @@ static void sender_thread_entry()
 	Genode::Ipc_manager::singleton()->register_thread(&thread);
 
 	/*
-	 * 1. Test: after 3 sekonds of sleeping
+	 * 1. Test: after 2 sekonds of sleeping
 	 * send a call with rancom number to receiving thread
 	 */
 	Genode::printf("\n============ Test 1 ============\n\n");
-	for(int i=1; i<4; i++) {
+	for(int i=1; i<3; i++) {
 		Genode::printf("%i ...", i);
 		Spartan::usleep(1000000);
 	}
 	Genode::printf("\n");
-	Spartan::ipc_call_sync_2_0(my_phone, 20, Spartan::thread_get_id(), 6);
+	Spartan::ipc_call_sync_2_0(my_phone, 20, thread.thread_id(), 6);
+	_sem.down();
 
 	/*
-	 * 2. Test: a) send not waitet for method
-	 *          b) wait 3 sekonds
-	 *          c) send mehod waitet for
+	 * 2. Test: send 2 messages with an intaval of 1 second
 	 */
 	Genode::printf("\n============ Test 2 ============\n\n");
-	Spartan::ipc_call_async_2(my_phone, 20, Spartan::thread_get_id(), 6);
-	for(int i=1; i<4; i++) {
-		Genode::printf("%i ...", i);
-		Spartan::usleep(1000000);
-	}
-	Genode::printf("\n");
-	Spartan::ipc_call_sync_2_0(my_phone, 30, Spartan::thread_get_id(), 6);
+	Spartan::ipc_call_sync_2_0(my_phone, 20, thread.thread_id(), 6);
+	Spartan::usleep(1000000);
+	Spartan::ipc_call_sync_2_0(my_phone, 20, thread.thread_id(), 6);
+	_sem.down();
 
 	/*
 	 * 3. Test: a) send not waitet for method
+	 *          b) wait 2 sekonds
+	 *          c) send mehod waitet for
+	 */
+	Genode::printf("\n============ Test 3 ============\n\n");
+	Spartan::ipc_call_async_2(my_phone, 20, thread.thread_id(), 6);
+	for(int i=1; i<3; i++) {
+		Genode::printf("%i ...", i);
+		Spartan::usleep(1000000);
+	}
+	Genode::printf("\n");
+	Spartan::ipc_call_sync_2_0(my_phone, 30, thread.thread_id(), 6);
+	_sem.down();
+
+	/*
+	 * 4. Test: a) send not waitet for method
 	 *          b) send method waitet for second
 	 *          c) send method waitet for first
 	 */
-	Genode::printf("\n============ Test 3 ============\n\n");
-	Spartan::ipc_call_async_2(my_phone, 40, Spartan::thread_get_id(), 6);
-	Spartan::ipc_call_async_2(my_phone, 30, Spartan::thread_get_id(), 6);
-	Spartan::ipc_call_async_2(my_phone, 20, Spartan::thread_get_id(), 6);
+	Genode::printf("\n============ Test 4 ============\n\n");
+	Spartan::ipc_call_async_2(my_phone, 40, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 30, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 20, thread.thread_id(), 6);
+	_sem.down();
+
+	/*
+	 * 5. Test: send 3 messages, the middle one is first being waited for
+	 */
+	Genode::printf("\n============ Test 5 ============\n\n");
+	Spartan::ipc_call_async_2(my_phone, 40, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 20, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 30, thread.thread_id(), 6);
+	_sem.down();
+
+	/*
+	 * 6. Test: send 3 messages, the middle one is first being waited for
+	 */
+	Genode::printf("\n============ Test 6 ============\n\n");
+	Spartan::ipc_call_async_2(my_phone, 30, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 20, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 40, thread.thread_id(), 6);
+	_sem.down();
+
+	/*
+	 * 7. Test: send more messages, forcing the ringbuffer to switch from
+	 *  'high' queue places to 'low' ones
+	 */
+	Genode::printf("\n============ Test 7 ============\n\n");
+	for(int i=21; i<26; i++)
+		Spartan::ipc_call_sync_2_0(my_phone, i, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 29, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 28, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 27, thread.thread_id(), 6);
+	Spartan::ipc_call_async_2(my_phone, 30, thread.thread_id(), 6);
+	_sem.down();
 
 	while(1);
 }
@@ -143,9 +189,21 @@ int main()
 	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call();
 	Genode::printf("ReceiverThread:\t got call with method %lu\n", call.call_method());
 	Spartan::ipc_answer_0(call.callid(), 0);
+	_sem.up();
 
 	/*
-	 * 2. Test: a) wait for a specific call with method 30
+	 * 2. Test: simply wait for 2 random incomming messages
+	 */
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call();
+	Genode::printf("ReceiverThread:\t got first call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call();
+	Genode::printf("ReceiverThread:\t got second call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	_sem.up();
+
+	/*
+	 * 3. Test: a) wait for a specific call with method 30
 	 *             (just a numer without any meaning - for testing issues)
 	 *          b) wait for any incomming call
 	 */
@@ -155,14 +213,15 @@ int main()
 	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call();
 	Genode::printf("ReceiverThread:\t got second call with method %lu\n", call.call_method());
 	Spartan::ipc_answer_0(call.callid(), 0);
+	_sem.up();
 
 	/*
-	 * 3. Test: a) sleep for 5 sekonds
+	 * 4. Test: a) sleep for 2 sekonds
 	 *          b) wait for a specific call with method 20
 	 *          c) wait for a specific call with method 30
 	 *          d) wait any incomming call (40)
 	 */
-	for(int i=1; i<6; i++) {
+	for(int i=1; i<3; i++) {
 		Genode::printf("%i ...", i);
 		Spartan::usleep(1000000);
 	}
@@ -176,6 +235,67 @@ int main()
 	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call();
 	Genode::printf("ReceiverThread:\t got third call with method %lu\n", call.call_method());
 	Spartan::ipc_answer_0(call.callid(), 0);
+	_sem.up();
+
+	/*
+	 * 5. Test: wait for a seconds to receive 3 calls
+	 *          a) retrive for the second one
+	 *          b) retrieve the first one
+	 *          c) retrieve the last one
+	 */
+	Spartan::usleep(1000000);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(20);
+	Genode::printf("ReceiverThread:\t got first call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(30);
+	Genode::printf("ReceiverThread:\t got second call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call();
+	Genode::printf("ReceiverThread:\t got third call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	_sem.up();
+
+	/*
+	 * 6. Test: wait for a seconds to receive 3 calls
+	 *          a) retrive for the second one
+	 *          b) retrieve the last one
+	 *          c) retrieve the fist one
+	 */
+	Spartan::usleep(1000000);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(20);
+	Genode::printf("ReceiverThread:\t got first call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(30);
+	Genode::printf("ReceiverThread:\t got second call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call();
+	Genode::printf("ReceiverThread:\t got third call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	_sem.up();
+
+	/*
+	 * 7. Test: retrieve mor messages from first to last
+	 * in the end test ordering of the queue when switching from high to low queue places
+	 */
+	for(int i=21; i<26; i++)
+	{
+		call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(i);
+		Genode::printf("ReceiverThread:\t got call with method %lu\n", call.call_method());
+		Spartan::ipc_answer_0(call.callid(), 0);
+	}
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(27);
+	Genode::printf("ReceiverThread:\t got first call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(28);
+	Genode::printf("ReceiverThread:\t got first call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(29);
+	Genode::printf("ReceiverThread:\t got first call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	call = Genode::Ipc_manager::singleton()->my_thread()->wait_for_call(30);
+	Genode::printf("ReceiverThread:\t got first call with method %lu\n", call.call_method());
+	Spartan::ipc_answer_0(call.callid(), 0);
+	_sem.up();
 
 
 	while(1);
