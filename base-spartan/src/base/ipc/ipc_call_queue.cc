@@ -48,7 +48,7 @@ Ipc_call_queue::get_first(addr_t imethod)
 		 * unlocks when a new element has been inserted 
 		 *  thus aquiring the _write_lock is not needed */
 		_unchecked_sem.down();
-	printf("NOM _queue[pt].call_method()=%lu, imethod=%lu\n", _queue[pt].call_method(), imethod);
+	printf("NOM _queue[%i].call_method()=%lu, imethod=%lu\n", pt, _queue[pt].call_method(), imethod);
 
 		/* check whether the current selected call is the one
 		 * we are looking for */
@@ -67,10 +67,9 @@ Ipc_call_queue::get_first(addr_t imethod)
 		ret_call = get();
 	else {
 		ret_call = _queue[pt];
-		for (int i=pt; _i_lt_head(i, _head, _tail); i++) {
-//		for (int i=pt; i<(_head-1) ; i++) {
+		for (int i=pt; _i_lt_head(i, _head, _tail); i = (i+1)%QUEUE_SIZE) {
 			printf("i=%i, HEAD=%i, TAIL=%i\n", i, _head, _tail);
-			_queue[i] = _queue[(i-1)%QUEUE_SIZE];
+			_queue[i] = _queue[(i+1)%QUEUE_SIZE];
 		}
 		/* decrease _head since there is one call less in the queue */
 		_head = (_head-1)%QUEUE_SIZE;
