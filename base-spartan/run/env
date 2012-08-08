@@ -89,8 +89,7 @@ proc build_boot_image {binaries} {
 	puts $fh "\ntitle Genode on SPARTAN"
 	puts $fh "kernel /kernel"
 	foreach binary $binaries {
-		if {$binary != "core"} {
-			puts $fh "module /genode/$binary" } }
+		puts $fh "module /genode/$binary" }
 	puts $fh "vbeset 0x117 506070"
 	close $fh
 

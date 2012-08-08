@@ -12,6 +12,7 @@
  */
 
 #include <base/printf.h>
+#include <base/native_types.h>
 #include <base/ipc_call.h>
 #include <spartan/syscalls.h>
 

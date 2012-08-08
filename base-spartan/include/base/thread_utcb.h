@@ -37,6 +37,8 @@ namespace Genode {
 			bool		insert_reply(Ipc_call call);
 			Ipc_call	get_reply();
 	};
+
+	typedef Thread_utcb Native_utcb;
 }
 
 #endif /* _INCLUDE__BASE__THREAD_UTCB_H_ */

@@ -18,8 +18,8 @@
 #include <base/ipc.h>
 #include <base/ipc_call_queue.h>
 #include <base/ipc_manager.h>
-#include <base/thread_utcb.h>
 #include <base/semaphore.h>
+#include <base/native_types>
 
 /* Spartan syscall includes */
 #include <spartan/syscalls.h>
