@@ -31,36 +31,8 @@ namespace Genode {
 		Native_task in_task_id;
 		addr_t in_phone_hash;
 	} Native_ipc_call;
-/*
-	class Ipc_destination
-	{
-		private:
-			Native_task	in_task_id;
-			Native_thread	in_thread_id;
-			Native_task	out_task_id;
-			Native_thread	out_thread_id;
-			int		out_phone;
-			addr_t		out_phone_hash;
-		public:
-			Ipc_destination(Native_task r_task=0,
-					Native_thread r_thread=0,
-					Native_task s_task=0,
-					Native_thread s_thread=0,
-					int s_phone=0, addr_t s_phonehash=0)
-			:
-				in_task_id(r_task), in_thread_id(r_thread),
-				out_task_id(s_task), out_thread_id(s_thread),
-				out_phone(s_phone), out_phone_hash(s_phonehash)
-			{}
 
-			Native_task rcv_task_id() { return in_task_id; }
-			Native_thread rcv_thread_id() { return in_thread_id; }
-			Native_task snd_task_id() { return out_task_id; }
-			Native_thread snd_thread_id() { return out_thread_id; }
-			int snd_phone() { return out_phone; }
-			addr_t snd_phone_hash() { return out_phone_hash; }
-	};
-*/
+
 	struct Ipc_destination {
 		Native_thread_id rcv_thread_id;
 		int              snd_phone;

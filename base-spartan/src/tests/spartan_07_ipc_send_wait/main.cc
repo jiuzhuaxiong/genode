@@ -18,7 +18,7 @@
 #include <base/ipc.h>
 #include <base/ipc_msgbuf.h>
 #include <base/ipc_manager.h>
-#include <base/thread_utcb.h>
+#include <base/native_types.h>
 
 /* Spartan syscall includes */
 #include <spartan/syscalls.h>
