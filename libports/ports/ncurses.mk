@@ -7,6 +7,12 @@ NCURSES_URL := http://ftp.gnu.org/pub/gnu/ncurses/$(NCURSES_TGZ)
 #
 PORTS += $(NCURSES)
 
+#
+# Check for tools
+#
+$(call check_tool,sed)
+$(call check_tool,mawk)
+
 NCURSES_SYMLINKED_INC := nc_alloc.h nc_panel.h nc_tparm.h term_entry.h \
                          tic.h hashed_db.h capdefaults.c
 NCURSES_GENERATED_INC := curses.h ncurses_def.h ncurses_dll.h term.h \
@@ -45,6 +51,7 @@ src/lib/ncurses:
 $(NCURSES_GEN_SYMLINKS):
 	$(VERBOSE)for i in $(NCURSES_SYMLINKED_INC); do \
 		ln -sf ../../$(CONTRIB_DIR)/$(NCURSES)/include/$$i include/ncurses/$$i; done
+	$(VERBOSE)ln -sf curses.h include/ncurses/ncurses.h
 
 #
 # Produce generated includes
@@ -153,7 +160,7 @@ src/lib/ncurses/codes.c:
 
 src/lib/ncurses/fallback.c: $(NCURSES_SRC_DIR)/tinfo/MKfallback.sh
 	$(VERBOSE)sh -e $< x $(CONTRIB_DIR)/$(NCURSES)/misc/terminfo.src tic linux > $@
-	#$(VERBOSE)sh -e $< /usr/share/terminfo $(NCURSES_SRC_DIR)/misc/terminfo.src /usr/bin/tic > $@
+	$(VERBOSE)#sh -e $< /usr/share/terminfo $(NCURSES_SRC_DIR)/misc/terminfo.src /usr/bin/tic > $@
 
 src/lib/ncurses/unctrl.c:
 	$(VERBOSE)echo | mawk -f $(NCURSES_SRC_DIR)/base/MKunctrl.awk bigstrings=1 > $@
@@ -179,6 +186,7 @@ clean-ncurses: clean_ncurses_symlinks clean_ncurses_gen_files
 
 clean_ncurses_symlinks:
 	$(VERBOSE)rm -f $(NCURSES_GEN_SYMLINKS)
+	$(VERBOSE)rm -f include/ncurses/ncurses.h
 
 clean_ncurses_gen_files:
 	$(VERBOSE)rm -f $(NCURSES_GEN_FILES)

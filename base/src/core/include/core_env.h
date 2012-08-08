@@ -24,6 +24,7 @@
 #include <ram_session/client.h>
 
 /* core includes */
+#include <platform.h>
 #include <core_parent.h>
 #include <core_rm_session.h>
 #include <cap_session_component.h>
@@ -68,10 +69,10 @@ namespace Genode {
 			 ** RAM-session interface **
 			 ***************************/
 
-			Ram_dataspace_capability alloc(size_t size)
+			Ram_dataspace_capability alloc(size_t size, bool cached)
 			{
 				Lock::Guard lock_guard(_lock);
-				return RAM_SESSION_IMPL::alloc(size);
+				return RAM_SESSION_IMPL::alloc(size, cached);
 			}
 
 			void free(Ram_dataspace_capability ds)

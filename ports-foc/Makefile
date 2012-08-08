@@ -8,7 +8,7 @@ VERBOSE        ?= @
 ECHO            = @echo
 TARGET         ?= l4linux
 
-PATCH-l4linux   = patches/l4lx_genode.patch
+PATCH-l4linux   = $(addprefix patches/,l4lx_genode.patch icmp_align.patch tcp_mem.patch)
 REV-l4linux     = 23
 REPO-l4linux    = http://svn.tudos.org/repos/oc/l4linux/trunk
 
@@ -16,15 +16,29 @@ PATCH-l4android = patches/l4android_genode.patch
 REV-l4android   = 90ca43bd629452ffd38d85fe8c976f069b5bb3d9
 REPO-l4android  = git://git.l4android.org/kernel.git
 
+UPDATE_PATCH    = $(word 1, $(PATCH-$(TARGET)))
+
+#
+# Utility to check if a tool is installed
+#
+check_tool = $(if $(shell which $(1)),,$(error Need to have '$(1)' installed.))
+
+$(call check_tool,patch)
+
 ifeq ($(TARGET), l4android)
+$(call check_tool,git)
 DIFF   = git diff
 UPDATE = cd $(REAL_CONTRIB_DIR)/l4android; git fetch; git reset --hard $(REV-l4android)
 PATCH  = patch -p1
 else
-DIFF   = svn diff
-UPDATE = svn up -r $(REV-l4linux) $(REAL_CONTRIB_DIR)/l4linux
-PATCH  = patch -p0
+$(call check_tool,svn)
+FILTER_DIR = net
+DIFF_PATH  = $(filter-out $(FILTER_DIR),$(shell ls $(REAL_CONTRIB_DIR)/l4linux))
+DIFF       = svn diff $(DIFF_PATH)
+UPDATE     = svn up -r $(REV-l4linux)
+PATCH      = patch -p0
 endif
+
 
 # realpath is there to follow symlink; if contrib dir does not exists yet,
 # create new directory
@@ -53,7 +67,7 @@ help:
 prepare: clean
 	$(VERBOSE)$(UPDATE)
 	$(ECHO) "applying patches to '$(REAL_CONTRIB_DIR)/$(TARGET)'"
-	$(VERBOSE)$(PATCH) -d $(REAL_CONTRIB_DIR)/$(TARGET) -i $(realpath $(PATCH-$(TARGET)))
+	$(VERBOSE)for i in $(PATCH-$(TARGET)); do $(PATCH) -d $(REAL_CONTRIB_DIR)/$(TARGET) < $$i; done
 	$(VERBOSE)ln -s $(shell pwd)/src/drivers $(REAL_CONTRIB_DIR)/$(TARGET)/arch/l4/drivers
 	$(ECHO)
 	$(ECHO) "Preparation completed!"
@@ -72,8 +86,8 @@ $(REAL_CONTRIB_DIR)/l4android:
 	$(VERBOSE)git clone $(REPO-l4android) $@
 
 update-patch:
-	$(ECHO) "Save changes to original code in $(PATCH-$(TARGET))"
-	$(VERBOSE)(cd $(REAL_CONTRIB_DIR)/$(TARGET); LC_COLLATE=C $(DIFF)) > $(PATCH-$(TARGET)) || true
+	$(ECHO) "Save changes to original code in $(UPDATE_PATCH)"
+	$(VERBOSE)(cd $(REAL_CONTRIB_DIR)/$(TARGET); LC_COLLATE=C $(DIFF)) > $(UPDATE_PATCH) || true
 
 clean: clean-$(TARGET)
 	$(VERBOSE)rm -f $(CONTRIB_DIR)/$(TARGET)/arch/l4/drivers

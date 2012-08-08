@@ -22,11 +22,15 @@
 
 /* Noux includes */
 #include <noux_session/sysio.h>
+#include <file_system.h>
+#include <vfs_handle.h>
 
 namespace Noux {
 
 	class Tar_file_system : public File_system
 	{
+		enum { verbose = false };
+
 		Lock _lock;
 
 		struct Rom_name
@@ -227,13 +231,43 @@ namespace Noux {
 		}
 
 
+		struct Num_dirent_cache
+		{
+			Lock             lock;
+			Tar_file_system &tar_fs;
+			bool             valid;              /* true after first lookup */
+			char             key[256];           /* key used for lookup */
+			size_t           cached_num_dirent;  /* cached value */
+
+			Num_dirent_cache(Tar_file_system &tar_fs)
+			: tar_fs(tar_fs), valid(false), cached_num_dirent(0) { }
+
+			size_t num_dirent(char const *path)
+			{
+				Lock::Guard guard(lock);
+
+				/* check for cache miss */
+				if (!valid || strcmp(path, key) != 0) {
+
+					Lookup_member_of_path lookup_criterion(path, ~0);
+					tar_fs._lookup(&lookup_criterion);
+					strncpy(key, path, sizeof(key));
+					cached_num_dirent = lookup_criterion.cnt;
+					valid = true;
+				}
+				return cached_num_dirent;
+			}
+		} _cached_num_dirent;
+
+
 		public:
 
 			Tar_file_system(Xml_node config)
 			:
-				File_system(config), _rom_name(config), _rom(_rom_name.name),
+				_rom_name(config), _rom(_rom_name.name),
 				_tar_base(env()->rm_session()->attach(_rom.dataspace())),
-				_tar_size(Dataspace_client(_rom.dataspace()).size())
+				_tar_size(Dataspace_client(_rom.dataspace()).size()),
+				_cached_num_dirent(*this)
 			{
 				PINF("tar archive '%s' local at %p, size is %zd",
 				     _rom_name.name, _tar_base, _tar_size);
@@ -284,7 +318,7 @@ namespace Noux {
 				return Dataspace_capability();
 			}
 
-			void release(Dataspace_capability ds_cap)
+			void release(char const *, Dataspace_capability ds_cap)
 			{
 				env()->ram_session()->free(static_cap_cast<Ram_dataspace>(ds_cap));
 			}
@@ -304,7 +338,10 @@ namespace Noux {
 				case Record::TYPE_FILE:    mode |= Sysio::STAT_MODE_FILE; break;
 				case Record::TYPE_SYMLINK: mode |= Sysio::STAT_MODE_SYMLINK; break;
 				case Record::TYPE_DIR:     mode |= Sysio::STAT_MODE_DIRECTORY; break;
-				default: PDBG("unhandled record type %d", record->type());
+
+				default:
+					if (verbose)
+						PDBG("unhandled record type %d", record->type());
 				}
 
 				sysio->stat_out.st.mode  = mode;
@@ -315,11 +352,9 @@ namespace Noux {
 				return true;
 			}
 
-			bool dirent(Sysio *sysio, char const *path)
+			bool dirent(Sysio *sysio, char const *path, off_t index)
 			{
 				Lock::Guard guard(_lock);
-
-				int const index = sysio->dirent_in.index;
 
 				Lookup_member_of_path lookup_criterion(path, index);
 				Record *record = _lookup(&lookup_criterion);
@@ -334,7 +369,10 @@ namespace Noux {
 				case 0: sysio->dirent_out.entry.type = Sysio::DIRENT_TYPE_FILE;      break;
 				case 2: sysio->dirent_out.entry.type = Sysio::DIRENT_TYPE_SYMLINK;   break;
 				case 5: sysio->dirent_out.entry.type = Sysio::DIRENT_TYPE_DIRECTORY; break;
-				default: PDBG("unhandled record type %d", record->type());
+
+				default:
+					if (verbose)
+						PDBG("unhandled record type %d", record->type());
 				}
 
 				Absolute_path absolute_path(record->name());
@@ -345,15 +383,42 @@ namespace Noux {
 				        absolute_path.base() + 1,
 				        sizeof(sysio->dirent_out.entry.name));
 
-				PWRN("direntry in %s: %s", path, absolute_path.base() + 1);
 				return true;
+			}
+
+			bool unlink(Sysio *, char const *) { return false; }
+
+			bool rename(Sysio *, char const *, char const *) { return false; }
+
+			bool mkdir(Sysio *, char const *) { return false; }
+
+			size_t num_dirent(char const *path)
+			{
+				return _cached_num_dirent.num_dirent(path);
+			}
+
+			bool is_directory(char const *path)
+			{
+				Lookup_exact lookup_criterion(path);
+				Record const * record = _lookup(&lookup_criterion);
+				return record && (record->type() == Record::TYPE_DIR);
+			}
+
+			char const *leaf_path(char const *path)
+			{
+				/*
+				 * Check if path exists within the file system. If this is the
+				 * case, return the whole path, which is relative to the root
+				 * of this file system.
+				 */
+				Lookup_exact lookup_criterion(path);
+				Record const * record = _lookup(&lookup_criterion);
+				return record ? path : 0;
 			}
 
 			Vfs_handle *open(Sysio *sysio, char const *path)
 			{
 				Lock::Guard guard(_lock);
-
-				PDBG("open %s", path);
 
 				Lookup_exact lookup_criterion(path);
 				Record *record = 0;
@@ -365,11 +430,12 @@ namespace Noux {
 				return 0;
 			}
 
-			void close(Vfs_handle *handle)
-			{
-				Lock::Guard guard(_lock);
-				destroy(env()->heap(), handle);
-			}
+
+			/***************************
+			 ** File_system interface **
+			 ***************************/
+
+			char const *name() const { return "tar"; }
 
 
 			/********************************

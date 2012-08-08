@@ -32,8 +32,14 @@ namespace Ffat { extern "C" {
 #include <ffat/ff.h>
 } }
 
+/*
+ * These macros are defined in later versions of the FatFs lib, but not in the
+ * one currently used for Genode.
+ */
+#define f_size(fp) ((fp)->fsize)
+#define f_tell(fp) ((fp)->fptr)
 
-static bool const verbose = true;
+static bool const verbose = false;
 
 
 namespace {
@@ -49,7 +55,8 @@ class Plugin_context : public Libc::Plugin_context
 
 		Plugin_context(const char *filename)
 		{
-			PDBG("new context at %p", this);
+			if (verbose)
+				PDBG("new context at %p", this);
 			_filename = (char*)malloc(::strlen(filename) + 1);
 			::strcpy(_filename, filename);
 		}
@@ -320,26 +327,23 @@ class Plugin : public Libc::Plugin
 			::memset(dirent, 0, sizeof(struct dirent));
 
 			FILINFO ffat_file_info;
-			FRESULT res;
+			ffat_file_info.lfname = dirent->d_name;
+			ffat_file_info.lfsize = sizeof(dirent->d_name);
 
-			const unsigned int index = *basep / sizeof(struct dirent);
-			f_readdir(_get_ffat_dir(fd), 0);
-			for (unsigned int i = 0; i <= index; i++) {
-				res = f_readdir(_get_ffat_dir(fd), &ffat_file_info);
-				switch(res) {
-					case FR_OK:
-						break;
-					case FR_DISK_ERR:
-					case FR_INT_ERR:
-					case FR_NOT_READY:
-					case FR_INVALID_OBJECT:
-						errno = EIO;
-						return -1;
-					default:
-						/* not supposed to occur according to the libffat documentation */
-						PERR("f_readdir() returned an unexpected error code");
-						return -1;
-				}
+			FRESULT res = f_readdir(_get_ffat_dir(fd), &ffat_file_info);
+			switch(res) {
+				case FR_OK:
+					break;
+				case FR_DISK_ERR:
+				case FR_INT_ERR:
+				case FR_NOT_READY:
+				case FR_INVALID_OBJECT:
+					errno = EIO;
+					return -1;
+				default:
+					/* not supposed to occur according to the libffat documentation */
+					PERR("f_readdir() returned an unexpected error code");
+					return -1;
 			}
 
 			if (ffat_file_info.fname[0] == 0) { /* no (more) entries */
@@ -358,8 +362,9 @@ class Plugin : public Libc::Plugin
 
 			dirent->d_reclen = sizeof(struct dirent);
 
-			::strncpy(dirent->d_name, ffat_file_info.fname,
-					  sizeof(dirent->d_name));
+			if (dirent->d_name[0] == 0) /* use short file name */
+				::strncpy(dirent->d_name, ffat_file_info.fname,
+						  sizeof(dirent->d_name));
 
 			dirent->d_namlen = ::strlen(dirent->d_name);
 
@@ -374,16 +379,26 @@ class Plugin : public Libc::Plugin
 		{
 			using namespace Ffat;
 
-			if (whence != SEEK_SET) {
-				PERR("only SEEK_SET is supported by the ffat lib");
-				errno = EINVAL;
-				return (::off_t)-1;
+			switch(whence) {
+				case SEEK_CUR:
+					offset += f_tell(_get_ffat_file(fd));
+					break;
+				case SEEK_END:
+					offset += f_size(_get_ffat_file(fd));
+					break;
+				default:
+					break;
 			}
 
 			FRESULT res = f_lseek(_get_ffat_file(fd), offset);
 
 			switch(res) {
 				case FR_OK:
+					/* according to the FatFs documentation this can happen */
+					if (f_tell(_get_ffat_file(fd)) != offset) {
+						errno = EINVAL;
+						return -1;
+					}
 					return offset;
 				case FR_DISK_ERR:
 				case FR_INT_ERR:
@@ -450,8 +465,12 @@ class Plugin : public Libc::Plugin
 			if (((flags & O_WRONLY) == O_WRONLY)  || ((flags & O_RDWR) == O_RDWR))
 				ffat_flags |= FA_WRITE;
 
-			if ((flags & O_CREAT) == O_CREAT)
-				ffat_flags |= FA_CREATE_NEW;
+			if ((flags & O_CREAT) == O_CREAT) {
+				if ((flags & O_EXCL) == O_EXCL)
+					ffat_flags |= FA_CREATE_NEW;
+				else
+					ffat_flags |= FA_CREATE_ALWAYS;
+			}
 
 			FRESULT res = f_open(&ffat_file, pathname, ffat_flags);
 
@@ -469,14 +488,16 @@ class Plugin : public Libc::Plugin
 					 */
 					Ffat::DIR ffat_dir;
 					FRESULT f_opendir_res = f_opendir(&ffat_dir, pathname);
-					PDBG("opendir res=%d", f_opendir_res);
+					if (verbose)
+						PDBG("opendir res=%d", f_opendir_res);
 					switch(f_opendir_res) {
 						case FR_OK: {
 							Plugin_context *context = new (Genode::env()->heap())
 								Directory_plugin_context(pathname, ffat_dir);
 							Libc::File_descriptor *f =
 								Libc::file_descriptor_allocator()->alloc(this, context);
-							PDBG("new fd=%d", f->libc_fd);
+							if (verbose)
+								PDBG("new fd=%d", f->libc_fd);
 							return f;
 
 						}
@@ -591,6 +612,9 @@ class Plugin : public Libc::Plugin
 			using namespace Ffat;
 
 			FILINFO file_info;
+			/* the long file name is not used in this function */
+			file_info.lfname = 0;
+			file_info.lfsize = 0;
 
 			FRESULT res = f_stat(path, &file_info);
 

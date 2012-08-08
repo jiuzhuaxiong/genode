@@ -168,7 +168,8 @@ class Pci_policy : public Genode::Slave_policy, public Pci::Provider
 
 		bool announce_service(const char             *service_name,
 		                      Genode::Root_capability root,
-		                      Genode::Allocator      *alloc)
+		                      Genode::Allocator      *alloc,
+		                      Genode::Server         *server)
 		{
 			/* wait for 'pci_drv' to announce the PCI service */
 			if (Genode::strcmp(service_name, "PCI"))
@@ -201,7 +202,7 @@ int main(int argc, char **argv)
 	/* use 'pci_drv' as slave service */
 	static Rpc_entrypoint pci_ep(&cap, STACK_SIZE, "pci_slave");
 	static Pci_policy     pci_policy(pci_ep, ep, irq_ep);
-	static Genode::Slave  pci_slave(pci_ep, pci_policy, 512 * 1024);
+	static Genode::Slave  pci_slave(pci_ep, pci_policy, 1024 * 1024);
 
 	Genode::sleep_forever();
 	return 0;

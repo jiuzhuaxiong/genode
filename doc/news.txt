@@ -4,6 +4,80 @@
                                ===========
 
 
+NOVA Hypervisor supported on 64-bit x86 machines | 2012-07-27
+#############################################################
+
+| NOVA combines microkernel principles with capability-based security and
+| virtualization technology. The updated version complements the existing
+| x86_32 support with a new variant for x86_64.
+
+NOVA is a so-called microhypervisor for the x86 architecture. It combines the
+principles of microkernels with capability-based security and hardware-assisted
+virtualization.
+
+Genode supports NOVA as base platform since 2010. But because we used NOVA
+solely for sporadic research activities and NOVA was lacking a regular release
+schedule, Genode's platform support received only little attention. This has
+changed now. NOVA's main developer Udo Steinberg moved from TU Dresden to Intel
+Labs where he leads the development of NOVA as an Open-Source project. In fact,
+the code is now being hosted at GitHub. [https://github.com/IntelLabs/NOVA - NOVA on GitHub..]
+
+This ignited our renewed interest in promoting this platform to a first-level
+citizen of our framework. The first significant improvement is the recently
+added 64-bit support of NOVA. We enabled Genode to work with both variants of
+the kernel - 32 and 64 bit.
+
+We congratulate the NOVA developers to this new model of development and open
+collaboration and look forward to work closely together!
+
+
+Interview in Revista Espírito Livre magazine | 2012-06-20
+#########################################################
+
+| Issue 36 of the Brazilian Revista Espírito Livre magazine features a
+| comprehensive interview with Norman Feske. _(update: english version)_
+
+The Brazilian Revista Espírito Livre is a magazine dedicated to Free and
+Open-Source software. With current issue 36, the Portuguese language magazine
+explores controversial questions about Internet freedom, privacy, neutrality
+among others. Genode seemingly represents a possible technical answer to some
+of these questions. In the comprehensive interview starting at page 35,
+co-founder of Genode Norman Feske talks about the background and motivation
+behind the project, describes the current structure of the community, and
+outlines his vision of the next generation of operating systems.
+
+[http://www.revista.espiritolivre.org/lancada-edicao-n-36-da-revista-espirito-livre - Issue 36 of the Revista Espírito Livre...]
+
+[http:/about/interview_rel36 - English version of the interview...]
+
+
+Genode OS Framework release 12.05 | 2012-05-30
+##############################################
+
+| The highlights of version 12.05 are our new USB stack, added media replay
+| capabilities, new support for dynamic system re-configuration,
+| and the ability to run the GNU tool chain on Genode.
+
+The just released version 12.05 is another corner stone for our plan to shape
+Genode into a general-purpose OS for the everyday use by its developers. It
+introduces numerious features that are crucial for this goal, in particular the
+groundwork for the use of file systems, the ability to execute the GNU tool
+chain directly on a Genode system, and a way to flexibly adapt the behaviour of
+operating-system components at runtime.
+
+In addition to working on the functionality outlined above, several of the
+framework's base platforms have received close attention. We profoundly
+revisited the platform-specific code for the Fiasco.OC kernel to fully leverage
+the kernel's capability concept. To facilitate the use of Genode as component
+framework on Linux, we extended the possibilities to use Linux-specific
+mechanisms, in particular chroot, in a way that is easy to use and coherent
+with the framework's architecture.
+
+For the full story behind all the new features and improvements, please
+refer to the
+[http:/documentation/release-notes/12.05 - release notes of version 12.05...]
+
+
 Genode participation at GSoC 2012 | 2012-04-25
 ##############################################
 

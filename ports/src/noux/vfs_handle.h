@@ -51,12 +51,17 @@ namespace Noux {
 						return Dataspace_capability();
 					}
 
-					void release(Dataspace_capability) { }
+					void release(char const *, Dataspace_capability) { }
 
-					bool        stat(Sysio *, char const *)   { return _msg("stat"); }
-					Vfs_handle *open(Sysio *, char const *)   { _msg("open"); return 0; }
-					void        close(Vfs_handle *)           { _msg("close"); }
-					bool        dirent(Sysio *, char const *) { return _msg("dirent"); }
+					bool        stat(Sysio *, char const *)                 { return _msg("stat"); }
+					Vfs_handle *open(Sysio *, char const *)                 { _msg("open"); return 0; }
+					bool        dirent(Sysio *, char const *, off_t)        { return _msg("dirent"); }
+					bool        unlink(Sysio *, char const *)               { return _msg("unlink"); }
+					bool        rename(Sysio *, char const *, char const *) { return _msg("rename"); }
+					bool        mkdir(Sysio *, char const *)                { return _msg("mkdir"); }
+					size_t      num_dirent(char const *)                    { return 0; }
+					bool        is_directory(char const *)                  { return false; }
+					char const *leaf_path(char const *path)                 { return 0; }
 				};
 				static Pseudo_directory_service ds;
 				return &ds;
@@ -87,6 +92,8 @@ namespace Noux {
 				_status_flags(status_flags),
 				_seek(0)
 			{ }
+
+			virtual ~Vfs_handle() { }
 
 			Directory_service *ds() { return _ds; }
 			File_io_service   *fs() { return _fs; }

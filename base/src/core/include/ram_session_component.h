@@ -34,6 +34,8 @@ namespace Genode {
 	{
 		private:
 
+			class Invalid_dataspace : public Exception { };
+
 			enum { SBS = 1024 };   /* slab block size */
 
 			typedef Tslab<Dataspace_component, SBS> Ds_slab;
@@ -103,7 +105,6 @@ namespace Genode {
 			 */
 			void _clear_ds(Dataspace_component *ds);
 
-
 		public:
 
 			/**
@@ -135,24 +136,30 @@ namespace Genode {
 			 */
 			~Ram_session_component();
 
-
 			/**
 			 * Accessors
 			 */
 			Ram_session_component *ref_account() { return _ref_account; }
-
 
 			/**
 			 * Register quota donation at allocator guard
 			 */
 			void upgrade_ram_quota(size_t ram_quota) { _md_alloc.upgrade(ram_quota); }
 
+			/**
+			 * Get physical address of the RAM that backs a dataspace
+			 *
+			 * \param ds  targeted dataspace
+			 *
+			 * \throw Invalid_dataspace
+			 */
+			addr_t phys_addr(Ram_dataspace_capability ds);
 
 			/***************************
 			 ** RAM Session interface **
 			 ***************************/
 
-			Ram_dataspace_capability alloc(size_t);
+			Ram_dataspace_capability alloc(size_t, bool);
 			void free(Ram_dataspace_capability);
 			int ref_account(Ram_session_capability);
 			int transfer_quota(Ram_session_capability, size_t);

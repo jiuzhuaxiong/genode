@@ -24,6 +24,16 @@ using namespace Genode;
 static const bool verbose = false;
 
 
+addr_t Ram_session_component::phys_addr(Ram_dataspace_capability ds)
+{
+	Dataspace_component * const dsc =
+		dynamic_cast<Dataspace_component *>(_ds_ep->obj_by_cap(ds));
+
+	if (!dsc) throw Invalid_dataspace();
+	return dsc->phys_addr();
+}
+
+
 void Ram_session_component::_free_ds(Dataspace_component *ds)
 {
 	if (!ds) return;
@@ -97,7 +107,7 @@ void Ram_session_component::_remove_ref_account_member(Ram_session_component *me
 }
 
 
-Ram_dataspace_capability Ram_session_component::alloc(size_t ds_size)
+Ram_dataspace_capability Ram_session_component::alloc(size_t ds_size, bool cached)
 {
 	/* zero-sized dataspaces are not allowed */
 	if (!ds_size) return Ram_dataspace_capability();
@@ -154,13 +164,23 @@ Ram_dataspace_capability Ram_session_component::alloc(size_t ds_size)
 
 	Dataspace_component *ds;
 	try {
-		ds = new (&_ds_slab) Dataspace_component(ds_size, (addr_t)ds_addr, true, this);
+		/*
+		 * For non-cached RAM dataspaces, we mark the dataspace as write
+		 * combined and expect the pager to evaluate this dataspace property
+		 * when resolving page faults.
+		 */
+		ds = new (&_ds_slab)
+			Dataspace_component(ds_size, (addr_t)ds_addr, !cached, true, this);
 	} catch (Allocator::Out_of_memory) {
 		PWRN("Could not allocate metadata");
 		throw Out_of_metadata();
 	}
 
-	/* fill new dataspaces with zeros */
+	/*
+	 * Fill new dataspaces with zeros. For non-cached RAM dataspaces, this
+	 * function must also make sure to flush all cache lines related to the
+	 * address range used by the dataspace.
+	 */
 	_clear_ds(ds);
 
 	/* keep track of the used quota for actual payload */

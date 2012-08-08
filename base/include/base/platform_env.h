@@ -49,9 +49,8 @@ namespace Genode {
 				                  Local_addr local_addr = (addr_t)0,
 				                  bool executable = false) {
 
-					bool try_again;
+					bool try_again = false;
 					do {
-						try_again = false;
 						try {
 							return Rm_session_client::attach(ds, size, offset,
 							                                 use_local_addr,
@@ -83,12 +82,11 @@ namespace Genode {
 				Expanding_ram_session_client(Ram_session_capability cap)
 				: Ram_session_client(cap), _cap(cap) { }
 
-				Ram_dataspace_capability alloc(size_t size) {
-					bool try_again;
+				Ram_dataspace_capability alloc(size_t size, bool cached) {
+					bool try_again = false;
 					do {
-						try_again = false;
 						try {
-							return Ram_session_client::alloc(size);
+							return Ram_session_client::alloc(size, cached);
 
 						} catch (Ram_session::Out_of_metadata) {
 

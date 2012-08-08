@@ -7,6 +7,11 @@ LWIP_URL = http://mirrors.zerg.biz/nongnu/lwip/$(LWIP_ZIP)
 #
 PORTS += $(LWIP)
 
+#
+# Check for tools
+#
+$(call check_tool,unzip)
+
 prepare-lwip: $(CONTRIB_DIR)/$(LWIP) include/lwip/lwip include/lwip/netif
 
 $(CONTRIB_DIR)/$(LWIP): clean-lwip
@@ -21,6 +26,7 @@ $(CONTRIB_DIR)/$(LWIP): $(DOWNLOAD_DIR)/$(LWIP_ZIP)
 	$(VERBOSE)unzip $< -d $(CONTRIB_DIR) && touch $@
 	$(VERBOSE)patch -d $(CONTRIB_DIR) -p0 -i ../src/lib/lwip/libc_select_notify.patch
 	$(VERBOSE)patch -d $(CONTRIB_DIR) -p0 -i ../src/lib/lwip/errno.patch
+	$(VERBOSE)patch -d $(CONTRIB_DIR) -p0 -i ../src/lib/lwip/sol_socket_definition.patch
 
 include/lwip/lwip:
 	$(VERBOSE)mkdir -p $@

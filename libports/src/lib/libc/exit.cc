@@ -13,12 +13,13 @@
 
 #include <base/env.h>
 #include <base/sleep.h>
+#include <base/printf.h>
 
+extern void genode_exit(int status) __attribute__((noreturn));
 
 extern "C" void _exit(int status)
 {
-	Genode::env()->parent()->exit(status);
-	Genode::sleep_forever();
+	genode_exit(status);
 }
 
 
@@ -31,6 +32,9 @@ extern "C" {
 
 	void exit(int status)
 	{
+		if (status == 4) {
+			PDBG("PT: %p %p %p", __builtin_return_address(0), __builtin_return_address(1), __builtin_return_address(2));
+		}
 		if (__cleanup)
 			(*__cleanup)();
 
