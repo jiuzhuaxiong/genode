@@ -21,7 +21,7 @@ namespace Genode {
 		private:
 			Native_thread_id	_thread_id;
 			bool			_initialized;
-			Thread_base*		_threads[MAX_THREAD_COUNT];
+			Native_utcb*		_threads[MAX_THREAD_COUNT];
 			addr_t			_thread_count;
 			Lock			_thread_lock;
 

@@ -44,19 +44,6 @@ static void thread_start(void *)
 	PWRN("%s: Not implemented", __PRETTY_FUNCTION__);
 }
 
-
-void Thread_base::_init_platform_thread()
-{
-	_tid = Spartan::thread_get_id();
-}
-
-
-void Thread_base::_deinit_platform_thread()
-{
-	PWRN("%s: Not implemented and not needed", __PRETTY_FUNCTION__);
-}
-
-
 void Thread_base::start()
 {
 /*
