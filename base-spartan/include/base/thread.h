@@ -352,6 +352,7 @@ namespace Genode {
 			 * 0 when called by the main thread.
 			 */
 			Native_utcb *utcb();
+
 	};
 
 

@@ -38,7 +38,7 @@ Ipc_manager::_get_thread(Native_thread_id thread_id)
 {
 	Lock::Guard lock(_thread_lock);
 	for(addr_t i=0; i<_thread_count; i++)
-		if(_threads[i]->tid() == thread_id)
+		if(_threads[i]->thread_id() == thread_id)
 			return i;
 
 	return -1;
@@ -99,7 +99,7 @@ Ipc_manager::loop_answerbox()
 
 		if(call.call_method() != IPC_M_DATA_READ) {
 			try {
-				_threads[thread_pos]->utcb()->insert_call(call);
+				_threads[thread_pos]->insert_call(call);
 			} catch (Ipc_call_queue::Overflow) {
 				/* could not insert call */
 				printf("Ipc_manager:\trejecting call\n");
@@ -107,7 +107,7 @@ Ipc_manager::loop_answerbox()
 			}
 		}
 		else
-			while(!_threads[thread_pos]->utcb()->insert_reply(call));
+			while(!_threads[thread_pos]->insert_reply(call));
 	}
 }
 
@@ -117,11 +117,12 @@ Ipc_manager::register_thread()
 	if(_thread_count >= MAX_THREAD_COUNT)
 		return false;
 
-	Thread_base *my_thread = Thread_base::myself();
+	Native_utcb *my_utcb = Thread_base::myself()->utcb();
+	printf("Ipc_manager:\t my_utcb = %i\n", my_utcb);
 
-	printf("Ipc_manager:\tregistering new thread with thread_id=%lu\n", my_thread->tid());
+	printf("Ipc_manager:\tregistering new thread with thread_id=%lu\n", my_utcb->thread_id());
 	Lock::Guard lock(_thread_lock);
-	_threads[_thread_count++] = my_thread;
+	_threads[_thread_count++] = my_utcb;
 	return true;
 }
 
