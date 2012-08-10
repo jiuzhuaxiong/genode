@@ -3,6 +3,7 @@
 #include <base/printf.h>
 #include <base/ipc_call.h>
 #include <base/ipc_manager.h>
+#include <base/thread.h>
 
 using namespace Genode;
 
@@ -37,12 +38,13 @@ Ipc_manager::_get_thread(Native_thread_id thread_id)
 {
 	Lock::Guard lock(_thread_lock);
 	for(addr_t i=0; i<_thread_count; i++)
-		if(_threads[i]->thread_id() == thread_id)
+		if(_threads[i]->tid() == thread_id)
 			return i;
 
 	return -1;
 }
 
+/*
 Thread_utcb*
 Ipc_manager::my_thread()
 {
@@ -55,6 +57,7 @@ Ipc_manager::my_thread()
 
 	return _threads[pos];
 }
+*/
 
 void
 Ipc_manager::wait_for_calls()
@@ -96,7 +99,7 @@ Ipc_manager::loop_answerbox()
 
 		if(call.call_method() != IPC_M_DATA_READ) {
 			try {
-				_threads[thread_pos]->insert_call(call);
+				_threads[thread_pos]->utcb()->insert_call(call);
 			} catch (Ipc_call_queue::Overflow) {
 				/* could not insert call */
 				printf("Ipc_manager:\trejecting call\n");
@@ -104,26 +107,28 @@ Ipc_manager::loop_answerbox()
 			}
 		}
 		else
-			while(!_threads[thread_pos]->insert_reply(call));
+			while(!_threads[thread_pos]->utcb()->insert_reply(call));
 	}
 }
 
 bool
-Ipc_manager::register_thread(Thread_utcb* new_thread)
+Ipc_manager::register_thread()
 {
 	if(_thread_count >= MAX_THREAD_COUNT)
 		return false;
 
-	printf("Ipc_manager:\tregistering new thread with thread_id=%lu\n", new_thread->thread_id());
+	Thread_base *my_thread = Thread_base::myself();
+
+	printf("Ipc_manager:\tregistering new thread with thread_id=%lu\n", my_thread->tid());
 	Lock::Guard lock(_thread_lock);
-	_threads[_thread_count++] = new_thread;
+	_threads[_thread_count++] = my_thread;
 	return true;
 }
 
 void
 Ipc_manager::unregister_thread()
 {
-	Native_thread_id thread_id = Spartan::thread_get_id();
+	Native_thread_id thread_id = Thread_base::myself()->tid();
 
 	Lock::Guard lock(_thread_lock);
 	int pos = _get_thread(thread_id);

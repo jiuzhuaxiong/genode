@@ -3,7 +3,7 @@
 
 #include <base/native_types.h>
 #include <base/lock.h>
-#include <base/thread_utcb.h>
+#include <base/thread.h>
 
 namespace Genode {
 	/* call implementing the manager thread which is exclusively looking into
@@ -13,15 +13,15 @@ namespace Genode {
 	 */
 	class Ipc_manager
 	{
-		enum { 
-			STACK_SIZE = 16384,
+		enum {
+			STACK_SIZE = 8192,
 			MAX_THREAD_COUNT = 16,
 		};
 
 		private:
 			Native_thread_id	_thread_id;
 			bool			_initialized;
-			Thread_utcb*		_threads[MAX_THREAD_COUNT];
+			Thread_base*		_threads[MAX_THREAD_COUNT];
 			addr_t			_thread_count;
 			Lock			_thread_lock;
 
@@ -37,10 +37,10 @@ namespace Genode {
 				static Ipc_manager manager;
 				return &manager;
 			}
-			Thread_utcb*	my_thread();
+//			Thread_utcb*	my_thread();
 			void		wait_for_calls();
 			void		loop_answerbox();
-			bool		register_thread(Thread_utcb* new_thread);
+			bool		register_thread();
 			void		unregister_thread();
 	};
 }
