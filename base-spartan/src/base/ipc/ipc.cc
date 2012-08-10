@@ -15,7 +15,8 @@
 #include <base/ipc.h>
 #include <base/native_types.h>
 #include <base/ipc_call.h>
-#include <base/ipc_manager.h>
+//#include <base/ipc_manager.h>
+#include <base/thread.h>
 
 #include <spartan/syscalls.h>
 
@@ -42,8 +43,12 @@ int _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
-	Ipc_call call = Ipc_manager::singleton()->my_thread()->wait_for_call(
-			IPC_M_CONNECTION_CLONE);
+
+//	Ipc_call call = Ipc_manager::singleton()->my_utcb()->wait_for_call(
+//			IPC_M_CONNECTION_CLONE);
+
+	Ipc_call call = Thread_base::myself()->utcb()->wait_for_call(
+	                 IPC_M_CONNECTION_CLONE);
 
 	Ipc_destination dest = {call.target_thread_id(), call.cloned_phone()};
 	Native_capability  cap = Native_capability(dest, call.capability_id());
@@ -111,7 +116,8 @@ void Ipc_istream::_wait()
 	/*
 	 * Wait for IPC message
 	 */
-	call = Ipc_manager::singleton()->my_thread()->wait_for_call();
+//	call = Ipc_manager::singleton()->my_utcb()->wait_for_call();
+	call = Thread_base::myself()->utcb()->wait_for_call();
 	printf("Ipc_istream:\tgot call with callid %lu\n", call.callid());
 	if(call.call_method() != IPC_M_DATA_WRITE) {
 		/* unknown sender */
@@ -228,9 +234,11 @@ void Ipc_server::_reply()
 {
 //	Ipc_ostream::_send();
 	/* TODO remove busy waiting */
-	Ipc_call call = Ipc_manager::singleton()->my_thread()->get_reply();
+//	Ipc_call call = Ipc_manager::singleton()->my_utcb()->get_reply();
+	Ipc_call call = Thread_base::myself()->utcb()->get_reply();
 	while(call.callid() == 0)
-		call = Ipc_manager::singleton()->my_thread()->get_reply();
+//		call = Ipc_manager::singleton()->my_utcb()->get_reply();
+		call = Thread_base::myself()->utcb()->get_reply();
 
 	if(call.call_method() != IPC_M_DATA_READ) {
 		/* unknown sender */

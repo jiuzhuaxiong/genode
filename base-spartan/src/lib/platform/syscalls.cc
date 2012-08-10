@@ -11,9 +11,12 @@ extern "C" {
 #include <abi/ipc/ipc.h>
 #include <abi/ipc/methods.h>
 #include <abi/synch.h>
+#include <abi/mm/as.h>
 }
 
 using namespace Spartan;
+
+extern "C" int _main();
 
 extern "C" addr_t __syscall(const addr_t p1, const addr_t p2,
 	const addr_t p3, const addr_t p4, const addr_t p5, const addr_t p6,
@@ -390,6 +393,7 @@ int Spartan::ipc_hangup(int phoneid)
 	return __SYSCALL1(SYS_IPC_HANGUP, phoneid);
 }
 
+
 /***************
  * Futex calls *
  ***************/
@@ -405,9 +409,10 @@ int Spartan::futex_wakeup(volatile int *futex)
 }
 
 
-/*8*************
+/***************
  * Timer calls *
  ***************/
+
 int Spartan::usleep(addr_t usec)
 {
 	(void) __SYSCALL1(SYS_THREAD_USLEEP, usec);
@@ -425,3 +430,32 @@ void Spartan::exit(int status)
 	/* Unreachable */
 	while (1);
 }
+
+
+/***************************
+ * Address spaces handling *
+ ***************************/
+
+void *Spartan::as_area_create(void *base, size_t size, unsigned int flags)
+{
+	return (void *) __SYSCALL4(SYS_AS_AREA_CREATE, (sysarg_t) base,
+	       (sysarg_t) size, (sysarg_t) flags, (sysarg_t) _main);
+}
+
+int Spartan::as_area_resize(void *address, size_t size, unsigned int flags)
+{
+	return __SYSCALL3(SYS_AS_AREA_RESIZE, (sysarg_t) address,
+	       (sysarg_t) size, (sysarg_t) flags);
+}
+
+int Spartan::as_area_destroy(void *address)
+{
+	return __SYSCALL1(SYS_AS_AREA_DESTROY, (sysarg_t) address);
+}
+
+int as_area_change_flags(void *address, unsigned int flags)
+{
+	return __SYSCALL2(SYS_AS_AREA_CHANGE_FLAGS, (sysarg_t) address,
+	       (sysarg_t) flags);
+}
+

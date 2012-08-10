@@ -1,78 +1,51 @@
 /*
- * \brief   Thread facility
- * \author  Norman Feske
- * \date    2009-10-02
+ * \brief  Linux-specific platform thread implementation
+ * \author Norman Feske
+ * \date   2007-10-15
  */
 
 /*
- * Copyright (C) 2009-2012 Genode Labs GmbH
+ * Copyright (C) 2007-2012 Genode Labs GmbH
  *
  * This file is part of the Genode OS framework, which is distributed
  * under the terms of the GNU General Public License version 2.
  */
 
 /* Genode includes */
+#include <util/token.h>
+#include <util/misc_math.h>
 #include <base/printf.h>
 
-/* core includes */
-#include <platform_thread.h>
+/* local includes */
+#include "platform_thread.h"
 
 using namespace Genode;
 
 
-void Platform_thread::set_cpu(unsigned int cpu_no)
+typedef Token<Scanner_policy_identifier_with_underline> Tid_token;
+
+
+Platform_thread::Platform_thread(const char *name, unsigned, addr_t)
 {
-	PERR("not yet implemented");
-}
-
-
-int Platform_thread::start(void *ip, void *sp, unsigned int cpu_no)
-{
-	PWRN("not implemented");
-	return -1;
-}
-
-
-void Platform_thread::pause()
-{
-	PWRN("not implemented");
-}
-
-
-void Platform_thread::resume()
-{
-	PWRN("not implemented");
-}
-
-
-int Platform_thread::state(Thread_state *state_dst)
-{
-	PWRN("not implemented");
-	return -1;
+	PWRN("%s: Not implemented", __PRETTY_FUNCTION__);
 }
 
 
 void Platform_thread::cancel_blocking()
 {
-	PWRN("not implemented");
+	PWRN("%s: Not implemented", __PRETTY_FUNCTION__);
+//	PDBG("send cancel-blocking signal to %ld\n", _tid);
+//	lx_tgkill(_pid, _tid, LX_SIGUSR1);
 }
 
 
-unsigned long Platform_thread::pager_object_badge() const
+void Platform_thread::pause()
 {
-	PWRN("not implemented");
-	return -1;
+	PWRN("%s: Not implemented", __PRETTY_FUNCTION__);
 }
 
 
-Platform_thread::Platform_thread(const char *name, unsigned, addr_t,
-                                 int thread_id)
+void Platform_thread::resume()
 {
-	PWRN("not implemented");
-}
-
-
-Platform_thread::~Platform_thread()
-{
-	PWRN("not implemented");
+	PWRN("%s: Not implemented", __PRETTY_FUNCTION__);
 }

@@ -10,6 +10,7 @@ namespace Spartan
 #include <sys/types.h>
 #include <abi/ipc/ipc.h>
 #include <abi/ipc/methods.h>
+#include <abi/mm/as.h>
 #include <abi/errno.h>
 
 #define __SYSCALL0(id) \
@@ -190,6 +191,18 @@ namespace Spartan
 	 ***************/
 	int usleep(Genode::addr_t usec);
 	void udelay(Genode::addr_t time);
+
+	/***************************
+	 * Address spaces handling *
+	 ***************************/
+	enum {
+		PROT_READ = AS_AREA_READ,
+		PROT_WRITE = AS_AREA_WRITE,
+	};
+	void *as_area_create(void *base, size_t size, unsigned int flags);
+	int as_area_resize(void *address, size_t size, unsigned int flags);
+	int as_area_destroy(void *address);
+	int as_area_change_flags(void *address, unsigned int flags);
 }
 
 #endif /* SPARTAN_SYSCALL */

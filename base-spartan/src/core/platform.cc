@@ -18,7 +18,6 @@
 #include "platform.h"
 #include "core_env.h"
 
-
 using namespace Genode;
 
 
@@ -33,23 +32,21 @@ static void signal_handler(int signum)
 
 
 Platform::Platform()
-: _ram_alloc(0)
+	: _ram_alloc(0)
 {
 	/**
-	 * TODO:
-	 * - register with dummy nameserv
-	 * - gain phone handly to myself
-	 */
+	 * * TODO:
+	 * * - register with dummy nameserv
+	 * * - gain phone handly to myself
+	 * */
 
 	_ram_alloc.add_range((addr_t)_some_mem, sizeof(_some_mem));
-	while(1);
 }
 
 
 void Platform::wait_for_exit()
 {
 	/* block until exit condition is satisfied */
-	while(1);
 	try { _wait_for_exit_lock.lock(); }
 	catch (Blocking_canceled) { };
 }
@@ -57,3 +54,4 @@ void Platform::wait_for_exit()
 void Core_parent::exit(int exit_value)
 {
 }
+

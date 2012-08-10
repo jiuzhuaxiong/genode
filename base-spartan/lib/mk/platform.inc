@@ -8,7 +8,8 @@ SPARTAN_SYS_INC += syscall.h \
 		   abi/ipc/methods.h \
 		   abi/errno.h \
 		   abi/synch.h \
-                   abi/syscall.h
+                   abi/syscall.h \
+                   abi/mm/as.h
 
 all: $(addprefix $(BUILD_BASE_DIR)/include/,$(SPARTAN_SYS_INC))
 
