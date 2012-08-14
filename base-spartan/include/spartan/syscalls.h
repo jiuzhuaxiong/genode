@@ -159,6 +159,11 @@ namespace Spartan
 	int ipc_forward_fast(Genode::Native_ipc_callid callid, int phoneid,
 			Genode::addr_t imethod, Genode::addr_t arg1,
 			Genode::addr_t arg2, unsigned int mode);
+	int ipc_forward_slow(Genode::Native_ipc_callid callid, int phoneid,
+			Genode::addr_t imethod, Genode::addr_t arg1,
+			Genode::addr_t arg2, Genode::addr_t arg3,
+			Genode::addr_t arg4, Genode::addr_t arg5,
+			unsigned int mode);
 
 	/** Wrappers for IPC_M_DATA_WRITE calls. */
 	int ipc_data_write_start_synch(int phoneid, 

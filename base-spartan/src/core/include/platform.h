@@ -25,13 +25,17 @@
 
 namespace Genode {
 
-	using namespace Genode;
+	enum {
+		PHONE_TO_NAMESERV = 0,
+	};
 
 	class Platform : public Platform_generic
 	{
 		private:
 
 			Synchronized_range_allocator<Allocator_avl> _ram_alloc;  /* RAM allocator */
+
+			addr_t _phonehash_nameserv;
 
 		public:
 
@@ -40,6 +44,10 @@ namespace Genode {
 			 */
 			Platform();
 
+			addr_t nameserv_phonehash()
+			{
+				return _phonehash_nameserv;
+			}
 
 			/********************************
 			 ** Generic platform interface **
