@@ -66,13 +66,13 @@ bool _receive_capability(Msgbuf_base *rcv_msg)
 void Ipc_ostream::_send()
 {
 	/* insert number of capabilities to be send into msgbuf */
-	printf("Ipc_ostream:\tbefore: _snd_msg->buf[0]=%i, _snd_msg->cap_count()=%lu\n", _snd_msg->buf[0], _snd_msg->cap_count());
 	_snd_msg->buf[0] = _snd_msg->cap_count();
-	printf("Ipc_ostream:\tafter:  _snd_msg->buf[0]=%i\n", _snd_msg->buf[0]);
+	PDBG("_snd_msg->buf[0]=%i, _snd_msg->cap_count()=%lu", _snd_msg->buf[0], _snd_msg->cap_count());
 	/* perform IPC send operation
 	 *
 	 * Check whether the phone_id is valid and send the message
 	 */
+	PDBG("sending via phone %i", _dst.dst().snd_phone);
 	if(_dst.dst().snd_phone < 1 ||
 		Spartan::ipc_data_write_start_synch(_dst.dst().snd_phone,
 			_dst.dst().rcv_thread_id, _snd_msg->buf, _snd_msg->size()) != 0 ) {

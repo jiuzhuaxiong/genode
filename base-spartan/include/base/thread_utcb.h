@@ -24,12 +24,12 @@ namespace Genode {
 
 		public:
 			explicit Thread_utcb()
-			: _task_id(Spartan::task_get_id()),
-			  _thread_id(Spartan::thread_get_id()) {}
+			: _task_id(Spartan::task_get_id()) { }
 			~Thread_utcb();
 
 			Native_task	task_id() { return _task_id; }
 			Native_thread_id thread_id() { return _thread_id; }
+			void		set_thread_id(Native_thread_id tid);
 			void		insert_call(Ipc_call call);
 			Ipc_call	get_next_call(addr_t imethod=0);
 			Ipc_call	wait_for_call(addr_t imethod=0);

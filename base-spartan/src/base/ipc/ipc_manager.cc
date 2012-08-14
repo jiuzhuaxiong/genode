@@ -44,6 +44,17 @@ Ipc_manager::_get_thread(Native_thread_id thread_id)
 	return -1;
 }
 
+int
+Ipc_manager::_get_thread(Thread_utcb* utcb)
+{
+	Lock::Guard lock(_thread_lock);
+	for(addr_t i=0; i<_thread_count; i++)
+		if(_threads[i] == utcb)
+			return i;
+
+	return -1;
+}
+
 /*
 Thread_utcb*
 Ipc_manager::my_thread()
@@ -112,27 +123,30 @@ Ipc_manager::loop_answerbox()
 }
 
 bool
-Ipc_manager::register_thread()
+Ipc_manager::register_thread(Thread_utcb* utcb)
 {
 	if(_thread_count >= MAX_THREAD_COUNT)
 		return false;
 
-	Native_utcb *my_utcb = Thread_base::myself()->utcb();
-	printf("Ipc_manager:\t my_utcb = %i\n", my_utcb);
-
-	printf("Ipc_manager:\tregistering new thread with thread_id=%lu\n", my_utcb->thread_id());
-	Lock::Guard lock(_thread_lock);
-	_threads[_thread_count++] = my_utcb;
+	int pos = _get_thread(utcb);
+	if (pos >= 0) {
+		printf("Ipc_manager:\tregistering new thread with thread_id=%lu while utcb=%lu\n", utcb->thread_id(), utcb);
+		Lock::Guard lock(_thread_lock);
+		_threads[_thread_count++] = utcb;
+	}
 	return true;
 }
 
 void
-Ipc_manager::unregister_thread()
+Ipc_manager::unregister_thread(Thread_utcb* utcb)
 {
-	Native_thread_id thread_id = Thread_base::myself()->tid();
+	Native_thread_id thread_id = utcb->thread_id();//Thread_base::myself()->tid();
+
+	int pos = _get_thread(thread_id);
+	if (pos < 0)
+		return;
 
 	Lock::Guard lock(_thread_lock);
-	int pos = _get_thread(thread_id);
 	for(int i=pos; i<(_thread_count-1); i++)
 		_threads[i] = _threads[i+1];
 }
