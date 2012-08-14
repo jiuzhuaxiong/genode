@@ -21,9 +21,6 @@
 using namespace Genode;
 
 
-static void empty_signal_handler(int) { }
-
-
 static void thread_start(void *)
 {
 /*	

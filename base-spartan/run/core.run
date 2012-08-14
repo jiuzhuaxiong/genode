@@ -1,4 +1,4 @@
-build "tests/spartan_nameserv core"
+build "nameserv core"
 
 create_boot_directory
 

@@ -25,20 +25,17 @@ static char _some_mem[80*1024];
 static Lock _wait_for_exit_lock(Lock::LOCKED);  /* exit() sync */
 
 
-static void signal_handler(int signum)
-{
-	_wait_for_exit_lock.unlock();
-}
-
-
 Platform::Platform()
 	: _ram_alloc(0)
 {
+	addr_t tid_nameserv;
 	/**
-	 * * TODO:
-	 * * - register with dummy nameserv
-	 * * - gain phone handly to myself
-	 * */
+	 * TODO:
+	 * - register with dummy nameserv
+	 * - gain phone handly to myself
+	 */
+	Spartan::ipc_connect_to_me(PHONE_TO_NAMESERV, Spartan::thread_get_id(),
+	                           0, 0, &tid_nameserv, &_phonehash_nameserv);
 
 	_ram_alloc.add_range((addr_t)_some_mem, sizeof(_some_mem));
 }

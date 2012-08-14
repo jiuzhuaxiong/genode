@@ -353,6 +353,24 @@ int Spartan::ipc_forward_fast(Native_ipc_callid callid, int phoneid,
 		arg2, mode);
 }
 
+int Spartan::ipc_forward_slow(Native_ipc_callid callid, int phoneid,
+		addr_t imethod, addr_t arg1, addr_t arg2, addr_t arg3,
+		addr_t arg4, addr_t arg5, unsigned int mode)
+{
+	Native_ipc_call native_call;
+
+	IPC_SET_IMETHOD(native_call, imethod);
+	IPC_SET_ARG1(native_call, arg1);
+	IPC_SET_ARG2(native_call, arg2);
+	IPC_SET_ARG3(native_call, arg3);
+	IPC_SET_ARG4(native_call, arg4);
+	IPC_SET_ARG5(native_call, arg5);
+
+	return __SYSCALL4(SYS_IPC_FORWARD_SLOW, callid, phoneid,
+			(sysarg_t) &native_call, mode);
+}
+
+
 int Spartan::ipc_data_write_start_synch(int phoneid, Native_thread_id dst_thread,
 		const void *src, size_t size, bool is_reply)
 {
