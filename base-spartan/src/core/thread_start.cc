@@ -58,10 +58,11 @@ void Thread_base::start()
 	addr_t stack_size = (addr_t) _context->stack - (addr_t) _context->stack_base; //8192;//16384;
 //	void* stack_elem = (void*) (_context->stack_base+1024);
 	PDBG("*_context=%i, *_context->stack=%i, _context->stack_base=%i, stack_size=%i", _context, _context->stack, _context->stack_base, stack_size);
-	PDBG("stack_size = %lu", stack_size);
 	_tid = Spartan::thread_create((void*) &thread_start,
 	                              (void *) (_context->stack_base),
 	                              stack_size, _context->name);
+	utcb()->set_thread_id(_tid);
+	PDBG("new thread_id = %lu", _tid);
 	PWRN("%s: NEEDS FIX", __PRETTY_FUNCTION__);
 }
 
@@ -71,3 +72,4 @@ void Thread_base::cancel_blocking()
 	PWRN("%s: Not implemented, seems to be that Core doesn't need it",
 	     __PRETTY_FUNCTION__);
 }
+

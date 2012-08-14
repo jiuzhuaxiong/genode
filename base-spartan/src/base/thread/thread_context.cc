@@ -2,6 +2,8 @@
 #include <base/thread_utcb.h>
 #include <base/ipc_manager.h>
 
+#include <base/printf.h>
+
 #include <spartan/syscalls.h>
 
 using namespace Genode;
@@ -15,13 +17,12 @@ Native_utcb *main_thread_utcb()
 
 void Thread_base::_init_platform_thread()
 {
-	_tid = Spartan::thread_get_id();
-	Ipc_manager::singleton()->register_thread();
+	PWRN("Not implemented and not needed.");
 }
 
 void Thread_base::_deinit_platform_thread()
 {
-	Ipc_manager::singleton()->unregister_thread();
+	PWRN("Not implemented and not needed.");
 }
 
 Native_utcb *Thread_base::utcb()

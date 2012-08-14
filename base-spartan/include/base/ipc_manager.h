@@ -30,6 +30,7 @@ namespace Genode {
 
 			bool			_create();
 			int			_get_thread(Native_thread_id thread_id);
+			int			_get_thread(Thread_utcb* utcb);
 
 		public:
 			static Ipc_manager*	singleton()
@@ -40,8 +41,8 @@ namespace Genode {
 //			Thread_utcb*	my_thread();
 			void		wait_for_calls();
 			void		loop_answerbox();
-			bool		register_thread();
-			void		unregister_thread();
+			bool		register_thread(Thread_utcb* utcb);
+			void		unregister_thread(Thread_utcb *utcb);
 	};
 }
 

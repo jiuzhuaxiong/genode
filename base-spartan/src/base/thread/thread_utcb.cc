@@ -2,7 +2,10 @@
 #include <base/ipc_call.h>
 #include <base/ipc_manager.h>
 
+#include <base/printf.h>
+
 using namespace Genode;
+
 
 Thread_utcb::~Thread_utcb()
 {
@@ -13,6 +16,14 @@ Thread_utcb::~Thread_utcb()
 		 * maybe it would be better to use HANGUP as returncode? */
 		Spartan::ipc_answer_0(del_call.callid(), THREAD_KILLED);
 	}
+	Ipc_manager::singleton()->unregister_thread(this);
+}
+
+void
+Thread_utcb::set_thread_id(Native_thread_id tid)
+{
+	_thread_id = tid;
+	Ipc_manager::singleton()->register_thread(this);
 }
 
 void
