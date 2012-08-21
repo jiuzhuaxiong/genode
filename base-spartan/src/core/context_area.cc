@@ -1,7 +1,8 @@
 /*
- * \brief  Linux-specific support code for the thread API
+ * \brief  Spartan-specific support code for the thread API
  * \author Norman Feske
- * \date   2010-01-13
+ * \author Tobias Börtitz
+ * \date   2012-08-14
  */
 
 /*
@@ -53,14 +54,7 @@ class Context_area_rm_session : public Genode::Rm_session
 			/* use anonymous mmap for allocating stack backing store */
 //			int   flags = MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE;
 			int   prot  = Spartan::PROT_READ | Spartan::PROT_WRITE;
-			PDBG("Context_area_rm_session::attach size for mmap = %lu to %i", size, dest);
-			/*
-			 * FIXME:
-			 * allocating fixed size of 8K for the stack since
-			 * we can't determine the size of the stack when creating
-			 * the thread */
-			void *res = Spartan::as_area_create((void*)addr, size/*16384 8192*/, prot);
-			PDBG("*res = %i", res);
+			void *res = Spartan::as_area_create((void*)addr, size, prot);
 
 			if (res != dest)
 				throw Region_conflict();
@@ -69,7 +63,10 @@ class Context_area_rm_session : public Genode::Rm_session
 		}
 
 		void detach(Local_addr local_addr) {
-			PWRN("context area detach from 0x%p - not implemented", (void *)local_addr); }
+			//PWRN("context area detach from 0x%p - not implemented", (void *)local_addr);
+			if (local_addr)
+				Spartan::as_area_destroy((void*) local_addr);
+		}
 
 		Genode::Pager_capability add_client(Genode::Thread_capability) {
 			return Genode::Pager_capability(); }

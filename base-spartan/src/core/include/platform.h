@@ -1,8 +1,9 @@
 /*
- * \brief  Linux platform
+ * \brief  Spartan platform
  * \author Christian Helmuth
  * \author Norman Feske
- * \date   2007-09-10
+ * \author Tobias Börtitz
+ * \date   2012-08-14
  */
 
 /*
@@ -12,8 +13,8 @@
  * under the terms of the GNU General Public License version 2.
  */
 
-#ifndef _CORE__INCLUDE__LINUX__PLATFORM_H_
-#define _CORE__INCLUDE__LINUX__PLATFORM_H_
+#ifndef _CORE__INCLUDE__SPARTAN__PLATFORM_H_
+#define _CORE__INCLUDE__SPARTAN__PLATFORM_H_
 
 #include <base/sync_allocator.h>
 #include <base/allocator_avl.h>
@@ -67,4 +68,4 @@ namespace Genode {
 	};
 }
 
-#endif /* _CORE__INCLUDE__PLATFORM_H_ */
+#endif /* _CORE__INCLUDE__SPARTAN__PLATFORM_H_ */

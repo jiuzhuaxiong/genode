@@ -1,7 +1,8 @@
 /*
- * \brief  Linux-specific dataspace interface
+ * \brief  Spartan-specific dataspace interface
  * \author Norman Feske
- * \date   2006-07-05
+ * \author Tobias Börtitz
+ * \date   2012-08-14
  */
 
 /*

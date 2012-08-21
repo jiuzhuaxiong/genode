@@ -1,5 +1,5 @@
 /*
- * \brief  Core-specific instance of the IRQ session interface for Linux
+ * \brief  Core-specific instance of the IRQ session interface for Spartan
  * \author Christian Helmuth
  * \date   2007-09-13
  */
@@ -11,8 +11,8 @@
  * under the terms of the GNU General Public License version 2.
  */
 
-#ifndef _CORE__INCLUDE__LINUX__IRQ_SESSION_COMPONENT_H_
-#define _CORE__INCLUDE__LINUX__IRQ_SESSION_COMPONENT_H_
+#ifndef _CORE__INCLUDE__SPARTAN__IRQ_SESSION_COMPONENT_H_
+#define _CORE__INCLUDE__SPARTAN__IRQ_SESSION_COMPONENT_H_
 
 #include <util/list.h>
 #include <base/lock.h>
@@ -57,4 +57,4 @@ namespace Genode {
 	};
 }
 
-#endif /* _CORE__INCLUDE__LINUX__IRQ_SESSION_COMPONENT_H_ */
+#endif /* _CORE__INCLUDE__SPARTAN__IRQ_SESSION_COMPONENT_H_ */

@@ -1,11 +1,32 @@
-#include <spartan/syscalls.h>
+/*
+ * \brief  Implementation of Spartan-exclusive ipc dispatcher
+ * \author Tobias Börtitz
+ * \date   20122-08-14
+ */
+
+/*
+ * Copyright (C) 2009-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
+/* Genode includes */
 #include <base/native_types.h>
 #include <base/printf.h>
 #include <base/ipc_call.h>
 #include <base/ipc_manager.h>
 #include <base/thread.h>
 
+/* Spartan includes */
+#include <spartan/syscalls.h>
+
 using namespace Genode;
+
+
+/**********************
+ ** Helper functions **
+ **********************/
 
 void _manager_thread_entry()
 {
@@ -18,20 +39,25 @@ void _manager_thread_entry()
 }
 
 
+/*****************
+ ** Ipc Manager **
+ *****************/
+
 bool
 Ipc_manager::_create()
 {
 	if(_thread_id == Spartan::INVALID_ID) {
 		static char stack[STACK_SIZE];
-		printf("Ipc_manager:\tinitializing manager thread!\n");
+		PDBG("initializing manager thread!\n");
 
 		_thread_id = Spartan::thread_create((void*)_manager_thread_entry, &stack, STACK_SIZE,
-				"manager_thread");
-		printf("Ipc_manager:\t new thread has id %lu\n", _thread_id);
+		                                    "manager_thread");
+		PDBG(" new thread has id %lu\n", _thread_id);
 	}
 
 	return _initialized;
 }
+
 
 int
 Ipc_manager::_get_thread(Native_thread_id thread_id)
@@ -44,6 +70,7 @@ Ipc_manager::_get_thread(Native_thread_id thread_id)
 	return -1;
 }
 
+
 int
 Ipc_manager::_get_thread(Thread_utcb* utcb)
 {
@@ -55,26 +82,13 @@ Ipc_manager::_get_thread(Thread_utcb* utcb)
 	return -1;
 }
 
-/*
-Thread_utcb*
-Ipc_manager::my_thread()
-{
-	int pos;
-	Native_thread_id thread_id = Spartan::thread_get_id();
-
-//	printf("Ipc_manager:\tlooking for thread with id %lu\n", thread_id);
-	if((pos = _get_thread(thread_id)) < 0)
-		return 0;
-
-	return _threads[pos];
-}
-*/
 
 void
 Ipc_manager::wait_for_calls()
 {
 	_create();
 }
+
 
 void
 Ipc_manager::loop_answerbox()
@@ -87,23 +101,23 @@ Ipc_manager::loop_answerbox()
 
 	/* loop forever and grab all incomming calls */
 	while(1) {
-		Genode::Native_ipc_callid	callid = 0;
-		Genode::Native_ipc_call		n_call;
-		callid = Spartan::ipc_wait_for_call_timeout(&n_call, 0);
+		Genode::Native_ipc_callid callid = 0;
+		Genode::Native_ipc_call   new_call;
+		callid = Spartan::ipc_wait_for_call_timeout(&new_call, 0);
 
-		printf("Ipc_manager:\treceived incomming call\n"
-			"\t\tIMETHOD=%lu, ARG1=%lu(destination task), "
-			"ARG2=%lu(destination thread), ARG3=%lu(sending thread), "
-			"ARG4=%lu, ARG5=%lu\n", IPC_GET_IMETHOD(n_call),
-			IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call),
-			IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call),
-			IPC_GET_ARG5(n_call));
+		PDBG("Ipc_manager:\treceived incomming call\n"
+		     "\t\tIMETHOD=%lu, ARG1=%lu(destination task), "
+		     "ARG2=%lu(destination thread), ARG3=%lu(sending thread), "
+		     "ARG4=%lu, ARG5=%lu\n", IPC_GET_IMETHOD(new_call),
+		     IPC_GET_ARG1(new_call), IPC_GET_ARG2(new_call),
+		     IPC_GET_ARG3(new_call), IPC_GET_ARG4(new_call),
+		     IPC_GET_ARG5(new_call));
 
-		Ipc_call call = Ipc_call(callid, n_call);
+		Ipc_call call = Ipc_call(callid, new_call);
 		int thread_pos;
 		if((thread_pos = _get_thread(call.dest_thread_id())) < 0) {
 			/* there is no such thread */
-			printf("Ipc_manager:\trejecting call\n");
+			PDBG("Ipc_manager:\trejecting call\n");
 			Spartan::ipc_answer_0(callid, -1);
 			continue;
 		}
@@ -113,7 +127,7 @@ Ipc_manager::loop_answerbox()
 				_threads[thread_pos]->insert_call(call);
 			} catch (Ipc_call_queue::Overflow) {
 				/* could not insert call */
-				printf("Ipc_manager:\trejecting call\n");
+				PDBG("Ipc_manager:\trejecting call\n");
 				Spartan::ipc_answer_0(callid, -1);
 			}
 		}
@@ -122,6 +136,7 @@ Ipc_manager::loop_answerbox()
 	}
 }
 
+
 bool
 Ipc_manager::register_thread(Thread_utcb* utcb)
 {
@@ -129,18 +144,20 @@ Ipc_manager::register_thread(Thread_utcb* utcb)
 		return false;
 
 	int pos = _get_thread(utcb);
-	if (pos >= 0) {
-		printf("Ipc_manager:\tregistering new thread with thread_id=%lu while utcb=%lu\n", utcb->thread_id(), utcb);
+	if (pos < 0) {
+		PDBG("registering new thread with thread_id=%lu "
+		     "while utcb=%lu\n", utcb->thread_id(), utcb);
 		Lock::Guard lock(_thread_lock);
 		_threads[_thread_count++] = utcb;
 	}
 	return true;
 }
 
+
 void
 Ipc_manager::unregister_thread(Thread_utcb* utcb)
 {
-	Native_thread_id thread_id = utcb->thread_id();//Thread_base::myself()->tid();
+	Native_thread_id thread_id = utcb->thread_id();
 
 	int pos = _get_thread(thread_id);
 	if (pos < 0)

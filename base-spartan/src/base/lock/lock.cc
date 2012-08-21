@@ -1,7 +1,7 @@
 /*
  * \brief  Lock implementation
- * \author Norman Feske
- * \date   2007-10-15
+ * \author Tobias Börtitz
+ * \date   2012-08-14
  */
 
 /*
@@ -24,8 +24,10 @@ using namespace Genode;
 Cancelable_lock::Cancelable_lock(Cancelable_lock::State initial)
 : _native_lock(UNLOCKED)
 {
-	/* call wakeup so the first thread calling sleep
-	 *  will return immediately */
+	/**
+	 * Call wakeup so the first thread calling sleep
+	 *  will return immediately
+	 */
 	Spartan::futex_wakeup(&_native_lock);
 
 	if (initial == LOCKED)
@@ -38,9 +40,11 @@ void Cancelable_lock::lock()
 	if (Spartan::futex_sleep(&_native_lock) == -1)
 		throw Genode::Blocking_canceled();
 
-	/* when returning from sleeping state set lock variable to locked
-	 * using cmpxchg is not needed since this is happening when
-	 *  the lock is already aquired */
+	/**
+	 * When returning from sleeping state set lock variable to locked.
+	 * Using cmpxchg is not needed since this is happening when
+	 *  the lock is already aquired
+	 */
 	_native_lock = LOCKED;
 }
 

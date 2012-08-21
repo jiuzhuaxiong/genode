@@ -1,7 +1,8 @@
 /*
  * \brief  Thread interface
  * \author Norman Feske
- * \date   2006-04-28
+ * \author Tobias Börtitz
+ * \date   2012-08-14
  *
  * For storing thread-specific data (called thread context) such as the stack
  * and thread-local data, there is a dedicated portion of the virtual address
@@ -59,6 +60,7 @@
 #include <ram_session/ram_session.h>  /* for 'Ram_dataspace_capability' type */
 #include <cpu_session/cpu_session.h>  /* for 'Thread_capability' type */
 
+/* spartan specific includes */
 #include <base/thread_utcb.h>
 
 

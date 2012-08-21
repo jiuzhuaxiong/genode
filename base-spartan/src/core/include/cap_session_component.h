@@ -11,8 +11,8 @@
  * under the terms of the GNU General Public License version 2.
  */
 
-#ifndef _CORE__INCLUDE__LINUX__CAP_SESSION_COMPONENT_H_
-#define _CORE__INCLUDE__LINUX__CAP_SESSION_COMPONENT_H_
+#ifndef _CORE__INCLUDE__SPARTAN__CAP_SESSION_COMPONENT_H_
+#define _CORE__INCLUDE__SPARTAN__CAP_SESSION_COMPONENT_H_
 
 #include <cap_session/cap_session.h>
 #include <base/rpc_server.h>
@@ -44,4 +44,4 @@ namespace Genode {
 	};
 }
 
-#endif /* _CORE__INCLUDE__LINUX__CAP_SESSION_COMPONENT_H_ */
+#endif /* _CORE__INCLUDE__SPARTAN__CAP_SESSION_COMPONENT_H_ */

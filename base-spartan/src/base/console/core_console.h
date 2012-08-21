@@ -1,6 +1,21 @@
-#include <spartan/syscalls.h>
+/*
+ * \brief  Spartan-specific implementation of Core_console
+ * \author Tobias Börtitz
+ * \date   2012-08-14
+ */
 
+/*
+ * Copyright (C) 2010-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
+/* Genode includes */
 #include <base/console.h>
+
+/* Spartan includes */
+#include <spartan/syscalls.h>
 
 namespace Genode
 {

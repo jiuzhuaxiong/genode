@@ -1,7 +1,8 @@
 /*
- * \brief  OKL4-specific layout of IPC message buffer
+ * \brief  Spartan-specific layout of IPC message buffer
  * \author Norman Feske
- * \date   2009-03-25
+ * \author Tobias Brtitz
+ * \date   2012-08-14
  *
  */
 
@@ -15,7 +16,6 @@
 #ifndef _INCLUDE__BASE__IPC_MSGBUF_H_
 #define _INCLUDE__BASE__IPC_MSGBUF_H_
 
-#include <base/printf.h>
 
 namespace Genode {
 
@@ -36,6 +36,7 @@ namespace Genode {
 
 			/* Capabilities to be send / received */
 			Native_capability _caps[MAX_CAP_ARGS];
+
 			/* Number of capabilities to be send / received */
 			addr_t _cap_count;
 
@@ -60,7 +61,6 @@ namespace Genode {
 			/**
 			 * Reset all capabilities in buffer
 			 */
-
 			inline void cap_reset() { _cap_count = 0; };
 			inline addr_t cap_count() { return _cap_count; };
 			inline addr_t max_cap_count() { return MAX_CAP_ARGS; };

@@ -1,11 +1,27 @@
+/*
+ * \brief  Implementation of Spartan-exclusive call queue
+ * \author Tobias Börtitz
+ * \date   20122-08-14
+ */
+
+/*
+ * Copyright (C) 2009-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
+/* Genode includes */
 #include <base/ipc_call_queue.h>
 #include <base/printf.h>
 
 using namespace Genode;
 
-/********************
- * helper functions *
- ********************/
+
+/**********************
+ ** helper functions **
+ **********************/
+
 bool
 _i_lt_head(int i, int head, int tail)
 {
@@ -18,10 +34,15 @@ _i_lt_head(int i, int head, int tail)
 		return i >= tail ? true : i<(head-1);
 }
 
+
+/********************
+ ** Ipc_call_queue **
+ ********************/
+
 void
 Ipc_call_queue::insert_new(Ipc_call new_call)
 {
-	printf("Ipc_call_queue:\tstarting to insert new call\n");
+	PDBG("Ipc_call_queue:\tstarting to insert new call\n");
 	/* lock the queue for writing */
 	Lock::Guard write_lock(_write_lock);
 	try {
@@ -31,6 +52,7 @@ Ipc_call_queue::insert_new(Ipc_call new_call)
 		throw Overflow();
 	}
 }
+
 
 Ipc_call
 Ipc_call_queue::get_first(addr_t imethod)
@@ -86,6 +108,7 @@ Ipc_call_queue::get_first(addr_t imethod)
 
 	return ret_call;
 }
+
 
 Ipc_call
 Ipc_call_queue::get_last(void)

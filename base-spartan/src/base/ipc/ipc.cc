@@ -1,7 +1,7 @@
 /*
- * \brief  IPC implementation for OKL4
- * \author Norman Feske
- * \date   2009-03-25
+ * \brief  IPC implementation for Spartan
+ * \author Tobias Börtitz
+ * \date   20122-08-14
  */
 
 /*
@@ -11,22 +11,23 @@
  * under the terms of the GNU General Public License version 2.
  */
 
+/* Genode includes */
 #include <base/printf.h>
 #include <base/ipc.h>
 #include <base/native_types.h>
 #include <base/ipc_call.h>
-//#include <base/ipc_manager.h>
 #include <base/thread.h>
 
+/* Spartan includes */
 #include <spartan/syscalls.h>
 
 using namespace Genode;
 
+
 enum {
 	PHONE_CORE = 0,
-
-	IPC_CONNECTION_REQUEST = 30,
 };
+
 
 /**********************
  ** helper functions **
@@ -41,23 +42,21 @@ int _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 	                                     snd_cap.dst().snd_phone);
 }
 
+
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
-
-//	Ipc_call call = Ipc_manager::singleton()->my_utcb()->wait_for_call(
-//			IPC_M_CONNECTION_CLONE);
-
 	Ipc_call call = Thread_base::myself()->utcb()->wait_for_call(
 	                 IPC_M_CONNECTION_CLONE);
 
-	Ipc_destination dest = {call.target_thread_id(), call.cloned_phone()};
-	Native_capability  cap = Native_capability(dest, call.capability_id());
+	Ipc_destination  dest = {call.target_thread_id(), call.cloned_phone()};
+	Native_capability cap = Native_capability(dest, call.capability_id());
 	Spartan::ipc_answer_0(call.callid(), 0);
 
-	printf("_receive_capability:\tincomming phone = %i\n", cap.dst().snd_phone);
+	PDBG("_receive_capability:\tincomming phone = %i", cap.dst().snd_phone);
 
 	return rcv_msg->cap_append(cap);
 }
+
 
 /*****************
  ** Ipc_ostream **
@@ -72,7 +71,7 @@ void Ipc_ostream::_send()
 	 *
 	 * Check whether the phone_id is valid and send the message
 	 */
-	PDBG("sending via phone %i", _dst.dst().snd_phone);
+	PDBG("thread %lu: sending via phone %i to thread %lu", Spartan::thread_get_id(), _dst.dst().snd_phone, _dst.dst().rcv_thread_id);
 	if(_dst.dst().snd_phone < 1 ||
 		Spartan::ipc_data_write_start_synch(_dst.dst().snd_phone,
 			_dst.dst().rcv_thread_id, _snd_msg->buf, _snd_msg->size()) != 0 ) {
@@ -110,17 +109,14 @@ Ipc_ostream::Ipc_ostream(Native_capability dst, Msgbuf_base *snd_msg)
 
 void Ipc_istream::_wait()
 {
-	Ipc_call		call;
-	addr_t			size;
+	Ipc_call call;
+	addr_t   size;
 
-	/*
-	 * Wait for IPC message
-	 */
-//	call = Ipc_manager::singleton()->my_utcb()->wait_for_call();
+	/* Wait for IPC message */
 	call = Thread_base::myself()->utcb()->wait_for_call();
 	printf("Ipc_istream:\tgot call with callid %lu\n", call.callid());
 	if(call.call_method() != IPC_M_DATA_WRITE) {
-		/* unknown sender */
+		/* wrong method send */
 		printf("Ipc_istream:\twrong call method (call.call_method()!=IPC_M_DATA_WRITE)!\n");
 		Spartan::ipc_answer_0(call.callid(), -1);
 		return;
@@ -133,15 +129,13 @@ void Ipc_istream::_wait()
 	 * -> which policy should be implemented?
 	 */
 	int ret = Spartan::ipc_data_write_finalize(_rcv_msg->callid, _rcv_msg->buf, size);
-	printf("Ipc_istream:\twrite finalize returned %i\n", ret);
+	PDBG("Ipc_istream:\twrite finalize returned %i\n", ret);
 
 	/* set dst so it can be used in Ipc_server */
-//	Ipc_destination dest = {call.snd_thread_id(), 0};
-//	_dst = Native_capability(dest, _dst.dst().local_name());
 	_dst.rcv_thread_id = call.snd_thread_id();
 
 	/* extract all retrieved capailities */
-	printf("Ipc_istream:\t_rcv_msg->buf[0] = %i\n", _rcv_msg->buf[0]);
+	PDBG("Ipc_istream:\t_rcv_msg->buf[0] = %i\n", _rcv_msg->buf[0]);
 	for(int i=0; i<_rcv_msg->buf[0]; i++) {
 		_receive_capability(_rcv_msg);
 	}
@@ -149,6 +143,7 @@ void Ipc_istream::_wait()
 	/* reset unmarshaller */
 	_read_offset = sizeof(addr_t);
 }
+
 
 Ipc_istream::Ipc_istream(Msgbuf_base *rcv_msg)
 :
@@ -169,15 +164,8 @@ Ipc_istream::~Ipc_istream() { }
 void Ipc_client::_call()
 {
 	Ipc_ostream::_send();
-	/* TODO remove busy waiting */
-	/*
-	printf("Ipc_client::_call() *my_thread=%i", Ipc_manager::singleton()->my_thread());
-	Ipc_call call = Ipc_manager::singleton()->my_thread()->get_reply();
-	while(call.callid() == 0)
-		Ipc_call call = Ipc_manager::singleton()->my_thread()->get_reply();
-	*/
-	/* request the answer from the server
-	 *
+	/**
+	 * request the answer from the server
 	 * Check whether the phone_id is valid and request the message
 	 */
 	if(Ipc_ostream::_dst.dst().snd_phone < 1 ||
@@ -194,6 +182,7 @@ void Ipc_client::_call()
 	}
 	_read_offset = sizeof(addr_t);
 }
+
 
 Ipc_client::Ipc_client(Native_capability const &srv,
                        Msgbuf_base *snd_msg, Msgbuf_base *rcv_msg)
@@ -217,6 +206,7 @@ void Ipc_server::_prepare_next_reply_wait()
 	_read_offset = sizeof(addr_t);
 }
 
+
 void Ipc_server::_wait()
 {
 	/* wait for new server request */
@@ -230,18 +220,15 @@ void Ipc_server::_wait()
 	_prepare_next_reply_wait();
 }
 
+
 void Ipc_server::_reply()
 {
-//	Ipc_ostream::_send();
-	/* TODO remove busy waiting */
-//	Ipc_call call = Ipc_manager::singleton()->my_utcb()->get_reply();
 	Ipc_call call = Thread_base::myself()->utcb()->get_reply();
 	while(call.callid() == 0)
-//		call = Ipc_manager::singleton()->my_utcb()->get_reply();
 		call = Thread_base::myself()->utcb()->get_reply();
 
 	if(call.call_method() != IPC_M_DATA_READ) {
-		/* unknown sender */
+		/* wrong method send */
 		printf("Ipc_istream:\twrong call method (call.call_method()!=IPC_M_DATA_READ)!\n");
 		Spartan::ipc_answer_0(call.callid(), -1);
 		return;
@@ -257,6 +244,7 @@ void Ipc_server::_reply()
 	_prepare_next_reply_wait();
 }
 
+
 void Ipc_server::_reply_wait()
 {
 	if (_reply_needed)
@@ -264,6 +252,7 @@ void Ipc_server::_reply_wait()
 
 	_wait();
 }
+
 
 Ipc_server::Ipc_server(Genode::Msgbuf_base *snd_msg, Genode::Msgbuf_base *rcv_msg)
 :

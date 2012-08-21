@@ -1,10 +1,25 @@
+/*
+ * \brief  Spartan-specific Native_utcb implementation
+ * \author Tobias Börtitz
+ * \date   2012-08-14
+ */
+
+/*
+ * Copyright (C) 2010-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
 #ifndef _INCLUDE__BASE__THREAD_UTCB_H_
 #define _INCLUDE__BASE__THREAD_UTCB_H_
 
+/* Genode includes */
 #include <base/native_types.h>
 #include <base/ipc_call.h>
 #include <base/ipc_call_queue.h>
 #include <base/lock.h>
+
 
 namespace Genode {
 	enum {
@@ -14,13 +29,13 @@ namespace Genode {
 	class Thread_utcb
 	{
 		private:
-			Native_task		_task_id;
-			Native_thread_id	_thread_id;
-			Ipc_call_queue		_call_queue;
+			Native_task      _task_id;
+			Native_thread_id _thread_id;
+			Ipc_call_queue   _call_queue;
 
-			Ipc_call		_ipc_answer;
-			Lock			_answer_lock;
-			bool			_answer_used;
+			Ipc_call         _ipc_answer;
+			Semaphore        _answer_sem;
+			Lock             _answer_lock;
 
 		public:
 			explicit Thread_utcb()

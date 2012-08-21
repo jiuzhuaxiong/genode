@@ -14,6 +14,7 @@
 #ifndef _INCLUDE__BASE__IPC_PAGER_H_
 #define _INCLUDE__BASE__IPC_PAGER_H_
 
+/* Genode includes */
 #include <base/ipc.h>
 #include <base/stdint.h>
 #include <base/native_types.h>

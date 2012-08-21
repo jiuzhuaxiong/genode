@@ -1,6 +1,20 @@
+/*
+ * \brief  Spartan-specific queue preserving thread specific ipc calls
+ * \author Tobias Börtitz
+ * \date   2012-08-14
+ */
+
+/*
+ * Copyright (C) 2010-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
 #ifndef _INCLUDE__BASE__NATIVE_TYPES_H_
 #define _INCLUDE__BASE__NATIVE_TYPES_H_
 
+/* Genode includes */
 #include <base/native_capability.h>
 #include <base/stdint.h>
 
@@ -11,16 +25,17 @@ namespace Spartan {
 }
 
 namespace Genode {
-	/* TODO nasty work around
-	 * declaration taken from helenos/abi/include/ipc.ipc.h
+	/**
+	 * TODO: nasty work around
+	 * declaration taken from helenos/abi/include/ipc/ipc.h
 	 * It represents the maximum count of argument that can be passed 
-	 *  with a ipc call
+	 *  with one ipc call
 	 */
 	enum {
 		IPC_CALL_LEN = 6,
 	};
 
-	typedef volatile int Native_lock;
+	typedef volatile int     Native_lock;
 	typedef          addr_t Native_thread_id;
 	typedef          addr_t Native_thread;
 	typedef          addr_t Native_task;
@@ -42,7 +57,6 @@ namespace Genode {
 	{
 		typedef Ipc_destination Dst;
 		static bool valid(Dst tid) { return false; }
-//		static Dst  invalid()	{ return Dst(-1, -1, -1, -1, -1, -1); }
 		static Dst  invalid()
 		{
 			Dst dest;
@@ -52,8 +66,8 @@ namespace Genode {
 		}
 		static void copy(void* dst, Native_capability_tpl<Cap_dst_policy>* src);
 	};
-
 	typedef Native_capability_tpl<Cap_dst_policy> Native_capability;
+
 	typedef addr_t Native_connection_state;
 }
 
