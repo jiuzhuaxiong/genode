@@ -1,7 +1,7 @@
 /*
- * \brief  Simple roottask replacement for OKL4 that just prints some text
- * \author Norman Feske
- * \date   2008-09-01
+ * \brief  Simple nameserver for usage with Spartan
+ * \author Tobias Börtitz
+ * \date   2012-08-14
  */
 
 /*
@@ -31,6 +31,7 @@ enum {
 	TASK_ID_CORE = 3,
 };
 
+
 /*****************
  * Nameserv main *
  *****************/
@@ -48,6 +49,7 @@ int main()
 	while(1) {
 		callid = Spartan::ipc_wait_for_call_timeout(&native_call, 0);
 		call   = Ipc_call(callid, native_call);
+		PDBG("new message received");
 
 		if(call.snd_task_id() == TASK_ID_CORE
 		   && call.call_method() == IPC_M_CONNECT_TO_ME) {
@@ -57,6 +59,7 @@ int main()
 			Spartan::ipc_answer_0(call.callid(), 0);
 		}
 		else if (phone_core >= 0) {
+			PDBG("Forwarding receivedcall to Core");
 			/**
 			 * TODO:
 			 * optimize, so Spartan::ipc_forward_fast is used

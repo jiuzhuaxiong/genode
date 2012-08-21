@@ -1,7 +1,8 @@
 /*
- * \brief   Linux platform interface implementation
+ * \brief   Spartan platform interface implementation
  * \author  Norman Feske
- * \date    2006-06-13
+ * \author  Tobias Börtitz
+ * \date    2012-08-14
  */
 
 /*
@@ -31,7 +32,6 @@ Platform::Platform()
 	addr_t tid_nameserv;
 	/**
 	 * TODO:
-	 * - register with dummy nameserv
 	 * - gain phone handly to myself
 	 */
 	Spartan::ipc_connect_to_me(PHONE_TO_NAMESERV, Spartan::thread_get_id(),

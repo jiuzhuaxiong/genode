@@ -1,5 +1,5 @@
 /*
- * \brief  Linux-specific IO_PORT service
+ * \brief  Spartan-specific IO_PORT service
  * \author Christian Helmuth
  * \date   2007-04-18
  */

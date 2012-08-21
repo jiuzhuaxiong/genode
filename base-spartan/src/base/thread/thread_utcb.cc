@@ -1,7 +1,22 @@
+/*
+ * \brief  Spartan-specific threads UTCB implementation
+ * \author Tobias Börtitz
+ * \date   2012-08-14
+ */
+
+/*
+ * Copyright (C) 2010-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
+/* Genode includes */
 #include <base/thread_utcb.h>
 #include <base/ipc_call.h>
 #include <base/ipc_manager.h>
 
+/* Spartan includes */
 #include <base/printf.h>
 
 using namespace Genode;
@@ -19,6 +34,7 @@ Thread_utcb::~Thread_utcb()
 	Ipc_manager::singleton()->unregister_thread(this);
 }
 
+
 void
 Thread_utcb::set_thread_id(Native_thread_id tid)
 {
@@ -26,11 +42,13 @@ Thread_utcb::set_thread_id(Native_thread_id tid)
 	Ipc_manager::singleton()->register_thread(this);
 }
 
+
 void
 Thread_utcb::insert_call(Ipc_call call)
 {
 	_call_queue.insert_new(call);
 }
+
 
 Ipc_call
 Thread_utcb::get_next_call(addr_t imethod)
@@ -44,6 +62,7 @@ Thread_utcb::get_next_call(addr_t imethod)
 	return call;
 }
 
+
 Ipc_call
 Thread_utcb::wait_for_call(addr_t imethod)
 {
@@ -56,28 +75,29 @@ Thread_utcb::wait_for_call(addr_t imethod)
 	return call;
 }
 
+
 bool
 Thread_utcb::insert_reply(Ipc_call call)
 {
-	if(_answer_used)
+	if(_answer_sem.cnt() > 0)
 		return false;
 
 	Lock::Guard lock(_answer_lock);
+	_answer_sem.up();
 	_ipc_answer = call;
-	_answer_used = true;
 
 	return true;
 }
 
+
 Ipc_call
 Thread_utcb::get_reply()
 {
-	if(!_answer_used)
-		return Ipc_call();
-
 	Lock::Guard lock(_answer_lock);
+
+	_answer_sem.down();
 	Ipc_call answer = _ipc_answer;
-	_answer_used = false;
 
 	return answer;
 }
+

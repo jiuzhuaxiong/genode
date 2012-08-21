@@ -1,5 +1,5 @@
 /*
- * \brief  Make dataspace accessible to other Linux processes
+ * \brief  Make dataspace accessible to other Spartan processes
  * \author Norman Feske
  * \date   2006-07-03
  */

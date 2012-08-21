@@ -1,5 +1,5 @@
 /*
- * \brief  Core-specific instance of the IO_MEM session interface (Linux)
+ * \brief  Core-specific instance of the IO_MEM session interface (Spartan)
  * \author Christian Helmuth
  * \date   2007-09-14
  */
@@ -11,8 +11,8 @@
  * under the terms of the GNU General Public License version 2.
  */
 
-#ifndef _CORE__INCLUDE__LINUX__IO_MEM_SESSION_COMPONENT_H_
-#define _CORE__INCLUDE__LINUX__IO_MEM_SESSION_COMPONENT_H_
+#ifndef _CORE__INCLUDE__SPARTAN__IO_MEM_SESSION_COMPONENT_H_
+#define _CORE__INCLUDE__SPARTAN__IO_MEM_SESSION_COMPONENT_H_
 
 /* Genode includes */
 #include <base/allocator.h>
@@ -61,4 +61,4 @@ namespace Genode {
 	};
 }
 
-#endif /* _CORE__INCLUDE__LINUX__IO_MEM_SESSION_COMPONENT_H_ */
+#endif /* _CORE__INCLUDE__SPARTAN__IO_MEM_SESSION_COMPONENT_H_ */

@@ -1,5 +1,5 @@
 /*
- * \brief  Linux-specific platform thread implementation
+ * \brief  Spartan-specific platform thread implementation
  * \author Norman Feske
  * \date   2007-10-15
  */

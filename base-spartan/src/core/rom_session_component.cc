@@ -1,5 +1,5 @@
 /*
- * \brief  Linux-specific core implementation of the ROM session interface
+ * \brief  Spartan-specific core implementation of the ROM session interface
  * \author Norman Feske
  * \date   2006-07-06
  *

@@ -1,5 +1,18 @@
-#ifndef SPARTAN_SYSCALLS
-#define SPARTAN_SYSCALLS
+/*
+ * \brief  Spartan syscalls
+ * \author Tobias Börtitz
+ * \date   2012-08-14
+ */
+
+/*
+ * Copyright (C) 2010-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
+#ifndef _INCLUDE__SPARTAN__SYSCALLS_H_
+#define _INCLUDE__SPARTAN__SYSCALLS_H_
 
 #include <base/stdint.h>
 #include <base/native_types.h>
@@ -210,4 +223,4 @@ namespace Spartan
 	int as_area_change_flags(void *address, unsigned int flags);
 }
 
-#endif /* SPARTAN_SYSCALL */
+#endif /* _INCLUDE__SPARTAN__SYSCALLS_H_ */

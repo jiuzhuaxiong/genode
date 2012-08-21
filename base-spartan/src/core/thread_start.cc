@@ -1,7 +1,8 @@
 /*
- * \brief  Implementation of the core-internal Thread API via Linux threads
+ * \brief  Implementation of the core-internal Thread API via Spartan's threads
  * \author Norman Feske
- * \date   2006-06-13
+ * \author Tobias Börtitz
+ * \date   2012-08-14
  */
 
 /*
@@ -23,19 +24,6 @@ using namespace Genode;
 
 static void thread_start(void *)
 {
-/*	
-	*
-	 * Set signal handler such that canceled system calls get not
-	 * transparently retried after a signal gets received.
-	 *
-	lx_sigaction(LX_SIGUSR1, empty_signal_handler);
-
-	*
-	 * Prevent children from becoming zombies. (SIG_IGN = 1)
-	 *
-	lx_sigaction(LX_SIGCHLD, (void (*)(int))1);
-*/
-
 	Thread_base::myself()->entry();
 	sleep_forever();
 	PWRN("%s: Not implemented", __PRETTY_FUNCTION__);
@@ -43,24 +31,19 @@ static void thread_start(void *)
 
 void Thread_base::start()
 {
-/*
-	* align initial stack to 16 byte boundary *
-	void *thread_sp = (void *)((addr_t)(_context->stack) & ~0xf);
-	_tid.tid = lx_create_thread(thread_start, thread_sp, this);
-	_tid.pid = lx_getpid();
-*/
-	/* FIXME:
-	 * since the Spartan kernel wants to know the size of the stack
-	 * we have to assume a stack size which is big enough */
+	/**
+	 * calculate used stack size, since Spartans syscall
+	 * requires knowledge about this
+	 */
 	addr_t stack_size = (addr_t) _context->stack - (addr_t) _context->stack_base; //8192;//16384;
-//	void* stack_elem = (void*) (_context->stack_base+1024);
-	PDBG("*_context=%i, *_context->stack=%i, _context->stack_base=%i, stack_size=%i", _context, _context->stack, _context->stack_base, stack_size);
+
+	/* create the thread */
 	_tid = Spartan::thread_create((void*) &thread_start,
 	                              (void *) (_context->stack_base),
 	                              stack_size, _context->name);
+	/* set the thread id in threads UTCB */
 	utcb()->set_thread_id(_tid);
-	PDBG("new thread_id = %lu", _tid);
-	PWRN("%s: NEEDS FIX", __PRETTY_FUNCTION__);
+	PWRN("%s: needs fix?", __PRETTY_FUNCTION__);
 }
 
 

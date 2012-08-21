@@ -1,5 +1,5 @@
 /*
- * \brief  Linux protection domain facility
+ * \brief  Spartan protection domain facility
  * \author Norman Feske
  * \date   2006-06-13
  *
@@ -13,8 +13,8 @@
  * under the terms of the GNU General Public License version 2.
  */
 
-#ifndef _CORE__INCLUDE__LINUX__PLATFORM_PD_H_
-#define _CORE__INCLUDE__LINUX__PLATFORM_PD_H_
+#ifndef _CORE__INCLUDE__SPARTAN__PLATFORM_PD_H_
+#define _CORE__INCLUDE__SPARTAN__PLATFORM_PD_H_
 
 namespace Genode {
 
@@ -22,4 +22,4 @@ namespace Genode {
 	{ };
 }
 
-#endif /* _CORE__INCLUDE__LINUX__PLATFORM_PD_H_ */
+#endif /* _CORE__INCLUDE__SPARTAN__PLATFORM_PD_H_ */
