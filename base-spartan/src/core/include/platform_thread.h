@@ -56,6 +56,7 @@ namespace Genode {
 			 */
 			Pager_object *pager() { return 0; }
 			void          pager(Pager_object *) { }
+			void          affinity(unsigned cpu) { }
 			int           start(void *ip, void *sp) { return 0; }
 			int           state(Thread_state *state_dst) { return 0; }
 			const char   *name() { return _name; }

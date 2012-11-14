@@ -1,11 +1,12 @@
 TARGET        = core
 REQUIRES      = spartan
-LIBS          = cxx thread ipc heap core_printf process lock pager raw_server
+LIBS          = cxx thread ipc heap core_printf child lock pager raw_server
 
 GEN_CORE_DIR  = $(BASE_DIR)/src/core
 
 SRC_CC        = main.cc \
                 platform.cc \
+                platform_services.cc \
                 platform_thread.cc \
                 ram_session_component.cc \
                 ram_session_support.cc \
@@ -28,6 +29,7 @@ INC_DIR      += $(REP_DIR)/src/core/include \
 HOST_INC_DIR += /usr/include
 
 vpath main.cc                     $(GEN_CORE_DIR)
+vpath platform_services.cc        $(GEN_CORE_DIR)
 vpath thread.cc                   $(BASE_DIR)/src/base/thread
 vpath ram_session_component.cc    $(GEN_CORE_DIR)
 vpath cpu_session_component.cc    $(GEN_CORE_DIR)

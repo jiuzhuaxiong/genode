@@ -19,7 +19,7 @@
 #include <base/ipc_call_queue.h>
 #include <base/ipc_manager.h>
 #include <base/semaphore.h>
-#include <base/native_types>
+#include <base/native_types.h>
 
 /* Spartan syscall includes */
 #include <spartan/syscalls.h>

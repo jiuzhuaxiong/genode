@@ -66,9 +66,23 @@ namespace Genode {
 		}
 		static void copy(void* dst, Native_capability_tpl<Cap_dst_policy>* src);
 	};
-	typedef Native_capability_tpl<Cap_dst_policy> Native_capability;
 
+	typedef Native_capability_tpl<Cap_dst_policy> Native_capability;
 	typedef addr_t Native_connection_state;
+
+	struct Native_config
+	{
+		/**
+		 * Thread-context area configuration.
+		 */
+		static addr_t context_area_virtual_base() { return 0x40000000UL; }
+		static addr_t context_area_virtual_size() { return 0x10000000UL; }
+
+		/**
+		 * Size of virtual address region holding the context of one thread
+		 */
+		static addr_t context_virtual_size() { return 0x00100000UL; }
+	};
 }
 
 

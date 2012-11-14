@@ -53,14 +53,16 @@ class Minimal_env : public Genode::Env
 		 ** Dummy implementation of the Env interface **
 		 ***********************************************/
 
-		Genode::Parent      *parent()      { return 0; }
-		Genode::Ram_session *ram_session() { return 0; }
-		Genode::Cpu_session *cpu_session() { return 0; }
-		Genode::Rm_session  *rm_session()  { return 0; }
-		Genode::Pd_session  *pd_session()  { return 0; }
+		Genode::Parent                *parent()          { return 0; }
+		Genode::Ram_session           *ram_session()     { return 0; }
+		Genode::Cpu_session           *cpu_session()     { return 0; }
+		Genode::Rm_session            *rm_session()      { return 0; }
+		Genode::Pd_session            *pd_session()      { return 0; }
 
 		Genode::Ram_session_capability ram_session_cap() {
 			return Genode::Ram_session_capability(); }
+		Genode::Cpu_session_capability cpu_session_cap() {
+			return Genode::Cpu_session_capability(); }
 };
 
 

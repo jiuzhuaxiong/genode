@@ -1,5 +1,4 @@
 TARGET		= printf
 REQUIRES	= spartan
-LIBS 		= cxx core_console ipc
-#LIBS 		= cxx printf_spartan ipc
+LIBS 		= cxx core_printf ipc
 SRC_CC		= hello.cc
