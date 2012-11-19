@@ -1,0 +1,22 @@
+=== modified file 'tools/dest_build.py'
+--- tools/dest_build.py	2012-06-08 12:59:47 +0000
++++ tools/dest_build.py	2012-11-19 11:47:18 +0000
+@@ -97,11 +97,13 @@
+ 	duplicate_tree(src_path, dest_path, "")
+ 	
+ 	# Run the build from the destination tree
+-	os.chdir(dest_path)
+-	args = ["make"]
+-	args.extend(sys.argv[3:])
++#	# NOT NEEDED FOR USE WITH GENODE
++#	os.chdir(dest_path)
++#	args = ["make"]
++#	args.extend(sys.argv[3:])
+ 	
+-	return subprocess.Popen(args).wait()
++#	return subprocess.Popen(args).wait()
++	return
+ 
+ if __name__ == '__main__':
+ 	sys.exit(main())
+

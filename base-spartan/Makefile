@@ -7,8 +7,8 @@
 VERBOSE    ?= @
 ECHO        = @echo
 BZR_URI     = bzr://bzr.helenos.org/mainline
-BZR_REV     = 1530
-#BZR_REV     = 1486
+BZR_REV     = 1711
+#BZR_REV     = 1707
 CONTRIB_DIR = contrib
 PATCHES     = $(shell find patches -name *.patch)
 
@@ -24,6 +24,7 @@ REAL_CONTRIB_DIR := $(realpath $(CONTRIB_DIR))
 ifeq ($(REAL_CONTRIB_DIR),)
 REAL_CONTRIB_DIR := $(CONTRIB_DIR)
 endif
+
 
 prepare: $(REAL_CONTRIB_DIR)/.bzr update_contrib_subdirs apply_patches
 
@@ -43,15 +44,15 @@ $(CONTRIB_DIR):
 
 # for resolving the dependencies of 'update_contrib_subdirs'
 $(REAL_CONTRIB_DIR)/%:
-	$(ECHO) "Checking out revision $(BZR_REV)"
-#	$(VERBOSE)bzr checkout $(BZR_URI) $(REAL_CONTRIB_DIR)
+	$(ECHO) "Checking out contrib revision $(BZR_REV)"
 	$(VERBOSE)bzr checkout -r $(BZR_REV) $(BZR_URI) $(REAL_CONTRIB_DIR)
 
 # used phony to always update the SVN on 'make prepare'
 # (before updating, we need to revert our custom patches)
 update_contrib_subdirs:
-	$(ECHO) "updating $(REAL_CONTRIB_DIR) to revision $(BZR_REV)"
+	$((ECHO) "Updating contrib tree to revision $(BZR_REV)"
 	$(VERBOSE)bzr revert $(REAL_CONTRIB_DIR)
+	$(VERBOSE)bzr update -r $(BZR_REV) $(REAL_CONTRIB_DIR)
 
 apply_patches:
 	$(ECHO) "applying patches to '$(REAL_CONTRIB_DIR)/'"

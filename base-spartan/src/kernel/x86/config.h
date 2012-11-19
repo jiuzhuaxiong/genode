@@ -90,8 +90,8 @@
 #define CONFIG_FB
 
 /* Default framebuffer mode */
-#define CONFIG_BFB_MODE 800x600
-#define CONFIG_BFB_MODE_800x600
+#define CONFIG_BFB_MODE 1024x768
+#define CONFIG_BFB_MODE_1024x768
 
 /* Default framebuffer depth */
 #define CONFIG_BFB_BPP 16
@@ -106,12 +106,12 @@
 #define GRUB_ARCH_pc
 
 /* Default framebuffer width */
-#define CONFIG_BFB_WIDTH 800
-#define CONFIG_BFB_WIDTH_800
+#define CONFIG_BFB_WIDTH 1024
+#define CONFIG_BFB_WIDTH_1024
 
 /* Default framebuffer height */
-#define CONFIG_BFB_HEIGHT 600
-#define CONFIG_BFB_HEIGHT_600
+#define CONFIG_BFB_HEIGHT 768
+#define CONFIG_BFB_HEIGHT_768
 
-#define REVISION 1517M (martin@decky.cz-20120601192632-h6skaa5hfgiqbnm6)
-#define TIMESTAMP 2012-06-05 18:25:05
+#define REVISION 1707M (jakub@jermar.eu-20121113202741-bh6w1a0l032yy494)
+#define TIMESTAMP 2012-11-19 11:51:10
