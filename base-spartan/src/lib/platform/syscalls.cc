@@ -30,13 +30,47 @@ extern "C" {
 #include <abi/mm/as.h>
 }
 
+
 using namespace Spartan;
 
-/**
- * TODO
- * remove all usage of thread_get_id()
- * use additional argument instead!
- */
+/*********************************
+ * Syscall and wrapper functions *
+ ********************************/
+
+extern "C" addr_t __syscall(const addr_t p1, const addr_t p2, const addr_t p3,
+                            const addr_t p4, const addr_t p5, const addr_t p6,
+                            const syscall_t id);
+
+inline addr_t  __SYSCALL0(syscall_t id) {
+	return __syscall(0, 0, 0, 0, 0, 0, id);
+}
+
+inline addr_t  __SYSCALL1(syscall_t id, addr_t p1) {
+	return __syscall(p1, 0, 0, 0, 0, 0, id);
+}
+
+inline addr_t  __SYSCALL2(syscall_t id, addr_t p1, addr_t p2) {
+	return __syscall(p1, p2, 0, 0, 0, 0, id);
+}
+
+inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3) {
+	return __syscall(p1, p2, p3, 0, 0, 0, id);
+}
+
+inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3,
+                          addr_t p4) {
+	return __syscall(p1, p2, p3, p4, 0, 0, id);
+}
+
+inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3,
+                          addr_t p4, addr_t p5) {
+	return __syscall(p1, p2, p3, p4, p5, 0, id);
+}
+
+inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3,
+                          addr_t p4, addr_t p5, addr_t p6) {
+	return __syscall(p1, p2, p3, p4, p5, p6, id);
+}
 
 
 /*************************
@@ -44,12 +78,6 @@ using namespace Spartan;
  ************************/
 
 extern "C" int _main();
-
-
-extern "C" addr_t __syscall(const addr_t p1, const addr_t p2, const addr_t p3,
-                            const addr_t p4, const addr_t p5, const addr_t p6,
-                            const syscall_t id);
-
 
 void Spartan::exit(int status)
 {
@@ -78,7 +106,7 @@ void Spartan::io_port_enable(Genode::addr_t pio_addr, Genode::size_t size)
 Native_task Spartan::task_get_id(void)
 {
 	Native_task task_id;
-#ifdef __32_BITS
+#ifdef __32_BITS__
 	(void) __SYSCALL1(SYS_TASK_GET_ID, (addr_t) &task_id);
 #endif  /* __32_BITS__ */
 
