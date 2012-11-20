@@ -1,3 +1,16 @@
+/*
+ * \brief  Spartan-specific queue preserving thread specific ipc calls
+ * \author Tobias Börtitz
+ * \date   2012-08-14
+ */
+
+/*
+ * Copyright (C) 2010-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
 #ifndef _INCLUDE__BASE__NATIVE_TYPES_H_
 #define _INCLUDE__BASE__NATIVE_TYPES_H_
 
@@ -54,6 +67,9 @@ namespace Genode {
 
 	typedef Native_capability_tpl<Cap_dst_policy> Native_capability;
 	typedef addr_t Native_connection_state;
+
+	// temporary workaround until i need a real Native_utcb
+	typedef struct { } Native_utcb;
 }
 
 

@@ -126,3 +126,19 @@ Native_thread_id Spartan::thread_get_id(void)
 	return thread_id;
 }
 
+
+/***************
+ * Futex calls *
+ ***************/
+
+int Spartan::futex_sleep(volatile int *futex)
+{
+		return __SYSCALL1(SYS_FUTEX_SLEEP, (sysarg_t) futex);
+}
+
+
+int Spartan::futex_wakeup(volatile int *futex)
+{
+		return __SYSCALL1(SYS_FUTEX_WAKEUP, (sysarg_t) futex);
+}
+

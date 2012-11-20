@@ -41,6 +41,14 @@ namespace Spartan
 	Genode::Native_thread_id thread_get_id(void);
 	Genode::Native_thread thread_create(void* ip, void* sp, 
 			Genode::addr_t stack_size, const char* name);
+
+
+	/***************
+	 * Futex calls *
+	 ***************/
+
+	int futex_sleep(volatile int *futex);
+	int futex_wakeup(volatile int *futex);
 }
 
 #endif /* _INCLUDE__SPARTAN__SYSCALLS_H_ */
