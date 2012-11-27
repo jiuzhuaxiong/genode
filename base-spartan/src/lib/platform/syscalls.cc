@@ -20,23 +20,24 @@
 using namespace Genode;
 
 extern "C" {
-#include <sys/types.h>
 #include <abi/ddi/arg.h>
 #include <abi/syscall.h>
-#include <abi/proc/uarg.h>
-#include <abi/ipc/ipc.h>
-#include <abi/ipc/methods.h>
-#include <abi/synch.h>
-#include <abi/mm/as.h>
 }
+//#include <sys/types.h>
+//#include <abi/proc/uarg.h>
+//#include <abi/ipc/ipc.h>
+//#include <abi/ipc/methods.h>
+//#include <abi/synch.h>
+//#include <abi/mm/as.h>
 
 
 using namespace Spartan;
 
-/*********************************
- * Syscall and wrapper functions *
- ********************************/
 
+/*************************************
+ * Syscall and its wrapper functions *
+ *************************************/
+/*
 extern "C" addr_t __syscall(const addr_t p1, const addr_t p2, const addr_t p3,
                             const addr_t p4, const addr_t p5, const addr_t p6,
                             const syscall_t id);
@@ -71,6 +72,7 @@ inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3,
                           addr_t p4, addr_t p5, addr_t p6) {
 	return __syscall(p1, p2, p3, p4, p5, p6, id);
 }
+*/
 
 
 /*************************
@@ -78,6 +80,7 @@ inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3,
  ************************/
 
 extern "C" int _main();
+
 
 void Spartan::exit(int status)
 {
@@ -99,6 +102,7 @@ void Spartan::io_port_enable(Genode::addr_t pio_addr, Genode::size_t size)
 }
 
 
+
 /***************************
  * Access to specific ID's *
  **************************/
@@ -117,6 +121,7 @@ Native_task Spartan::task_get_id(void)
 }
 
 
+
 Native_thread_id Spartan::thread_get_id(void)
 {
 	Native_thread_id thread_id;
@@ -124,21 +129,5 @@ Native_thread_id Spartan::thread_get_id(void)
 	(void) __SYSCALL1(SYS_THREAD_GET_ID, (sysarg_t) &thread_id);
 
 	return thread_id;
-}
-
-
-/***************
- * Futex calls *
- ***************/
-
-int Spartan::futex_sleep(volatile int *futex)
-{
-		return __SYSCALL1(SYS_FUTEX_SLEEP, (sysarg_t) futex);
-}
-
-
-int Spartan::futex_wakeup(volatile int *futex)
-{
-		return __SYSCALL1(SYS_FUTEX_WAKEUP, (sysarg_t) futex);
 }
 

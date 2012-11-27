@@ -17,6 +17,7 @@
 
 /* Spartan includes */
 #include <spartan/syscalls.h>
+#include <spartan/futex.h>
 
 using namespace Genode;
 
