@@ -32,7 +32,8 @@ namespace Spartan
 	                                              Genode::addr_t arg1,
 	                                              Genode::addr_t arg2,
 	                                              Genode::addr_t arg3,
-	                                              Genode::addr_t arg4);
+	                                              Genode::addr_t arg4,
+	                                              Genode::Native_ipc_call *retcall);
 	/**
 	 * Slower asynchronous call carrying more payload
 	 */
@@ -42,7 +43,8 @@ namespace Spartan
 	                                              Genode::addr_t arg2,
 	                                              Genode::addr_t arg3,
 	                                              Genode::addr_t arg4,
-	                                              Genode::addr_t arg5);
+	                                              Genode::addr_t arg5,
+	                                              Genode::Native_ipc_call *retcall);
 
 	/**
 	 * Look for incomming messages
@@ -92,6 +94,30 @@ namespace Spartan
 	                               Genode::addr_t arg1, Genode::addr_t arg2,
 	                               Genode::addr_t arg3, Genode::addr_t arg4,
 	                               Genode::addr_t arg5);
+
+	/**
+	 * Request connection
+	 */
+	int ipc_connect_me_to(int phoneid, Genode::Native_thread_id dest_threadid,
+	                      Genode::Native_thread_id my_threadid);
+
+	/**
+	 * Request callback connection
+	 */
+	int ipc_connect_to_me(int phoneid, Genode::Native_thread_id my_threadid,
+	                      Genode::addr_t arg2, Genode::addr_t arg3, Genode::Native_task *task_id,
+	                      Genode::addr_t *phonehash);
+
+	/**
+	 * Send a cloned phone
+	 */
+	int ipc_send_phone(int snd_phone, int clone_phone);
+
+	/**
+	 * Ask for a cloned phone
+	 */
+	int ipc_receive_phone(int snd_phone, Genode::Native_task dst_task_id,
+	                      Genode::Native_thread_id dst_thread_id);
 
 	/**
 	 * Hangup a phone
