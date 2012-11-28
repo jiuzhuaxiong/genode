@@ -91,8 +91,9 @@ namespace Spartan
 
 	Genode::Native_task task_get_id(void);
 	Genode::Native_thread_id thread_get_id(void);
-//	Genode::Native_thread thread_create(void* ip, void* sp,
-//			Genode::addr_t stack_size, const char* name);
+	Genode::Native_thread thread_create(void* ip, void* sp,
+	                                    Genode::addr_t stack_size,
+	                                    const char* name);
 
 }
 

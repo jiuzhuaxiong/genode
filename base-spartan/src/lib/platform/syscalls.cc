@@ -20,11 +20,13 @@
 using namespace Genode;
 
 extern "C" {
+//for io_port_enable()
 #include <abi/ddi/arg.h>
-#include <abi/syscall.h>
+//#include <abi/syscall.h>
+//for thread_create()
+#include <abi/proc/uarg.h>
 }
 //#include <sys/types.h>
-//#include <abi/proc/uarg.h>
 //#include <abi/ipc/ipc.h>
 //#include <abi/ipc/methods.h>
 //#include <abi/synch.h>
@@ -32,47 +34,6 @@ extern "C" {
 
 
 using namespace Spartan;
-
-
-/*************************************
- * Syscall and its wrapper functions *
- *************************************/
-/*
-extern "C" addr_t __syscall(const addr_t p1, const addr_t p2, const addr_t p3,
-                            const addr_t p4, const addr_t p5, const addr_t p6,
-                            const syscall_t id);
-
-inline addr_t  __SYSCALL0(syscall_t id) {
-	return __syscall(0, 0, 0, 0, 0, 0, id);
-}
-
-inline addr_t  __SYSCALL1(syscall_t id, addr_t p1) {
-	return __syscall(p1, 0, 0, 0, 0, 0, id);
-}
-
-inline addr_t  __SYSCALL2(syscall_t id, addr_t p1, addr_t p2) {
-	return __syscall(p1, p2, 0, 0, 0, 0, id);
-}
-
-inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3) {
-	return __syscall(p1, p2, p3, 0, 0, 0, id);
-}
-
-inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3,
-                          addr_t p4) {
-	return __syscall(p1, p2, p3, p4, 0, 0, id);
-}
-
-inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3,
-                          addr_t p4, addr_t p5) {
-	return __syscall(p1, p2, p3, p4, p5, 0, id);
-}
-
-inline addr_t  __SYSCALL0(syscall_t id, addr_t p1, addr_t p2, addr_t p3,
-                          addr_t p4, addr_t p5, addr_t p6) {
-	return __syscall(p1, p2, p3, p4, p5, p6, id);
-}
-*/
 
 
 /*************************
@@ -130,4 +91,23 @@ Native_thread_id Spartan::thread_get_id(void)
 
 	return thread_id;
 }
+
+Native_thread Spartan::thread_create(void *ip, void *sp, addr_t stack_size,
+		                                     const char *name)
+{
+	uspace_arg_t uarg;
+	Native_thread tid;
+	int rc;
+
+	uarg.uspace_entry = ip;
+	uarg.uspace_stack = sp;
+	uarg.uspace_stack_size = stack_size;
+	uarg.uspace_uarg = &uarg;
+
+	rc = __SYSCALL4(SYS_THREAD_CREATE, (addr_t) &uarg, (addr_t) name,
+	                (addr_t) Genode::strlen(name), (addr_t) &tid);
+
+	return rc? INVALID_ID : tid;
+}
+
 
