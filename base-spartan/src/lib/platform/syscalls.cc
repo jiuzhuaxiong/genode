@@ -93,7 +93,7 @@ Native_thread_id Spartan::thread_get_id(void)
 }
 
 Native_thread Spartan::thread_create(void *ip, void *sp, addr_t stack_size,
-		                                     const char *name)
+                                     const char *name)
 {
 	uspace_arg_t uarg;
 	Native_thread tid;
@@ -107,7 +107,7 @@ Native_thread Spartan::thread_create(void *ip, void *sp, addr_t stack_size,
 	rc = __SYSCALL4(SYS_THREAD_CREATE, (addr_t) &uarg, (addr_t) name,
 	                (addr_t) Genode::strlen(name), (addr_t) &tid);
 
-	return rc? INVALID_ID : tid;
+	return rc? rc : tid;
 }
 
 

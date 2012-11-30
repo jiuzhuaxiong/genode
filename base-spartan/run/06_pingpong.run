@@ -1,0 +1,9 @@
+build "tests/spartan_ipc_nameserv tests/spartan_06_ipc_pingpong/pong tests/spartan_06_ipc_pingpong/ping"
+
+create_boot_directory
+
+build_boot_image "nameserv pong ping"
+
+append qemu_args "-m 64 -serial mon:stdio"
+
+run_genode_until forever
