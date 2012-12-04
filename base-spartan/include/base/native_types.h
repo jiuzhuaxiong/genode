@@ -18,21 +18,14 @@
 #include <base/stdint.h>
 
 namespace Spartan {
+#include <abi/ipc/ipc.h>
+
 	enum {
 		INVALID_ID = ~0UL,
 	};
 }
 
 namespace Genode {
-	/* TODO nasty work around
-	 * declaration taken from helenos/abi/include/ipc.ipc.h
-	 * It represents the maximum count of argument that can be passed 
-	 *  with a ipc call
-	 */
-	enum {
-		IPC_CALL_LEN = 6,
-	};
-
 	typedef volatile int Native_lock;
 	typedef          addr_t Native_thread_id;
 	typedef          addr_t Native_thread;

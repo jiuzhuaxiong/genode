@@ -29,6 +29,7 @@ enum {
 Genode::addr_t            _phone_hash[MAX_CONN_COUNT];
 Genode::addr_t _callid[MAX_CONN_COUNT];
 Genode::Native_thread_id  _thread_id[MAX_CONN_COUNT];
+Genode::Native_task       _task_id[MAX_CONN_COUNT];
 int                       _phone[MAX_CONN_COUNT];
 int                       _call_counter = 0;
 
@@ -43,7 +44,8 @@ bool insert_new_connection(Genode::addr_t new_callid,
 	/** insert callid and phonehash into global vars */
 	_callid[_call_counter] = new_callid;
 	_phone_hash[_call_counter] = new_phonehash;
-	_thread_id[_call_counter] = new_thread_id;
+//	_thread_id[_call_counter] = new_thread_id;
+	_task_id[_call_counter] = new_thread_id;
 	_phone[_call_counter] = new_phone;
 	_call_counter++;
 
@@ -65,8 +67,12 @@ int connection_exists_phonehash(Genode::addr_t phonehash)
 int connection_exists_thread_id(Genode::Native_thread_id thread_id)
 {
 	for(int i=0; i<_call_counter; i++)
-		if(_thread_id[i] == thread_id)
+//		if(_thread_id[i] == thread_id)
+		if(_task_id[i] == thread_id) {
+//			i=2;
+			Genode::printf("nameserv:connection_exists_thread_id: returning i=%i\n", i);
 			return i;
+		}
 
 	return -1;
 }
@@ -82,7 +88,7 @@ int delete_connection(Genode::addr_t phonehash)
 	for(i=pos; (i+1)<_call_counter; i++) {
 		_phone_hash[i] = _phone_hash[i+1];
 		_callid[i] = _callid[i+1];
-		_thread_id[i] = _thread_id[i+1];
+		_task_id[i] = _thread_id[i+1];
 		_phone[i] = _phone[i+1];
 	}
 	_call_counter--;
@@ -120,6 +126,7 @@ extern "C" int main(void)
 {
 	Genode::Native_ipc_call   call;
 	Genode::addr_t            retval;
+	int pos;
 
 	Genode::printf("nameserv:\tnameserv started\n");
 
@@ -140,9 +147,10 @@ extern "C" int main(void)
 			               call.in_phone_hash);
 //			if(call.in_task_id == 3)
 				retval = accept_connection(call.callid,
-			                           call.in_phone_hash,
-			                           IPC_GET_ARG1(call),
-			                           IPC_GET_ARG5(call));
+				                   call.in_phone_hash,
+				                   call.in_task_id,
+//			                           IPC_GET_ARG1(call),
+				                   IPC_GET_ARG5(call));
 //			else
 //				retval = reject_connection(call.callid);
 			if(retval == EOK) 
@@ -163,15 +171,23 @@ extern "C" int main(void)
 			               IPC_GET_ARG1(call), call.callid,
 			               call.in_task_id, IPC_GET_ARG2(call),
 			               call.in_phone_hash);
-			if(int pos = connection_exists_thread_id(IPC_GET_ARG1(call)) >= 0)
+//			if(int pos = connection_exists_thread_id(IPC_GET_ARG1(call)) >= 0) {
+			pos = connection_exists_thread_id(IPC_GET_ARG1(call));
+			if(pos >= 0) {
+				Genode::printf("nameserv:\t forwarding call to task=%lu via phone=%i where pos=%i\n", _task_id[pos], _phone[pos], pos);
+				/* TODO
+				 * give more information to forwarding ipc call
+				 */
 				Spartan::ipc_forward_fast(call.callid,
 				                          _phone[pos], 0, 0, 0,
-				                          IPC_FF_ROUTE_FROM_ME);
-			else
-				Genode::printf("nameserv:\tno thread with"
+				                          IPC_FF_NONE);
+			}
+			else {
+					Genode::printf("nameserv:\tno thread with"
 				               " id %lu known\n",
 				               IPC_GET_ARG1(call));
-				reject_connection(call.callid);
+					reject_connection(call.callid);
+			}
 			break;
 		default:
 			retval = reject_connection(call.callid);

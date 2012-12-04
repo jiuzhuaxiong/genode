@@ -137,10 +137,11 @@ Native_ipc_call Spartan::ipc_wait_for_call_timeout(Genode::addr_t usec)
 
 	Genode::printf("Spartan::ipc_wait_for_call_timeout:\treceived: callid=%lu, "
 	               "in_task_id=%lu, in_phonehash=%lu\t IMETHOD=%lu, "
-	               "ARG1=%lu, ARG2=%lu, ARG3=%lu, ARG4=%lu, ARG5=%lu\n",
+	               "ARG1=%lu, ARG2=%lu, ARG3=%lu, ARG4=%lu, ARG5=%lu\t my_thread_id=%lu\n",
 	               call.callid, call.in_task_id, call.in_phone_hash,
 	               IPC_GET_IMETHOD(call), IPC_GET_ARG1(call), IPC_GET_ARG2(call),
-	               IPC_GET_ARG3(call), IPC_GET_ARG4(call), IPC_GET_ARG5(call));
+	               IPC_GET_ARG3(call), IPC_GET_ARG4(call), IPC_GET_ARG5(call),
+	               Spartan::thread_get_id());
 
 	return call;
 }
@@ -224,16 +225,12 @@ addr_t Spartan::ipc_answer_slow(addr_t callid, addr_t retval, addr_t arg1,
  * Connection management *
  *************************/
 
-int Spartan::ipc_connect_me_to(int phoneid, Native_thread_id dest_threadid,
+addr_t Spartan::ipc_connect_me_to(int phoneid, Native_thread_id dest_threadid,
                       Native_thread_id my_threadid)
 {
 	Native_ipc_call call;
 	call = ipc_call_async_fast(phoneid, IPC_M_CONNECT_ME_TO,
 	                             dest_threadid, my_threadid, 0, 0);
-
-	/* FIXME
-	 * WH000000t?
-	 */
 
 	return call.callid;
 }
@@ -267,8 +264,8 @@ addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone)
 	 * Genode meanwhile needs to adress threads.
 	 */
 	Native_ipc_call call;
-	call = ipc_call_async_fast(snd_phone, IPC_M_CONNECTION_CLONE, 0, 0, 0,
-	                           (addr_t) clone_phone);
+	call = ipc_call_async_fast(snd_phone, IPC_M_CONNECTION_CLONE,
+	                           (addr_t) clone_phone, 0, 0, 0);
 
 	return call.callid;
 }

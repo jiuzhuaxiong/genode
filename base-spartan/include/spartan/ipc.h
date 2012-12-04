@@ -131,8 +131,9 @@ namespace Spartan
 	/**
 	 * Request connection
 	 */
-	int ipc_connect_me_to(int phoneid, Genode::Native_thread_id dest_threadid,
-	                      Genode::Native_thread_id my_threadid);
+	Genode::addr_t ipc_connect_me_to(int phoneid,
+	                                 Genode::Native_thread_id dest_threadid,
+	                                 Genode::Native_thread_id my_threadid);
 
 	/**
 	 * Request callback connection

@@ -25,7 +25,7 @@
 enum {
 	PHONE_NAMESERV = 0,
 	TASK_PONG = 4,
-	THREAD_PONG = 7
+	THREAD_PONG = 3
 };
 
 int                 phone_nameserv, phone_pong;
@@ -46,7 +46,7 @@ bool register_with_nameserv()
 	               msg_callid, call.callid, call.in_phone_hash);
 */
 	if ((IPC_GET_RETVAL(call) == EOK) && (call.callid & IPC_CALLID_ANSWERED)
-			&& (call.callid == msg_callid+1))
+			&& (call.callid == (msg_callid | IPC_CALLID_ANSWERED)))
 		return true;
 
 	return false;
@@ -54,22 +54,45 @@ bool register_with_nameserv()
 
 bool connect_to_pong()
 {
-	/*
-	phone_pong = Spartan::ipc_connect_me_to(PHONE_NAMESERV, TASK_PONG,
-	                                        THREAD_PONG,
+	Genode::addr_t msg_callid;
+	msg_callid = Spartan::ipc_connect_me_to(PHONE_NAMESERV, THREAD_PONG,
 	                                        Spartan::thread_get_id());
 
-	return phone_pong>0 ? true : false;
-	*/
-	Genode::printf("pIng:\tconnect_to_pong() NOT IMPLEMENTED\n");
+	Genode::Native_ipc_call call = Spartan::ipc_wait_for_call_timeout(0);
+	phone_pong = IPC_GET_ARG5(call);
+	Genode::printf("pIng:connect_to_pong: phone_pong = %lu\n", phone_pong);
+
+	if ((IPC_GET_RETVAL(call) == EOK) && (call.callid & IPC_CALLID_ANSWERED)
+			&& (call.callid == (msg_callid | IPC_CALLID_ANSWERED)))
+		return true;
 	return false;
 }
 
-int clone_pong_to_pong()
+bool clone_pong_to_pong()
 {
-//	return Spartan::ipc_clone_connection(phone_pong, TASK_PONG, THREAD_PONG, phone_pong);
-	Genode::printf("pIng:\tclone_pong_to_pong() NOT IMPLEMENTED\n");
-	return -1;
+	Genode::addr_t msg_callid;
+//	msg_callid = Spartan::ipc_clone_connection(phone_pong, TASK_PONG, THREAD_PONG, phone_pong);
+	msg_callid = Spartan::ipc_send_phone(phone_pong, phone_pong);
+
+	Genode::Native_ipc_call call = Spartan::ipc_wait_for_call_timeout(0);
+
+	if ((IPC_GET_RETVAL(call) == EOK) && (call.callid & IPC_CALLID_ANSWERED)
+			&& (call.callid == (msg_callid | IPC_CALLID_ANSWERED)))
+		return true;
+	return false;
+}
+
+bool hangup_pong()
+{
+	Genode::addr_t msg_callid;
+	msg_callid = Spartan::ipc_hangup(phone_pong);
+
+	Genode::Native_ipc_call call = Spartan::ipc_wait_for_call_timeout(0);
+
+	if ((IPC_GET_RETVAL(call) == EOK) && (call.callid & IPC_CALLID_ANSWERED)
+			&& (call.callid == (msg_callid | IPC_CALLID_ANSWERED)))
+		return true;
+	return false;
 }
 
 /**
@@ -77,8 +100,8 @@ int clone_pong_to_pong()
  */
 extern "C" int main(void)
 {
-	Genode::Native_ipc_call   call;
-	int                       ret;
+//	Genode::Native_ipc_call   call;
+//	int                       ret;
 
 	Genode::printf("pIng:\tping started\n");
 
@@ -98,31 +121,13 @@ extern "C" int main(void)
 	else
 		Genode::printf("pIng:\tcould not connect to pong\n");
 
-	ret = clone_pong_to_pong();
-	Genode::printf("pIng:\tclone_pong_to_pong() returned %i\n", ret);
-
-	call = Spartan::ipc_wait_for_call_timeout(0);
-	if(call.in_phone_hash == phonehash_nameserv)
-		Genode::printf("pIng:\treceived call with callid = %lu,\n"
-		                "\t  in_task_id = %lu from known in_phone_hash = "
-		                "%lu\n", call.callid, call.in_task_id, call.in_phone_hash);
+	if(clone_pong_to_pong())
+		Genode::printf("pIng:\tsuccessfully cloned to pong\n");
 	else
-		Genode::printf("pIng:\treceived unknown call with callid = %lu,"
-		               "\n\t  in_task_id = %lu, in_phone_hash = %lu\n", call.callid,
-		               call.in_task_id, call.in_phone_hash);
+		Genode::printf("pIng:\tcould not clone phone to pong\n");
 
-	switch(IPC_GET_IMETHOD(call)) {
-	case IPC_M_PHONE_HUNGUP:
-		if(call.in_phone_hash == phonehash_nameserv)
-			Genode::printf("pIng:\tnameserv hung up the connection.\n");
-		else
-			Genode::printf("pIng:\ttask %lu hung up the "
-			               "connection.\n", call.in_task_id);
-		break;
-	default:
-		Genode::printf("pIng:\tunhandled method %lu received", 
-		               IPC_GET_IMETHOD(call));
-	}
+	hangup_pong();
+
 
 	while(1);
 

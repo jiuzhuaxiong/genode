@@ -50,7 +50,7 @@ bool register_with_nameserv()
 	               msg_callid, call.callid, call.in_phone_hash);
 */
 	if ((IPC_GET_RETVAL(call) == EOK) && (call.callid & IPC_CALLID_ANSWERED)
-			&& (call.callid == msg_callid+1))
+			&& (call.callid == (msg_callid | IPC_CALLID_ANSWERED)))
 		return true;
 
 	return false;
@@ -114,6 +114,7 @@ extern "C" int main(void)
 			else
 				Genode::printf("pOng:\ttask %lu hung up the "
 				               "connection.\n", call.in_task_id);
+			Spartan::ipc_answer_0(call.callid, EOK);
 			break;
 		case IPC_M_CONNECT_TO_ME:
 			Genode::printf("pOng:\treceived callback request with"
@@ -138,7 +139,10 @@ extern "C" int main(void)
 			               IPC_GET_ARG1(call), IPC_GET_ARG2(call),
 			               call.callid, call.in_task_id,
 			               IPC_GET_ARG3(call), call.in_phone_hash);
-			if(my_task == IPC_GET_ARG1(call) && my_threadid == IPC_GET_ARG2(call)) {
+			/* TODO
+			 * reintroduce checking for my_thread
+			 */
+//			if(my_task == IPC_GET_ARG1(call) && my_threadid == IPC_GET_ARG2(call)) {
 				retval = accept_connection(call.callid,
 				                           call.in_phone_hash,
 				                           call.in_task_id,
@@ -152,17 +156,16 @@ extern "C" int main(void)
 					               "establish connection. "
 					               "Errorcode %lu\n", retval);
 				break;
-			}
-			else
-				Genode::printf("pOng:\treceived "
-				               "IPC_M_CONNECT_ME_TO to task %lu "
-				               "request but do not kow it\n",
-				               IPC_GET_ARG1(call));
+//			}
+//			else
+//				Genode::printf("pOng:\treceived "
+//				               "IPC_M_CONNECT_ME_TO to task %lu "
+//				               "request but do not kow it\n",
+//				               IPC_GET_ARG1(call));
 			break;
 		case IPC_M_CONNECTION_CLONE:
 			phone_ping = IPC_GET_ARG1(call);
 			Spartan::ipc_answer_0(call.callid, 0);
-			Spartan::ipc_call_async_fast(phone_ping, 11, 1,2,3,4);
 			break;
 		default:
 			retval = reject_connection(call.callid);
