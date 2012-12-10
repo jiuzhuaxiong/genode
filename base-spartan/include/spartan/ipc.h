@@ -27,22 +27,22 @@ namespace Spartan
 	/**
 	 * Fast asynchronous call
 	 */
-	Genode::Native_ipc_call ipc_call_async_fast(int phoneid,
-	                                            Genode::addr_t imethod,
-	                                            Genode::addr_t arg1,
-	                                            Genode::addr_t arg2,
-	                                            Genode::addr_t arg3,
-	                                            Genode::addr_t arg4);
+	Genode::Native_ipc_callid ipc_call_async_fast(int phoneid,
+	                                              Genode::addr_t imethod,
+	                                              Genode::addr_t arg1,
+	                                              Genode::addr_t arg2,
+	                                              Genode::addr_t arg3,
+	                                              Genode::addr_t arg4);
 	/**
 	 * Slower asynchronous call carrying more payload
 	 */
-	Genode::Native_ipc_call ipc_call_async_slow(int phoneid,
-	                                            Genode::addr_t imethod,
-	                                            Genode::addr_t arg1,
-	                                            Genode::addr_t arg2,
-	                                            Genode::addr_t arg3,
-	                                            Genode::addr_t arg4,
-	                                            Genode::addr_t arg5);
+	Genode::Native_ipc_callid ipc_call_async_slow(int phoneid,
+	                                              Genode::addr_t imethod,
+	                                              Genode::addr_t arg1,
+	                                              Genode::addr_t arg2,
+	                                              Genode::addr_t arg3,
+	                                              Genode::addr_t arg4,
+	                                              Genode::addr_t arg5);
 
 	/**
 	 * Look for incomming messages
@@ -61,17 +61,17 @@ namespace Spartan
 	/**
 	 * Fast forward a call
 	 */
-	int ipc_forward_fast(Genode::addr_t callid, int phoneid,
-	                     Genode::addr_t imethod, Genode::addr_t arg1,
-	                     Genode::addr_t arg2, unsigned int mode);
+	Genode::addr_t ipc_forward_fast(Genode::addr_t callid, int phoneid,
+	                                Genode::addr_t imethod, Genode::addr_t arg1,
+	                                Genode::addr_t arg2, unsigned int mode);
 	/**
 	 * Slow forwarding a call
 	 */
-	int ipc_forward_slow(Genode::addr_t callid, int phoneid,
-	                     Genode::addr_t imethod, Genode::addr_t arg1,
-	                     Genode::addr_t arg2, Genode::addr_t arg3,
-	                     Genode::addr_t arg4, Genode::addr_t arg5,
-	                     unsigned int mode);
+	Genode::addr_t ipc_forward_slow(Genode::addr_t callid, int phoneid,
+	                                Genode::addr_t imethod, Genode::addr_t arg1,
+	                                Genode::addr_t arg2, Genode::addr_t arg3,
+	                                Genode::addr_t arg4, Genode::addr_t arg5,
+	                                unsigned int mode);
 
 	/**
 	 * Answer a call fast

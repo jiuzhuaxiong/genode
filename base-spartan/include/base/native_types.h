@@ -26,11 +26,12 @@ namespace Spartan {
 }
 
 namespace Genode {
-	typedef volatile int Native_lock;
+	typedef volatile int    Native_lock;
 	typedef          addr_t Native_thread_id;
 	typedef          addr_t Native_thread;
 	typedef          addr_t Native_task;
 
+	typedef          addr_t Native_ipc_callid;
 	/**
 	 * This is a structure adopted from HelenOS/SPARTAN.
 	 * It is important for ipc with SPARTAN's syscalls.
@@ -38,14 +39,14 @@ namespace Genode {
 	 * Additions to the pre-defined values MUST be added at the very end.
 	 */
 	typedef struct {
-		addr_t      args[IPC_CALL_LEN];
-		Native_task in_task_id;
-		addr_t      in_phone_hash;
+		addr_t            args[IPC_CALL_LEN];
+		Native_task       in_task_id;
+		addr_t            in_phone_hash;
 		/**
 		 * Addition for compfortable handling of
 		 *  ipc calls in Genode
 		 */
-		addr_t      callid;
+		Native_ipc_callid callid;
 	} Native_ipc_call;
 
 
