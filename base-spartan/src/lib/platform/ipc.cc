@@ -26,11 +26,6 @@ extern "C" {
 #include <abi/ipc/methods.h>
 #include <abi/synch.h>
 }
-//#include <sys/types.h>
-//#include <abi/proc/uarg.h>
-//#include <abi/ipc/ipc.h>
-//#include <abi/ipc/methods.h>
-//#include <abi/mm/as.h>
 
 
 using namespace Spartan;
@@ -195,24 +190,22 @@ addr_t Spartan::ipc_answer_slow(addr_t callid, addr_t retval, addr_t arg1,
  *************************/
 
 addr_t Spartan::ipc_connect_me_to(int phoneid, Native_thread_id dest_threadid,
-                      Native_thread_id my_threadid)
+                                  Native_thread_id my_threadid)
 {
 	Native_ipc_callid callid;
-	callid = ipc_call_async_fast(phoneid, IPC_M_CONNECT_ME_TO,
-	                           dest_threadid, my_threadid, 0, 0);
+	callid = ipc_call_async_fast(phoneid, IPC_M_CONNECT_ME_TO, 0, 0,
+	                             my_threadid, dest_threadid);
 
 	return callid;
 }
 
 
-addr_t Spartan::ipc_connect_to_me(int phoneid)
+addr_t Spartan::ipc_connect_to_me(int phoneid, Native_thread_id dest_threadid,
+                                  Native_thread_id my_threadid)
 {
-	/* TODO
-	 * workaround needed, since messages can only be send to tasks,
-	 * Genode meanwhile needs to adress threads.
-	 */
 	Native_ipc_callid callid;
-	callid = ipc_call_async_fast(phoneid, IPC_M_CONNECT_TO_ME, 0, 0, 0, 0);
+	callid = ipc_call_async_fast(phoneid, IPC_M_CONNECT_TO_ME, 0, 0,
+	                             my_threadid, dest_threadid);
 /*
 	Genode::printf("Spartan::ipc_connect_to_me:\treceived: callid=%lu, "
 	               "in_task_id=%lu, in_phonehash=%lu\t IMETHOD=%lu, "
@@ -225,7 +218,8 @@ addr_t Spartan::ipc_connect_to_me(int phoneid)
 }
 
 
-addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone)
+addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone,
+	                       Native_thread_id dest_threadid)
 {
 	/**
 	 * TODO
@@ -234,7 +228,7 @@ addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone)
 	 */
 	Native_ipc_callid callid;
 	callid = ipc_call_async_fast(snd_phone, IPC_M_CONNECTION_CLONE,
-	                           (addr_t) clone_phone, 0, 0, 0);
+	                           (addr_t) clone_phone, 0, 0, dest_threadid);
 
 	return callid;
 }
@@ -245,7 +239,8 @@ addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone)
  * Hangup phone *
  ****************/
 
-int Spartan::ipc_hangup(int phoneid)
+int Spartan::ipc_hangup(int phoneid, Native_thread_id dest_threadid,
+                        Native_thread_id my_threadid)
 {
-	return __SYSCALL1(SYS_IPC_HANGUP, phoneid);
+	return __SYSCALL5(SYS_IPC_HANGUP, phoneid, 0, 0, my_threadid, dest_threadid);
 }

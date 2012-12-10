@@ -93,32 +93,41 @@ namespace Spartan
 	 * Answering wrapper functions
 	 */
 	inline Genode::addr_t ipc_answer_0(Genode::addr_t callid,
-	                            Genode::addr_t retval) {
-		return ipc_answer_fast(callid, retval, 0, 0, 0, 0);
+	                               Genode::Native_thread_id dest_threadid,
+	                               Genode::addr_t retval) {
+		return ipc_answer_fast(callid, retval, 0, 0, 0, dest_threadid);
 	}
 
 	inline Genode::addr_t ipc_answer_1(Genode::addr_t callid,
-	                            Genode::addr_t retval, Genode::addr_t arg1) {
-		return ipc_answer_fast(callid, retval, arg1, 0, 0, 0);
+	                             Genode::Native_thread_id dest_threadid,
+	                             Genode::addr_t retval, Genode::addr_t arg1) {
+		return ipc_answer_fast(callid, retval, arg1, 0, 0,
+		                       dest_threadid);
 	}
 
 	inline Genode::addr_t ipc_answer_2(Genode::addr_t callid,
+	                            Genode::Native_thread_id dest_threadid,
 	                            Genode::addr_t retval, Genode::addr_t arg1,
 	                            Genode::addr_t arg2) {
-		return ipc_answer_fast(callid, retval, arg1, arg2, 0, 0);
+		return ipc_answer_fast(callid, retval, arg1, arg2, 0,
+		                       dest_threadid);
 	}
 
 	inline Genode::addr_t ipc_answer_3(Genode::addr_t callid,
+	                            Genode::Native_thread_id dest_threadid,
 	                            Genode::addr_t retval, Genode::addr_t arg1,
 	                            Genode::addr_t arg2, Genode::addr_t arg3) {
-		return ipc_answer_fast(callid, retval, arg1, arg2, arg3, 0);
+		return ipc_answer_fast(callid, retval, arg1, arg2, arg3,
+		                       dest_threadid);
 	}
 
 	inline Genode::addr_t ipc_answer_4(Genode::addr_t callid,
+	                            Genode::Native_thread_id dest_threadid,
 	                            Genode::addr_t retval, Genode::addr_t arg1,
 	                            Genode::addr_t arg2, Genode::addr_t arg3,
 	                            Genode::addr_t arg4) {
-		return ipc_answer_fast(callid, retval, arg1, arg2, arg3, arg4);
+		return ipc_answer_slow(callid, retval, arg1, arg2, arg3,
+		                       dest_threadid, arg4);
 	}
 
 	inline Genode::addr_t ipc_answer_5(Genode::addr_t callid,
@@ -138,12 +147,15 @@ namespace Spartan
 	/**
 	 * Request callback connection
 	 */
-	Genode::addr_t ipc_connect_to_me(int phoneid);
+	Genode::addr_t ipc_connect_to_me(int phoneid,
+	                                 Genode::Native_thread_id dest_threadid,
+	                                 Genode::Native_thread_id my_threadid);
 
 	/**
 	 * Send a cloned phone
 	 */
-	Genode::addr_t ipc_send_phone(int snd_phone, int clone_phone);
+	Genode::addr_t ipc_send_phone(int snd_phone, int clone_phone,
+	                              Genode::Native_thread_id dst_threadid);
 
 	/**
 	 * Ask for a cloned phone
@@ -154,7 +166,8 @@ namespace Spartan
 	/**
 	 * Hangup a phone
 	 */
-	int ipc_hangup(int phoneid);
+	int ipc_hangup(int phoneid, Genode::Native_thread_id dest_threadid,
+	               Genode::Native_thread_id my_threadid);
 }
 
 #endif /* _INCLUDE__SPARTAN__IPC_H_ */
