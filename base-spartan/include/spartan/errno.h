@@ -17,11 +17,14 @@
 /* SPARTAN's error codes */
 #include <abi/errno.h>
 
-
-/* declare the offset where user defined errorcodes begin */
-#define USER_ERROR_OFFSET         -256
+enum {
+	/* declare the offset where user defined errorcodes begin */
+	USERSPACE_ERROR_OFFSET           = -256,
 
 /* error codes concerning the ipc framework */
-#define E_IPC_CONNECTION_REJECTED   USER_ERROR_OFFSET - 0
+	E__IPC_CONNECTION_REJECTED  = USERSPACE_ERROR_OFFSET - 0,
+	E__IPC_NO_SUCH_DESTINATION  = USERSPACE_ERROR_OFFSET - 1,
+	E__IPC_CALL_QUEUE_FULL      = USERSPACE_ERROR_OFFSET - 2,
+};
 
 #endif /* _INCLUDE__SPARTAN__ERRNO_H_ */
