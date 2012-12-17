@@ -31,6 +31,9 @@ namespace Genode {
 			Semaphore _sem;
 			Lock      _read_lock, _write_lock;
 
+			Ipc_call _get_first(addr_t cmp_val, bool (*cmp_fktn)(Ipc_call, addr_t));
+
+
 		public:
 			class Overflow : public Genode::Exception { };
 
@@ -40,9 +43,12 @@ namespace Genode {
 			Ipc_call_queue()
 			: _item_count(0) {}
 
-			void		insert_new(Ipc_call new_call);
-			Ipc_call	get_first(addr_t imethod=0);
-			Ipc_call	get_last(void);
+			void     insert_new(Ipc_call new_call);
+			Ipc_call get_first_imethod(addr_t imethod=0);
+			Ipc_call get_first_reply_callid(addr_t callid=0);
+			Ipc_call get_last(void);
+
+			bool     is_waiting();
 	};
 }
 

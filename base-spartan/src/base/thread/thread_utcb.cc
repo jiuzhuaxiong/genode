@@ -1,8 +1,7 @@
 #include <base/thread_utcb.h>
-#include <base/ipc_call.h>
 #include <base/ipc_manager.h>
 
-#include <base/printf.h>
+#include <spartan/errno.h>
 
 using namespace Genode;
 
@@ -10,11 +9,11 @@ using namespace Genode;
 Thread_utcb::~Thread_utcb()
 {
 	Ipc_call del_call;
-	/* Answer every pending call with error code THREAD_KILLED */
-	while((del_call = _call_queue.get_last()) != Ipc_call()) {
-		/* TODO
-		 * maybe it would be better to use HANGUP as returncode? */
-		Spartan::ipc_answer_0(del_call.callid(), THREAD_KILLED);
+	Ipc_call cmp_val = Ipc_call();
+	/* Answer every pending call, which is not an answer, with error code */
+	while(((del_call = _call_queue.get_last()) != cmp_val)
+	      && !(del_call.callid() & IPC_CALLID_ANSWERED)) {
+		Spartan::ipc_answer_0(del_call.callid(), del_call.snd_task_id(), E__THREAD_KILLED);
 	}
 	Ipc_manager::singleton()->unregister_thread(this);
 }
@@ -36,24 +35,13 @@ Thread_utcb::insert_call(Ipc_call call)
 
 
 Ipc_call
-Thread_utcb::get_next_call(addr_t imethod)
-{
-	Ipc_call	call;
-
-	call = _call_queue.get_first_imethod(imethod);
-
-	return call;
-}
-
-
-Ipc_call
 Thread_utcb::wait_for_call(addr_t imethod)
 {
 	Ipc_call	call;
 
 	while(!call.is_valid()) {
 		Ipc_manager::singleton()->get_call();
-		call = get_next_call(imethod);
+		call = _call_queue.get_first_imethod(imethod);
 		/**
 		 * if the returned call is invalid the
 		 *  government of the ipc_manager of another
@@ -65,32 +53,14 @@ Thread_utcb::wait_for_call(addr_t imethod)
 }
 
 
-void
-Thread_utcb::insert_reply(Ipc_call call)
-{
-	_answer_queue.insert_new(call);
-}
-
-
 Ipc_call
-Thread_utcb::get_next_answer(Native_ipc_callid callid)
-{
-	Ipc_call answer;
-
-	answer = _call_queue.get_first_callid(callid);
-
-	return answer;
-}
-
-
-Ipc_call
-Thread_utcb::wait_for_call(Native_ipc_callid callid)
+Thread_utcb::wait_for_reply(Native_ipc_callid callid)
 {
 	Ipc_call answer;
 
 	while(!answer.is_valid()) {
 		Ipc_manager::singleton()->get_call();
-		answer = get_next_answer(callid);
+		answer = _call_queue.get_first_reply_callid(callid);
 		/**
 		 * if the returned answer is invalid the
 		 *  government of the ipc_manager of another
@@ -99,5 +69,12 @@ Thread_utcb::wait_for_call(Native_ipc_callid callid)
 		 */
 	}
 	return answer;
+}
+
+
+bool
+Thread_utcb::is_waiting()
+{
+	return _call_queue.is_waiting();
 }
 

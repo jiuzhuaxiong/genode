@@ -15,8 +15,6 @@
 #ifndef _INCLUDE__BASE__IPC_MSGBUF_H_
 #define _INCLUDE__BASE__IPC_MSGBUF_H_
 
-#include <base/printf.h>
-
 namespace Genode {
 
 	/**

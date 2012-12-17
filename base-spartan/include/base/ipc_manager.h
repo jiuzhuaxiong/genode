@@ -29,11 +29,11 @@ namespace Genode {
 			Lock         _thread_lock;
 
 			explicit     Ipc_manager()
-			: _thread_id(Spartan::INVALID_ID), _initialized(false) {}
+			: _governor(GOV_FREE) {}
 
-			bool         _create();
 			int          _get_thread(Native_thread_id thread_id);
 			int          _get_thread(Thread_utcb* utcb);
+			void         _wait_for_calls();
 
 		public:
 			static Ipc_manager* singleton()

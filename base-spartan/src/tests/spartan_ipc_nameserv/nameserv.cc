@@ -112,7 +112,7 @@ Genode::addr_t reject_connection(Genode::Native_ipc_call call)
 {
 	Genode::printf("nameserv: rejecting callid %lu\n", call.callid);
 
-	return Spartan::ipc_answer_0(call.callid, IPC_GET_ARG4(call), E_IPC_CONNECTION_REJECTED);
+	return Spartan::ipc_answer_0(call.callid, IPC_GET_ARG4(call), E__IPC_CONNECTION_REJECTED);
 }
 
 /**

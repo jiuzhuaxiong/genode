@@ -1,7 +1,12 @@
 #ifndef _INCLUDE__BASE__IPC_CALL_H_
 #define _INCLUDE__BASE__IPC_CALL_H_
 
-#include <native_types.h>
+/* Genode includes */
+#include <base/native_types.h>
+
+/* SPARTAN includes */
+#include <spartan/ipc.h>
+
 
 namespace Genode {
 	class Ipc_call
@@ -9,9 +14,22 @@ namespace Genode {
 		private:
 			Native_ipc_call _call;
 
+			static Native_ipc_call _invalid_ipc_call()
+			{
+				Native_ipc_call ipc_call;
+				for(int i=0; i<IPC_CALL_LEN; i++)
+					ipc_call.args[i] = 0;
+				ipc_call.in_task_id = 0;
+				ipc_call.in_phone_hash = 0;
+				ipc_call.callid = 0;
+
+				return ipc_call;
+			}
+
 		public:
 			explicit Ipc_call()
-			: _call(Native_ipc_call(0, 0, 0, 0, 0, 0, 0, 0, 0));
+			: _call(_invalid_ipc_call()) {}
+
 			explicit Ipc_call(Native_ipc_call call)
 			: _call(call) {}
 
@@ -48,7 +66,7 @@ namespace Genode {
 
 			int cloned_phone()
 			{
-				switch(call_method()) {
+				switch(method()) {
 				case IPC_M_CONNECTION_CLONE:
 					return arg1();
 				default:
@@ -56,19 +74,20 @@ namespace Genode {
 				}
 			}
 
-			bool is_valid() {
-				return (call.callid != 0);
-			}
-
-			bool operator == (Ipc_call other)
+			bool operator == (Ipc_call &other)
 			{
-				return ( (_callid == other.callid())
+				return ( (callid() == other.callid())
 					&& (dest_thread_id() == other.dest_thread_id()));
 			}
 
-			bool operator != (Ipc_call other)
+			bool operator != (Ipc_call &other)
 			{
-				return !(this == other);
+				return !(*this == other);
+			}
+
+			bool is_valid() {
+				static Ipc_call cmp_call;
+				return (*this != cmp_call);
 			}
 	};
 }
