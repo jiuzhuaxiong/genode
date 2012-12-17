@@ -49,7 +49,8 @@ _cmp_reply_callid(Ipc_call call, Native_ipc_callid callid)
 /* get first occurence of a specific call from th queue
  *  comparison is defined through a function pointer */
 Ipc_call
-Ipc_call_queue::_get_first(addr_t cmp_val, bool (*cmp_fktn)(Ipc_call, addr_t))
+Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
+                           bool (*cmp_fktn)(Ipc_call, addr_t))
 {
 	Ipc_call ret_call;
 	addr_t   pt, sem = 0;
@@ -58,10 +59,19 @@ Ipc_call_queue::_get_first(addr_t cmp_val, bool (*cmp_fktn)(Ipc_call, addr_t))
 	Lock::Guard read_lock(_read_lock);
 	/* look for the message in th queue */
 	for(pt=0; pt<_item_count; pt++) {
+		/* did we find the requested call? */
 		if(cmp_fktn(_queue[pt], cmp_val)) {
 			ret_call = _queue[pt];
 			break;
 		}
+
+		/* the requested call is not in the queue
+		 *  and we shall not block */
+		if(!blocking && (_sem.cnt() == 0)) {
+			ret_call = Ipc_call();
+			break;
+		}
+
 		/* count checked messages */
 		sem++;
 		_sem.down();
@@ -86,17 +96,17 @@ Ipc_call_queue::_get_first(addr_t cmp_val, bool (*cmp_fktn)(Ipc_call, addr_t))
 
 /* get the first call with the specified imethod */
 Ipc_call
-Ipc_call_queue::get_first_imethod(addr_t imethod)
+Ipc_call_queue::get_first_imethod(bool blocking, addr_t imethod)
 {
-	return _get_first(imethod, &_cmp_imethod);
+	return _get_first(blocking, imethod, &_cmp_imethod);
 }
 
 
 /* get the first reply to the sepcified callid */
 Ipc_call
-Ipc_call_queue::get_first_reply_callid(Native_ipc_callid callid)
+Ipc_call_queue::get_first_reply_callid(bool blocking, Native_ipc_callid callid)
 {
-	return _get_first(callid, &_cmp_reply_callid);
+	return _get_first(blocking, callid, &_cmp_reply_callid);
 }
 
 

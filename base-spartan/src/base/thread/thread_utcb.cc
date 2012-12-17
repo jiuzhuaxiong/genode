@@ -37,11 +37,11 @@ Thread_utcb::insert_call(Ipc_call call)
 Ipc_call
 Thread_utcb::wait_for_call(addr_t imethod)
 {
-	Ipc_call	call;
+	Ipc_call call = _call_queue.get_first_imethod(false, imethod);
 
 	while(!call.is_valid()) {
 		Ipc_manager::singleton()->get_call();
-		call = _call_queue.get_first_imethod(imethod);
+		call = _call_queue.get_first_imethod(true, imethod);
 		/**
 		 * if the returned call is invalid the
 		 *  government of the ipc_manager of another
@@ -56,11 +56,11 @@ Thread_utcb::wait_for_call(addr_t imethod)
 Ipc_call
 Thread_utcb::wait_for_reply(Native_ipc_callid callid)
 {
-	Ipc_call answer;
+	Ipc_call answer = _call_queue.get_first_reply_callid(false, callid);
 
 	while(!answer.is_valid()) {
 		Ipc_manager::singleton()->get_call();
-		answer = _call_queue.get_first_reply_callid(callid);
+		answer = _call_queue.get_first_reply_callid(true, callid);
 		/**
 		 * if the returned answer is invalid the
 		 *  government of the ipc_manager of another
