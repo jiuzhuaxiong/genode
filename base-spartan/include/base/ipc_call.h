@@ -66,12 +66,11 @@ namespace Genode {
 
 			int cloned_phone()
 			{
-				switch(method()) {
-				case IPC_M_CONNECTION_CLONE:
-					return arg1();
-				default:
+				if((callid() & IPC_CALLID_ANSWERED)
+				   && (arg1() == IPC_M_PHONE_HANDLE))
+					return arg5();
+				else
 					return -1;
-				}
 			}
 
 			bool operator == (Ipc_call &other)

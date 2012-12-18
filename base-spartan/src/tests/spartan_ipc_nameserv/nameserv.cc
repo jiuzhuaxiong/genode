@@ -170,7 +170,8 @@ extern "C" int main(void)
 				 * give more information to forwarding ipc call
 				 */
 				Spartan::ipc_forward_fast(call.callid,
-				                          _phone[pos], _thread_id[pos], 0, 0,
+				                          _phone[pos], IPC_GET_ARG1(call),
+				                          IPC_GET_ARG2(call), IPC_GET_ARG3(call),
 				                          IPC_FF_NONE);
 			}
 			else {

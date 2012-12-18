@@ -14,15 +14,17 @@
 #ifndef _INCLUDE__SPARTAN__IPC_H_
 #define _INCLUDE__SPARTAN__IPC_H_
 
+/* Genode includes */
 #include <base/stdint.h>
 #include <base/native_types.h>
+
+/*Spartan includes */
+#include <spartan/methods.h>
 
 namespace Spartan
 {
 #include <sys/types.h>
 #include <abi/ipc/ipc.h>
-#include <abi/ipc/methods.h>
-
 
 	/**
 	 * Fast asynchronous call

@@ -57,7 +57,7 @@ Ipc_manager::_wait_for_calls()
 		n_call = Spartan::ipc_wait_for_call_timeout(0);
 
 		PDBG("Ipc_manager: received incomming call\n"
-		     "\t\tIMETHOD=%lu, ARG1=%lu(destination task), "
+		     "\t\tIMETHOD=%lu, ARG1=%lu, "
 		     "ARG2=%lu, ARG3=%lu(sending thread), "
 		     "ARG4=%lu(destination thread), ARG5=%lu",
 		     IPC_GET_IMETHOD(n_call), IPC_GET_ARG1(n_call),
@@ -95,6 +95,7 @@ Ipc_manager::_wait_for_calls()
 
 		/* handle the case the destined thread is the current govenor thread */
 		if(call.dest_thread_id() == my_thread_id) {
+//			PDBG("laying down governorship");
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
 			/**
@@ -103,7 +104,9 @@ Ipc_manager::_wait_for_calls()
 			 *  by sending an invalid ipc call
 			 */
 			for(addr_t i=0; i<_thread_count; i++) {
-				if(_threads[i]->is_waiting()) {
+				if((_threads[i]->thread_id() != my_thread_id)
+				   && _threads[i]->is_waiting()) {
+//					PDBG("inserting fake ipc call");
 					_threads[i]->insert_call(Ipc_call());
 					break;
 				}

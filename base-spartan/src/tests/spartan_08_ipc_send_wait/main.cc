@@ -21,7 +21,9 @@
 #include <base/native_types.h>
 
 /* Spartan syscall includes */
-#include <spartan/syscalls.h>
+#include <spartan/ipc.h>
+#include <spartan/methods.h>
+#include <spartan/errno.h>
 
 /* local includes */
 #include "../mini_env.h"
@@ -61,26 +63,28 @@ bool _register_with_nameserv(Genode::Thread_utcb* thread)
 int _connect_to_myself(Genode::Thread_utcb* thread)
 {
 	if(!_register_with_nameserv(thread)) {
-		Genode::printf("Could not register with nameserv!\n");
+		PDBG("Could not register with nameserv!");
 		return 0;
 	}
+	PDBG("Successfully registered with nameserv!");
 
-	int              ret;
 	Genode::Ipc_call call;
 	Genode::Native_thread_id mythread = Spartan::thread_get_id();
-//	ret = Spartan::ipc_call_sync_2_0(PHONE_NAMESERV, 
-//		/*IPC_CONNECTION_REQUEST*/ 30, mythread, mythread);
 
-	/* connection endpoint is not known */
-//	if(ret<0)
-//		return ret;
+	Genode::addr_t msg_callid;
+	msg_callid = Spartan::ipc_connect_me_to(PHONE_NAMESERV, mythread,
+	                                        mythread);
 
-	call = thread->wait_for_call(IPC_M_CONNECTION_CLONE);
-//	ret = call.cloned_phone();
-	Spartan::ipc_answer_0(call.callid(), call.snd_thread_id(), 0);
+	call = thread->wait_for_call(IPC_M_CONNECT_ME_TO);
+	if(call.dest_thread_id() != mythread)
+		Spartan::ipc_answer_0(call.callid(), call.snd_thread_id(),
+		                      E__IPC_DESTINATION_UNKNOWN);
 
-	/* return the aquired phone */
-	return ret;
+	Spartan::ipc_answer_1(call.callid(), call.snd_thread_id(), EOK,
+	                      IPC_M_PHONE_HANDLE);
+	call = thread->wait_for_reply();
+
+	return call.cloned_phone();
 }
 
 /**
@@ -101,7 +105,7 @@ static void sender_thread_entry()
 	Genode::printf("sending a=%d, b=%d, c=%d\n", a, b, c);
 	/* Since the for this test constructed Native_capability is a local,
 	 * the capability is not send via ipc */
-	os << a << b << c << os.dst() << Genode::IPC_SEND;
+	os << a << b << c << /*os.dst() << */Genode::IPC_SEND;
 
 	while(1);
 }
@@ -123,6 +127,7 @@ int main()
 	receiver_cap = is;
 	/* set id of capability so it can be marshalled */
 	int myphone = _connect_to_myself(&thread);
+	PDBG("acquired phone to myself is phone %i", myphone);
 	Genode::Ipc_destination dest = {Spartan::thread_get_id(), myphone};
 	receiver_cap = Genode::Untyped_capability(dest, 2);
 
@@ -135,7 +140,7 @@ int main()
 	/* wait for incoming IPC */
 	int a = 0, b = 0, c = 0;
 	Genode::Native_capability cap;
-	is >> Genode::IPC_WAIT >> a >> b >> c >> cap;
+	is >> Genode::IPC_WAIT >> a >> b >> c/* >> cap*/;
 	Genode::printf("received a=%d, b=%d, c=%d\n", a, b, c);
 
 	while(1);

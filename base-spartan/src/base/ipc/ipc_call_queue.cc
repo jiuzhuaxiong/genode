@@ -53,12 +53,14 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
                            bool (*cmp_fktn)(Ipc_call, addr_t))
 {
 	Ipc_call ret_call;
-	addr_t   pt, sem = 0;
+	addr_t   pt = 0, sem = 0;
 
 	/* lock queue for reading */
 	Lock::Guard read_lock(_read_lock);
 	/* look for the message in th queue */
+//	PDBG("itemcount = %lu", _item_count);
 	for(pt=0; pt<_item_count; pt++) {
+//		PDBG("call.callid() & IPC_CALLID_ANSWERED returns %i & call.is_valid() returns %i", (_queue[pt].callid() & IPC_CALLID_ANSWERED), _queue[pt].is_valid());
 		/* did we find the requested call? */
 		if(cmp_fktn(_queue[pt], cmp_val)) {
 			ret_call = _queue[pt];
@@ -67,11 +69,13 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
 
 		/* the requested call is not in the queue
 		 *  and we shall not block */
-		if(!blocking && (_sem.cnt() == 0)) {
-			ret_call = Ipc_call();
-			break;
+		if(!blocking && (_sem.cnt() < 1)) {
+			PDBG("NON-blocking return");
+			return ret_call;
 		}
 
+		if(_sem.cnt() < 1)
+			PDBG("BLOCK");
 		/* count checked messages */
 		sem++;
 		_sem.down();
@@ -80,6 +84,8 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
 	/* lock queue for writing */
 	Lock::Guard write_lock(_write_lock);
 	/* reorder queue */
+	if(_item_count > 0)
+		_item_count--;
 	for(; pt<_item_count; pt++)
 		_queue[pt] = _queue[pt+1];
 

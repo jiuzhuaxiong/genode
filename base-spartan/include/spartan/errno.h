@@ -1,5 +1,5 @@
 /*
- * \brief  Spartan futex specific syscalls
+ * \brief  Spartan specific error codes
  * \author Tobias Börtitz
  * \date   2012-11-29
  */
