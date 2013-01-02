@@ -1,10 +1,20 @@
+/*
+ * \brief  Spartan-specific thread context implementation
+ * \author Tobias Börtitz
+ * \date   2012-08-14
+ */
+
+/*
+ * Copyright (C) 2010-2012 Genode Labs GmbH
+ *
+ * This file is part of the Genode OS framework, which is distributed
+ * under the terms of the GNU General Public License version 2.
+ */
+
 #include <base/thread.h>
 #include <base/thread_utcb.h>
-#include <base/ipc_manager.h>
 
 #include <base/printf.h>
-
-#include <spartan/syscalls.h>
 
 using namespace Genode;
 

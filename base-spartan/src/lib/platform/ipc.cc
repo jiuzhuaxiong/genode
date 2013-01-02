@@ -39,11 +39,8 @@ Native_ipc_callid Spartan::ipc_call_async_fast(int phoneid, addr_t imethod,
                                                addr_t arg1, addr_t arg2,
                                                addr_t arg3, addr_t arg4)
 {
-	Native_ipc_callid callid;
-	callid = __SYSCALL6(SYS_IPC_CALL_ASYNC_FAST, phoneid, imethod,
-	                         arg1, arg2, arg3, arg4);
-
-	return callid;
+	return __SYSCALL6(SYS_IPC_CALL_ASYNC_FAST, phoneid, imethod,
+	                  arg1, arg2, arg3, arg4);
 }
 
 
@@ -53,7 +50,6 @@ Native_ipc_callid Spartan::ipc_call_async_slow(int phoneid, addr_t imethod,
                                                addr_t arg5)
 {
 	Native_ipc_call   call;
-	Native_ipc_callid callid;
 
 	IPC_SET_IMETHOD(call, imethod);
 	IPC_SET_ARG1(call, arg1);
@@ -62,10 +58,8 @@ Native_ipc_callid Spartan::ipc_call_async_slow(int phoneid, addr_t imethod,
 	IPC_SET_ARG4(call, arg4);
 	IPC_SET_ARG5(call, arg5);
 
-	callid =  __SYSCALL2(SYS_IPC_CALL_ASYNC_SLOW, phoneid,
-	                     (sysarg_t) &call);
-
-	return callid;
+	return __SYSCALL2(SYS_IPC_CALL_ASYNC_SLOW, phoneid,
+	                  (sysarg_t) &call);
 }
 
 
@@ -77,6 +71,7 @@ Native_ipc_callid Spartan::ipc_call_async_slow(int phoneid, addr_t imethod,
 Native_ipc_call Spartan::ipc_wait_cycle(addr_t usec, unsigned int flags)
 {
 	Native_ipc_call call;
+
 	call.callid = __SYSCALL3(SYS_IPC_WAIT, (addr_t) &call, usec, flags);
 /* DEBUG
 	Genode::printf("Spartan::ipc_wait_cycle:\treceived: callid=%lu, "
@@ -192,20 +187,16 @@ addr_t Spartan::ipc_answer_slow(addr_t callid, addr_t retval, addr_t arg1,
 addr_t Spartan::ipc_connect_me_to(int phoneid, Native_thread_id dest_threadid,
                                   Native_thread_id my_threadid)
 {
-	Native_ipc_callid callid;
-	callid = ipc_call_async_fast(phoneid, IPC_M_CONNECT_ME_TO, 0, 0,
-	                             my_threadid, dest_threadid);
-
-	return callid;
+	return ipc_call_async_fast(phoneid, IPC_M_CONNECT_ME_TO, 0, 0,
+	                           my_threadid, dest_threadid);
 }
 
 
 addr_t Spartan::ipc_connect_to_me(int phoneid, Native_thread_id dest_threadid,
                                   Native_thread_id my_threadid)
 {
-	Native_ipc_callid callid;
-	callid = ipc_call_async_fast(phoneid, IPC_M_CONNECT_TO_ME, 0, 0,
-	                             my_threadid, dest_threadid);
+	return ipc_call_async_fast(phoneid, IPC_M_CONNECT_TO_ME, 0, 0,
+	                           my_threadid, dest_threadid);
 /*
 	Genode::printf("Spartan::ipc_connect_to_me:\treceived: callid=%lu, "
 	               "in_task_id=%lu, in_phonehash=%lu\t IMETHOD=%lu, "
@@ -214,23 +205,21 @@ addr_t Spartan::ipc_connect_to_me(int phoneid, Native_thread_id dest_threadid,
 	               IPC_GET_IMETHOD(call), IPC_GET_ARG1(call), IPC_GET_ARG2(call),
 	               IPC_GET_ARG3(call), IPC_GET_ARG4(call), IPC_GET_ARG5(call));
 */
-	return callid;
 }
 
 
 addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone,
-	                       Native_thread_id dest_threadid)
+                               Native_thread_id dest_threadid,
+                               Genode::Native_thread_id my_threadid)
 {
 	/**
 	 * TODO
 	 * workaround needed, since messages can only be send to tasks,
 	 * Genode meanwhile needs to adress threads.
 	 */
-	Native_ipc_callid callid;
-	callid = ipc_call_async_fast(snd_phone, IPC_M_CONNECTION_CLONE,
-	                           (addr_t) clone_phone, 0, 0, dest_threadid);
-
-	return callid;
+	return ipc_call_async_fast(snd_phone, IPC_M_CONNECTION_CLONE,
+	                           (addr_t) clone_phone, 0, my_threadid,
+	                           dest_threadid);
 }
 
 
@@ -243,4 +232,26 @@ int Spartan::ipc_hangup(int phoneid, Native_thread_id dest_threadid,
                         Native_thread_id my_threadid)
 {
 	return __SYSCALL5(SYS_IPC_HANGUP, phoneid, 0, 0, my_threadid, dest_threadid);
+}
+
+
+/********************************
+ * Send & receive buffered data *
+ ********************************/
+
+Genode::Native_ipc_callid Spartan::ipc_data_write(int snd_phone, const void* data,
+                                                  size_t size,
+                                                  Genode::Native_thread_id dst_threadid,
+                                                  Genode::Native_thread_id my_threadid,
+                                                  Genode::addr_t req_callid)
+{
+	return ipc_call_async_slow(snd_phone, IPC_M_DATA_WRITE, (addr_t)data, size,
+	                           my_threadid, dst_threadid, req_callid);
+}
+
+Genode::addr_t Spartan::ipc_data_accept(Genode::addr_t callid, void* data,
+                                        size_t size,
+                                        Genode::Native_thread_id dest_threadid)
+{
+	return ipc_answer_2(callid, dest_threadid, EOK, (addr_t)data, size);
 }

@@ -19,10 +19,6 @@
 
 namespace Spartan {
 #include <abi/ipc/ipc.h>
-
-	enum {
-		INVALID_ID = ~0UL,
-	};
 }
 
 namespace Genode {
@@ -49,7 +45,6 @@ namespace Genode {
 		Native_ipc_callid callid;
 	} Native_ipc_call;
 
-
 	struct Ipc_destination {
 		Native_thread_id rcv_thread_id;
 		int              snd_phone;
@@ -58,12 +53,18 @@ namespace Genode {
 	struct Cap_dst_policy
 	{
 		typedef Ipc_destination Dst;
-		static bool valid(Dst tid) { return false; }
+		static bool valid(Dst tid)
+		{
+			if((tid.rcv_thread_id == 0)
+			   || (tid.snd_phone < 0))
+				return false;
+			return true;
+		}
 		static Dst  invalid()
 		{
 			Dst dest;
-			dest.rcv_thread_id = Spartan::INVALID_ID;
-			dest.snd_phone = 0;
+			dest.rcv_thread_id = 0;
+			dest.snd_phone = -1;
 			return dest;
 		}
 		static void copy(void* dst, Native_capability_tpl<Cap_dst_policy>* src);

@@ -2,6 +2,8 @@
 
 #include <base/ipc_call_queue.h>
 
+#include <spartan/syscalls.h>
+
 using namespace Genode;
 
 /********************
@@ -55,39 +57,50 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
 	Ipc_call ret_call;
 	addr_t   pt = 0, sem = 0;
 
+//	PDBG("FOO?");
 	/* lock queue for reading */
 	Lock::Guard read_lock(_read_lock);
-	/* look for the message in th queue */
-//	PDBG("itemcount = %lu", _item_count);
-	for(pt=0; pt<_item_count; pt++) {
-//		PDBG("call.callid() & IPC_CALLID_ANSWERED returns %i & call.is_valid() returns %i", (_queue[pt].callid() & IPC_CALLID_ANSWERED), _queue[pt].is_valid());
-		/* did we find the requested call? */
-		if(cmp_fktn(_queue[pt], cmp_val)) {
-			ret_call = _queue[pt];
+//	PDBG("BAR?!");
+
+	do {
+		/* break the loop if the requested message could not
+		 *  be found and the queue request is non-blocking */
+		PDBG("_sem.cnt() = %i", _sem.cnt());
+		if(!blocking && (_sem.cnt() < 1)) {
+			PDBG("NON-blocking return thread %lu", Spartan::thread_get_id());
 			break;
 		}
 
-		/* the requested call is not in the queue
-		 *  and we shall not block */
-		if(!blocking && (_sem.cnt() < 1)) {
-			PDBG("NON-blocking return");
-			return ret_call;
-		}
-
 		if(_sem.cnt() < 1)
-			PDBG("BLOCK");
-		/* count checked messages */
-		sem++;
+			PDBG("BLOCKING thread %lu while _sem.cnt()=%i", Spartan::thread_get_id(), _sem.cnt());
+		/* decrease _sem before looking at the current position of the queue
+		 * this ensures, that the queue will block the thread whenever there is
+		 *  1) no message in the queue (on fresh entry of this function)
+		 *  2) no unread message in the queuei (else)
+		 *  since _sem holds the amount of all messages on fresh entry and 
+		 *  otherwise the amount of unchecked messages */
 		_sem.down();
-	}
+		if(_sem.cnt() < 1)
+			PDBG("AWAKEN thread %lu", Spartan::thread_get_id());
+		/* did we find the requested call? */
+		if(cmp_fktn(_queue[pt], cmp_val)) {
+			PDBG("requested message found at position %lu", pt);
+			ret_call = _queue[pt];
+			_item_count--;
+			break;
+		}
+		PDBG("requested message not found at position %lu", pt);
+	} while(pt++, pt<_item_count);
+	/* safe pt to re-increase _sem
+	 * pt is exact the amount pf read messages */
+	sem = pt;
 
 	/* lock queue for writing */
 	Lock::Guard write_lock(_write_lock);
-	/* reorder queue */
-	if(_item_count > 0)
-		_item_count--;
-	for(; pt<_item_count; pt++)
-		_queue[pt] = _queue[pt+1];
+	/* reorder queue if we took something out */
+	if(blocking || _sem.cnt() > 0)
+		for(; pt<_item_count; pt++)
+			_queue[pt] = _queue[pt+1];
 
 	/* restore count of unchecked messages */
 	while(sem--)
@@ -140,7 +153,8 @@ Ipc_call_queue::get_last(void)
 void
 Ipc_call_queue::insert_new(Ipc_call new_call)
 {
-	PDBG("Ipc_call_queue:\tstarting to insert new call\n");
+	PDBG("starting to insert new call in thread %lu. Current _item_count=%lu, _sem.cnt()=%lu",
+	     Spartan::thread_get_id(), _item_count, _sem.cnt());
 	if(_item_count >= QUEUE_SIZE)
 		throw Overflow();
 	/* lock the queue for writing */
@@ -148,6 +162,7 @@ Ipc_call_queue::insert_new(Ipc_call new_call)
 
 	_queue[_item_count++] = new_call;
 	_sem.up();
+	PDBG("new _item_count=%lu, _sem.cnt()=%lu", _item_count, _sem.cnt());
 }
 
 
@@ -155,6 +170,7 @@ Ipc_call_queue::insert_new(Ipc_call new_call)
 bool
 Ipc_call_queue::is_waiting()
 {
+	PDBG("_sem.cnt() on thread %lu = %i", Spartan::thread_get_id(), _sem.cnt());
 	return (_sem.cnt() < 0);
 }
 

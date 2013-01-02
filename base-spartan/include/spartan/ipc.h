@@ -157,7 +157,8 @@ namespace Spartan
 	 * Send a cloned phone
 	 */
 	Genode::addr_t ipc_send_phone(int snd_phone, int clone_phone,
-	                              Genode::Native_thread_id dst_threadid);
+	                              Genode::Native_thread_id dst_threadid,
+	                              Genode::Native_thread_id my_threadid);
 
 	/**
 	 * Ask for a cloned phone
@@ -170,6 +171,17 @@ namespace Spartan
 	 */
 	int ipc_hangup(int phoneid, Genode::Native_thread_id dest_threadid,
 	               Genode::Native_thread_id my_threadid);
+
+
+	Genode::Native_ipc_callid ipc_data_write(int snd_phone,
+	                                         const void* data,
+	                                         size_t size,
+	                                         Genode::Native_thread_id dst_threadid,
+	                                         Genode::Native_thread_id my_threadid,
+	                                         Genode::addr_t req_callid=0);
+	Genode::addr_t ipc_data_accept(Genode::addr_t callid, void* data,
+	                               size_t size,
+	                               Genode::Native_thread_id snd_thread_id);
 }
 
 #endif /* _INCLUDE__SPARTAN__IPC_H_ */

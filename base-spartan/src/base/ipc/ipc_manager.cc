@@ -49,6 +49,7 @@ void
 Ipc_manager::_wait_for_calls()
 {
 	Native_thread_id my_thread_id = Spartan::thread_get_id();
+		//Thread_base::myself()->utcb()->thread_id();
 
 	/* loop and grab all incomming calls as long as there is no call for me */
 	while(1) {
@@ -56,13 +57,15 @@ Ipc_manager::_wait_for_calls()
 		/* wait for incoming calls */
 		n_call = Spartan::ipc_wait_for_call_timeout(0);
 
-		PDBG("Ipc_manager: received incomming call\n"
+		PDBG("Ipc_manager: received incomming call with callid=%lu\n"
 		     "\t\tIMETHOD=%lu, ARG1=%lu, "
 		     "ARG2=%lu, ARG3=%lu(sending thread), "
-		     "ARG4=%lu(destination thread), ARG5=%lu",
-		     IPC_GET_IMETHOD(n_call), IPC_GET_ARG1(n_call),
-		     IPC_GET_ARG2(n_call), IPC_GET_ARG3(n_call),
-		     IPC_GET_ARG4(n_call), IPC_GET_ARG5(n_call));
+		     "ARG4=%lu(destination thread), ARG5=%lu\n"
+		     "\t\tmy own thrad_id is %lu",
+		     n_call.callid, IPC_GET_IMETHOD(n_call), 
+		     IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call), 
+		     IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call), 
+		     IPC_GET_ARG5(n_call), my_thread_id);
 
 		/* check whether the incomming call is valid. if not, desmiss it */
 		Ipc_call call = Ipc_call(n_call);
@@ -95,18 +98,20 @@ Ipc_manager::_wait_for_calls()
 
 		/* handle the case the destined thread is the current govenor thread */
 		if(call.dest_thread_id() == my_thread_id) {
-//			PDBG("laying down governorship");
+			PDBG("laying down governorship");
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
 			/**
 			 * wake up the first waiting thread
+			 * (which is not the current thread)
 			 *  to take over the government
 			 *  by sending an invalid ipc call
 			 */
 			for(addr_t i=0; i<_thread_count; i++) {
+				PDBG(" check thread %lu (waiting=%i) for wakeup, while myself being thread %lu", _threads[i]->thread_id(), _threads[i]->is_waiting(), my_thread_id);
 				if((_threads[i]->thread_id() != my_thread_id)
 				   && _threads[i]->is_waiting()) {
-//					PDBG("inserting fake ipc call");
+					PDBG("waking up thread %lu", _threads[i]->thread_id());
 					_threads[i]->insert_call(Ipc_call());
 					break;
 				}
@@ -121,6 +126,8 @@ void
 Ipc_manager::get_call()
 {
 	if(cmpxchg(&_governor, GOV_FREE, GOV_TAKEN)) {
+		PDBG("new governor is thread with id %lu",
+		     Spartan::thread_get_id());
 		_wait_for_calls();
 	}
 }
@@ -133,12 +140,13 @@ Ipc_manager::register_thread(Thread_utcb* utcb)
 		return false;
 
 	int pos = _get_thread(utcb);
+	PDBG("trying to register thread with id %lu with *utcb=%lu",
+	     utcb->thread_id(), utcb);
 	if (pos < 0) {
 		/* utcb is not registered already, so register it */
-		PDBG("registering new thread with thread_id=%lu while"
-		     " utcb=%lu", utcb->thread_id(), utcb);
 		Lock::Guard lock(_thread_lock);
 		_threads[_thread_count++] = utcb;
+		PDBG("successfully registered!");
 	}
 	return true;
 }

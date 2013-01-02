@@ -44,6 +44,10 @@ namespace Genode {
 			addr_t arg4() { return IPC_GET_ARG4(_call); }
 			addr_t arg5() { return IPC_GET_ARG5(_call); }
 
+			/******************
+			 * returning id's *
+			 ******************/
+
 			Native_task snd_task_id()
 			{
 				return _call.in_task_id;
@@ -64,15 +68,51 @@ namespace Genode {
 				return arg4();
 			}
 
+
+			/********************
+			 * handling answers *
+			 ********************/
+
+			bool is_answer() {
+				return (callid() & IPC_CALLID_ANSWERED);
+			}
+
+			bool is_answer_to(Native_ipc_callid cmp_id) {
+				return (is_answer()
+				        && ((callid() | IPC_CALLID_ANSWERED)
+				            == cmp_id));
+			}
+
+			addr_t answer_code() {
+				if(!is_answer())
+					return 0;
+
+				return method();
+			}
+
+
 			int cloned_phone()
 			{
-				if((callid() & IPC_CALLID_ANSWERED)
+				if(is_answer()
 				   && (arg1() == IPC_M_PHONE_HANDLE))
 					return arg5();
 				else
 					return -1;
 			}
 
+			addr_t msg_size() {
+				switch(method()) {
+				case IPC_M_DATA_WRITE:
+				case IPC_M_DATA_READ:
+					return arg2();
+				default:
+					return 0;
+				}
+			}
+
+			/***********************
+			 * comparing operators *
+			 ***********************/
 			bool operator == (Ipc_call &other)
 			{
 				return ( (callid() == other.callid())

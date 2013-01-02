@@ -27,6 +27,8 @@ namespace Genode {
 				MAX_CAP_ARGS = 4,
 			};
 
+			Native_ipc_callid callid;
+
 		protected:
 
 			size_t _size;

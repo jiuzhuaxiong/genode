@@ -19,6 +19,7 @@
 #include <base/ipc_msgbuf.h>
 #include <base/ipc_manager.h>
 #include <base/native_types.h>
+#include <base/thread.h>
 
 /* Spartan syscall includes */
 #include <spartan/ipc.h>
@@ -94,7 +95,7 @@ static void sender_thread_entry()
 {
 	Genode::Thread_utcb thread;
 	thread.set_thread_id(Spartan::thread_get_id());
-	Genode::Ipc_manager::singleton()->register_thread(&thread);
+//	Genode::Ipc_manager::singleton()->register_thread(&thread);
 
 	static Genode::Msgbuf<256> sndbuf;
 	static Genode::Ipc_ostream os(receiver_cap, &sndbuf);
@@ -118,7 +119,7 @@ int main()
 {
 	Genode::Thread_utcb thread;
 	thread.set_thread_id(Spartan::thread_get_id());
-	Genode::Ipc_manager::singleton()->register_thread(&thread);
+//	Genode::Ipc_manager::singleton()->register_thread(&thread);
 
 	static Genode::Msgbuf<256> rcvbuf;
 	static Genode::Ipc_istream is(&rcvbuf);
@@ -128,7 +129,7 @@ int main()
 	/* set id of capability so it can be marshalled */
 	int myphone = _connect_to_myself(&thread);
 	PDBG("acquired phone to myself is phone %i", myphone);
-	Genode::Ipc_destination dest = {Spartan::thread_get_id(), myphone};
+	Genode::Ipc_destination dest = {thread.thread_id(), myphone};
 	receiver_cap = Genode::Untyped_capability(dest, 2);
 
 	/* create sender thread, sending to destination (us) */
