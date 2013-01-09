@@ -19,9 +19,12 @@ namespace Genode {
 			Native_thread_id _thread_id;
 			Ipc_call_queue   _call_queue;
 
+			bool             _waiting_for_ipc;
+
 		public:
 			explicit Thread_utcb()
-			: _task_id(Spartan::task_get_id()) { }
+			: _task_id(Spartan::task_get_id()),
+			  _waiting_for_ipc(false) { }
 			~Thread_utcb();
 
 			Native_task      task_id() { return _task_id; }
@@ -32,7 +35,7 @@ namespace Genode {
 			Ipc_call         wait_for_call(addr_t imethod=0);
 			Ipc_call         wait_for_reply(Native_ipc_callid callid=0);
 
-			bool             is_waiting();
+			bool             is_waiting_for_ipc();
 	};
 
 	typedef Thread_utcb Native_utcb;

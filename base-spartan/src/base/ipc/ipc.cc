@@ -15,6 +15,7 @@
 #include <base/ipc.h>
 #include <base/native_types.h>
 #include <base/ipc_call.h>
+#include <base/ipc_manager.h>
 #include <base/thread.h>
 
 #include <spartan/ipc.h>
@@ -77,7 +78,8 @@ void Ipc_ostream::_send()
 	                                     Spartan::thread_get_id());
 //	                                     Thread_base::myself()->utcb()->thread_id());
 
-	rpl_call = Thread_base::myself()->utcb()->wait_for_reply(snd_callid);
+//	rpl_call = Thread_base::myself()->utcb()->wait_for_reply(snd_callid);
+	rpl_call = Ipc_manager::singleton()->my_utcb()->wait_for_reply(snd_callid);
 	if(rpl_call.answer_code() != EOK) {
 		PERR("ipc error in _send.");
 		throw Genode::Ipc_error();
@@ -119,7 +121,8 @@ void Ipc_istream::_wait()
 	/*
 	 * Wait for IPC message
 	 */
-	call = Thread_base::myself()->utcb()->wait_for_call(IPC_M_DATA_WRITE);
+//	call = Thread_base::myself()->utcb()->wait_for_call(IPC_M_DATA_WRITE);
+	call = Ipc_manager::singleton()->my_utcb()->wait_for_call(IPC_M_DATA_WRITE);
 	PDBG("got call with callid %lu\n", call.callid());
 	if(call.method() != IPC_M_DATA_WRITE) {
 		/* unknown sender */

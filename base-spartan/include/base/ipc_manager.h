@@ -6,6 +6,34 @@
 #include <base/thread.h>
 
 namespace Genode {
+
+	template <int QUEUE_SIZE>
+	class Thread_buffer
+	{
+		private:
+			Lock         _thread_lock;
+			Native_utcb* _threads[QUEUE_SIZE];
+			int          _thread_count;
+
+		public:
+			class Overflow : public Genode::Exception { };
+
+			Thread_buffer() : _thread_count(0) {};
+			void         add(Native_utcb* utcb);
+			/**
+			 * looks up the list whether the request thread_utcb
+			 *  exists or not
+			 * returns position relative to _tail when found
+			 * returns 0 when not found
+			 */
+			Native_utcb* exists_threadid(Native_thread_id thread_id);
+			int          exists_utcbpt(Thread_utcb* utcb);
+
+			void         message_all(Ipc_call call,
+			                         Native_thread_id thread_id=0);
+			void         del(Thread_utcb* utcb);
+	};
+
 	/* call implementing the manager thread which is exclusively looking into
 	 * the tasks answerbox, waiting for incoming calls and saving them.
 	 * Other threads obtain calls from this class
@@ -23,16 +51,14 @@ namespace Genode {
 		};
 
 		private:
-			int          _governor;
-			Native_utcb* _threads[MAX_THREAD_COUNT];
-			addr_t       _thread_count;
-			Lock         _thread_lock;
+			int                             _governor;
+
+			Thread_buffer<MAX_THREAD_COUNT> _threads;
+			Lock                            _thread_lock;
 
 			explicit     Ipc_manager()
 			: _governor(GOV_FREE) {}
 
-			int          _get_thread(Native_thread_id thread_id);
-			int          _get_thread(Thread_utcb* utcb);
 			void         _wait_for_calls();
 
 		public:
@@ -42,8 +68,9 @@ namespace Genode {
 				return &manager;
 			}
 
-			void                get_call();
-			bool                register_thread(Thread_utcb* utcb);
+			bool                get_call();
+			Native_utcb*        my_utcb();
+			void                register_thread(Thread_utcb* utcb);
 			void                unregister_thread(Thread_utcb *utcb);
 	};
 }

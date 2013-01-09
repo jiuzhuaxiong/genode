@@ -3,6 +3,8 @@
 
 #include <spartan/errno.h>
 
+//#include <base/printf.h>
+
 using namespace Genode;
 
 
@@ -37,9 +39,11 @@ Thread_utcb::insert_call(Ipc_call call)
 Ipc_call
 Thread_utcb::wait_for_call(addr_t imethod)
 {
+	_waiting_for_ipc = true;
 	Ipc_call call = _call_queue.get_first_imethod(false, imethod);
 
 	while(!call.is_valid()) {
+		PDBG("%lu(%lu): is waiting = %i", Spartan::thread_get_id(), this, _waiting_for_ipc);
 		Ipc_manager::singleton()->get_call();
 		call = _call_queue.get_first_imethod(true, imethod);
 		/**
@@ -49,6 +53,7 @@ Thread_utcb::wait_for_call(addr_t imethod)
 		 *  by someone
 		 */
 	}
+	_waiting_for_ipc = false;
 	return call;
 }
 
@@ -56,9 +61,11 @@ Thread_utcb::wait_for_call(addr_t imethod)
 Ipc_call
 Thread_utcb::wait_for_reply(Native_ipc_callid callid)
 {
+	_waiting_for_ipc = true;
 	Ipc_call answer = _call_queue.get_first_reply_callid(false, callid);
 
 	while(!answer.is_valid()) {
+		PDBG("%lu(%lu): is waiting = %i", Spartan::thread_get_id(), this, _waiting_for_ipc);
 		Ipc_manager::singleton()->get_call();
 		answer = _call_queue.get_first_reply_callid(true, callid);
 		/**
@@ -68,13 +75,13 @@ Thread_utcb::wait_for_reply(Native_ipc_callid callid)
 		 *  by someone
 		 */
 	}
+	_waiting_for_ipc = false;
 	return answer;
 }
 
-
 bool
-Thread_utcb::is_waiting()
+Thread_utcb::is_waiting_for_ipc()
 {
-	return _call_queue.is_waiting();
+	return _waiting_for_ipc;
 }
 

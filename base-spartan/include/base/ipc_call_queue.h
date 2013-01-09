@@ -31,6 +31,7 @@ namespace Genode {
 			Semaphore _sem;
 			Lock      _read_lock, _write_lock;
 
+			void     _remove_from_queue(addr_t pos);
 			Ipc_call _get_first(bool blocking, addr_t cmp_val,
 			                    bool (*cmp_fktn)(Ipc_call, addr_t));
 
@@ -48,8 +49,6 @@ namespace Genode {
 			Ipc_call get_first_imethod(bool blocking, addr_t imethod=0);
 			Ipc_call get_first_reply_callid(bool blocking, addr_t callid=0);
 			Ipc_call get_last(void);
-
-			bool     is_waiting();
 	};
 }
 

@@ -14,32 +14,75 @@
 
 using namespace Genode;
 
-/*******************
- * private methods *
- ******************/
+template<int QUEUE_SIZE>
+void Thread_buffer<QUEUE_SIZE>::add(Thread_utcb* utcb)
+{
+	if(_thread_count >= QUEUE_SIZE)
+		throw Overflow();
+
+	int pos = exists_utcbpt(utcb);
+	Lock::Guard lock(_thread_lock);
+//	PDBG("%lu: adding thread %lu(%lu), pos=%i", this, utcb->thread_id(), utcb, pos);
+	if(pos < 0) {
+		_threads[_thread_count++] = utcb;
+//		PDBG("new _thread_count=%i", _thread_count);
+	}
+//	for(int i=0; i<_thread_count; i++)
+//		PDBG("_threads[%i](%lu)->thread_id()=%lu, waiting=%i", i, _threads[i], _threads[i]->thread_id(), _threads[i]->is_waiting_for_ipc());
+}
 
 /* look for a threads specified by its id */
-int
-Ipc_manager::_get_thread(Native_thread_id thread_id)
+template<int QUEUE_SIZE>
+Thread_utcb* Thread_buffer<QUEUE_SIZE>::exists_threadid(Native_thread_id thread_id)
 {
 	Lock::Guard lock(_thread_lock);
-	for(addr_t i=0; i<_thread_count; i++)
+
+	for(int i=0; i<_thread_count; i++)
 		if(_threads[i]->thread_id() == thread_id)
-			return i;
-	return -1;
+			return _threads[i];
+	return 0;
 }
 
 
 /* look for a thread specified by th pointer to its utcb */
-int
-Ipc_manager::_get_thread(Thread_utcb* utcb)
+template<int QUEUE_SIZE>
+int Thread_buffer<QUEUE_SIZE>::exists_utcbpt(Thread_utcb* utcb)
 {
 	Lock::Guard lock(_thread_lock);
-	for(addr_t i=0; i<_thread_count; i++)
+
+	for(int i=0; i<_thread_count; i++)
 		if(_threads[i] == utcb)
 			return i;
 
 	return -1;
+}
+
+/* sends a certain message to all registered threads except the 
+ *  one specified by thread_id */
+template<int QUEUE_SIZE>
+void Thread_buffer<QUEUE_SIZE>::message_all(Ipc_call call,
+                                            Native_thread_id thread_id)
+{
+	Lock::Guard lock(_thread_lock);
+	for(int i=0; i<_thread_count; i++) {
+//		PDBG("%lu(%lu): waiting for ipc = %i", _threads[i]->thread_id(), _threads[i], _threads[i]->is_waiting_for_ipc());
+		if(_threads[i]->is_waiting_for_ipc()
+		   && !(_threads[i]->thread_id() == thread_id))
+			_threads[i]->insert_call(call);
+	}
+}
+
+template<int QUEUE_SIZE>
+void Thread_buffer<QUEUE_SIZE>::del(Thread_utcb* utcb)
+{
+	int pos = exists_utcbpt(utcb);
+	if(pos < 0)
+		return;
+
+	Lock::Guard lock(_thread_lock);
+	for(int i=pos; (i+1)<_thread_count; i++)
+		_threads[i] = _threads[i+1];
+	_thread_count--;
 }
 
 
@@ -74,8 +117,8 @@ Ipc_manager::_wait_for_calls()
 		}
 
 		/* look up the destined thread */
-		int thread_pos;
-		if((thread_pos = _get_thread(call.dest_thread_id())) < 0) {
+		Thread_utcb* dest_thread = _threads.exists_threadid(call.dst_thread_id());
+		if(dest_thread == 0) {
 			/* there is no such thread */
 			PDBG("Ipc_manager:\trejecting call because no such"
 			     " requested thread found\n");
@@ -86,7 +129,7 @@ Ipc_manager::_wait_for_calls()
 
 		/* insert the received call into the threads call queue */
 		try {
-			_threads[thread_pos]->insert_call(call);
+			dest_thread->insert_call(call);
 		} catch (Ipc_call_queue::Overflow) {
 			/* could not insert call */
 			PDBG("Ipc_manager:\trejecting call because of full"
@@ -97,72 +140,65 @@ Ipc_manager::_wait_for_calls()
 		}
 
 		/* handle the case the destined thread is the current govenor thread */
-		if(call.dest_thread_id() == my_thread_id) {
-			PDBG("laying down governorship");
+		if(call.dst_thread_id() == my_thread_id) {
+			PDBG("thread %lu laying down governorship", my_thread_id);
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
 			/**
-			 * wake up the first waiting thread
+			 * wake up the last waiting thread
 			 * (which is not the current thread)
 			 *  to take over the government
 			 *  by sending an invalid ipc call
 			 */
-			for(addr_t i=0; i<_thread_count; i++) {
-				PDBG(" check thread %lu (waiting=%i) for wakeup, while myself being thread %lu", _threads[i]->thread_id(), _threads[i]->is_waiting(), my_thread_id);
-				if((_threads[i]->thread_id() != my_thread_id)
-				   && _threads[i]->is_waiting()) {
-					PDBG("waking up thread %lu", _threads[i]->thread_id());
-					_threads[i]->insert_call(Ipc_call());
-					break;
-				}
-			}
+			_threads.message_all(Ipc_call(), my_thread_id);
+
 			return;
 		}
 	}
 }
 
 
-void
+bool
 Ipc_manager::get_call()
 {
 	if(cmpxchg(&_governor, GOV_FREE, GOV_TAKEN)) {
 		PDBG("new governor is thread with id %lu",
 		     Spartan::thread_get_id());
 		_wait_for_calls();
+
+		return true;
 	}
+
+	return false;
 }
 
 
-bool
+Native_utcb*
+Ipc_manager::my_utcb()
+{
+	Native_utcb* utcb = _threads.exists_threadid(Spartan::thread_get_id());
+	if(utcb == 0)
+		return Thread_base::myself()->utcb();
+
+	return utcb;
+}
+
+
+void
 Ipc_manager::register_thread(Thread_utcb* utcb)
 {
-	if(_thread_count >= MAX_THREAD_COUNT)
-		return false;
-
-	int pos = _get_thread(utcb);
-	PDBG("trying to register thread with id %lu with *utcb=%lu",
-	     utcb->thread_id(), utcb);
-	if (pos < 0) {
-		/* utcb is not registered already, so register it */
-		Lock::Guard lock(_thread_lock);
-		_threads[_thread_count++] = utcb;
-		PDBG("successfully registered!");
-	}
-	return true;
+	Lock::Guard lock(_thread_lock);
+//	Thread_utcb* t = _threads.exists_threadid(6);
+//	if(t)
+//		PDBG("%lu: is thread 6 waiting?: %i", Spartan::thread_get_id(), t->is_waiting_for_ipc());
+	_threads.add(utcb);
 }
 
 
 void
 Ipc_manager::unregister_thread(Thread_utcb* utcb)
 {
-	Native_thread_id thread_id = utcb->thread_id();
-
-	int pos = _get_thread(thread_id);
-	if (pos < 0)
-		return;
-
 	Lock::Guard lock(_thread_lock);
-	for(int i=pos; i<(_thread_count-1); i++)
-		_threads[i] = _threads[i+1];
+	_threads.del(utcb);
 }
 

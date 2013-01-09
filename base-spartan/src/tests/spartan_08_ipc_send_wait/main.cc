@@ -77,7 +77,7 @@ int _connect_to_myself(Genode::Thread_utcb* thread)
 	                                        mythread);
 
 	call = thread->wait_for_call(IPC_M_CONNECT_ME_TO);
-	if(call.dest_thread_id() != mythread)
+	if(call.dst_thread_id() != mythread)
 		Spartan::ipc_answer_0(call.callid(), call.snd_thread_id(),
 		                      E__IPC_DESTINATION_UNKNOWN);
 

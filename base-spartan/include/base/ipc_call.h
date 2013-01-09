@@ -63,7 +63,7 @@ namespace Genode {
 				return _call.in_phone_hash;
 			}
 
-			Native_thread_id dest_thread_id()
+			Native_thread_id dst_thread_id()
 			{
 				return arg4();
 			}
@@ -79,7 +79,7 @@ namespace Genode {
 
 			bool is_answer_to(Native_ipc_callid cmp_id) {
 				return (is_answer()
-				        && ((callid() | IPC_CALLID_ANSWERED)
+				        && ((callid() & ~IPC_CALLID_ANSWERED)
 				            == cmp_id));
 			}
 
@@ -116,7 +116,7 @@ namespace Genode {
 			bool operator == (Ipc_call &other)
 			{
 				return ( (callid() == other.callid())
-					&& (dest_thread_id() == other.dest_thread_id()));
+					&& (dst_thread_id() == other.dst_thread_id()));
 			}
 
 			bool operator != (Ipc_call &other)
