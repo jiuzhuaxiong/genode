@@ -68,6 +68,26 @@ namespace Genode {
 				return arg4();
 			}
 
+			/************************
+			 * handle phone cloning *
+			 ************************/
+
+			Native_thread_id target_thread_id()
+			{
+				if(method() == IPC_M_CONNECTION_CLONE)
+					return arg2();
+				else
+					return 0;
+			}
+
+			addr_t capability_id()
+			{
+				if(method() == IPC_M_CONNECTION_CLONE)
+					return arg5();
+				else
+					return 0;
+			}
+
 
 			/********************
 			 * handling answers *
@@ -96,6 +116,8 @@ namespace Genode {
 				if(is_answer()
 				   && (arg1() == IPC_M_PHONE_HANDLE))
 					return arg5();
+				else if(method() == IPC_M_CONNECTION_CLONE)
+					return arg1();
 				else
 					return -1;
 			}

@@ -157,6 +157,8 @@ namespace Spartan
 	 * Send a cloned phone
 	 */
 	Genode::addr_t ipc_send_phone(int snd_phone, int clone_phone,
+	                              Genode::addr_t local_name,
+	                              Genode::Native_thread_id target_threadid,
 	                              Genode::Native_thread_id dst_threadid,
 	                              Genode::Native_thread_id my_threadid);
 

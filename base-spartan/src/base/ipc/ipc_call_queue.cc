@@ -69,6 +69,7 @@ Ipc_call_queue::_remove_from_queue(addr_t pos)
 	/* lock queue for writing */
 	Lock::Guard write_lock(_write_lock);
 	/* reorder queue removing the element in question */
+	PDBG("removing %lu. element from queue", pos);
 	for(; pos<(_item_count-1); pos++)
 		_queue[pos] = _queue[pos+1];
 	/* reduce the _item_count to its new value */
@@ -101,7 +102,7 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
 				break;
 			}
 
-			PDBG("%lu: BLOCKING while pt=%i & _item_count=%i", Spartan::thread_get_id(), pt, _item_count);
+			PDBG("%lu: BLOCKING while pt=%lu & _item_count=%lu", Spartan::thread_get_id(), pt, _item_count);
 			/**
 			 * decrease _sem and therefor cause the thread to be blocked whenever
 			 * 1) there is no message in the queue (on fresh entry of this function)
@@ -185,6 +186,7 @@ Ipc_call_queue::insert_new(Ipc_call new_call)
 //	     new_call.dst_thread_id(), Spartan::thread_get_id(), _item_count, _sem.cnt());
 	if(_item_count >= QUEUE_SIZE)
 		throw Overflow();
+
 	/* lock the queue for writing */
 	Lock::Guard write_lock(_write_lock);
 

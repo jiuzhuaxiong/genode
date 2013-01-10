@@ -1,5 +1,6 @@
 #include <base/thread_utcb.h>
 #include <base/ipc_manager.h>
+#include <base/printf.h>
 
 #include <spartan/errno.h>
 
@@ -32,6 +33,13 @@ Thread_utcb::set_thread_id(Native_thread_id tid)
 void
 Thread_utcb::insert_call(Ipc_call call)
 {
+	/* if an invalid call is to be inserted (marking to take 
+	 *  the governship of the Ipc_manager) unset _waiting_for_ipc
+	 *  so no more invalid calls will get inserted until the 
+	 *  Ipc_call_queue has been left and initiated again */
+	if(!call.is_valid())
+		_waiting_for_ipc = false;
+
 	_call_queue.insert_new(call);
 }
 
@@ -39,12 +47,11 @@ Thread_utcb::insert_call(Ipc_call call)
 Ipc_call
 Thread_utcb::wait_for_call(addr_t imethod)
 {
-	_waiting_for_ipc = true;
 	Ipc_call call = _call_queue.get_first_imethod(false, imethod);
 
 	while(!call.is_valid()) {
-		PDBG("%lu(%lu): is waiting = %i", Spartan::thread_get_id(), this, _waiting_for_ipc);
 		Ipc_manager::singleton()->get_call();
+		_waiting_for_ipc = true;
 		call = _call_queue.get_first_imethod(true, imethod);
 		/**
 		 * if the returned call is invalid the
@@ -61,12 +68,11 @@ Thread_utcb::wait_for_call(addr_t imethod)
 Ipc_call
 Thread_utcb::wait_for_reply(Native_ipc_callid callid)
 {
-	_waiting_for_ipc = true;
 	Ipc_call answer = _call_queue.get_first_reply_callid(false, callid);
 
 	while(!answer.is_valid()) {
-		PDBG("%lu(%lu): is waiting = %i", Spartan::thread_get_id(), this, _waiting_for_ipc);
 		Ipc_manager::singleton()->get_call();
+		_waiting_for_ipc = true;
 		answer = _call_queue.get_first_reply_callid(true, callid);
 		/**
 		 * if the returned answer is invalid the

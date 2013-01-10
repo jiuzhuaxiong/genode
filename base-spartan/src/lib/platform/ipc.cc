@@ -208,18 +208,14 @@ addr_t Spartan::ipc_connect_to_me(int phoneid, Native_thread_id dest_threadid,
 }
 
 
-addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone,
+addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone, addr_t local_name,
+                               Native_thread_id target_threadid,
                                Native_thread_id dest_threadid,
-                               Genode::Native_thread_id my_threadid)
+                               Native_thread_id my_threadid)
 {
-	/**
-	 * TODO
-	 * workaround needed, since messages can only be send to tasks,
-	 * Genode meanwhile needs to adress threads.
-	 */
-	return ipc_call_async_fast(snd_phone, IPC_M_CONNECTION_CLONE,
-	                           (addr_t) clone_phone, 0, my_threadid,
-	                           dest_threadid);
+	return ipc_call_async_slow(snd_phone, IPC_M_CONNECTION_CLONE,
+	                           (addr_t) clone_phone, target_threadid,
+	                           my_threadid, dest_threadid, local_name);
 }
 
 

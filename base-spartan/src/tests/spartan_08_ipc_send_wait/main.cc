@@ -106,7 +106,7 @@ static void sender_thread_entry()
 	Genode::printf("sending a=%d, b=%d, c=%d\n", a, b, c);
 	/* Since the for this test constructed Native_capability is a local,
 	 * the capability is not send via ipc */
-	os << a << b << c << /*os.dst() << */Genode::IPC_SEND;
+	os << a << b << c << os.dst()/* << os.dst() */<< Genode::IPC_SEND;
 
 	while(1);
 }
@@ -140,9 +140,9 @@ int main()
 
 	/* wait for incoming IPC */
 	int a = 0, b = 0, c = 0;
-	Genode::Native_capability cap;
-	is >> Genode::IPC_WAIT >> a >> b >> c/* >> cap*/;
-	Genode::printf("received a=%d, b=%d, c=%d\n", a, b, c);
+	Genode::Native_capability cap1, cap2;
+	is >> Genode::IPC_WAIT >> a >> b >> c >> cap1/* >> cap2*/;
+	Genode::printf("received a=%d, b=%d, c=%d, phone %i to thread %lu"/* and phone %i to thread %lu*/"\n", a, b, c, cap1.dst().snd_phone, cap1.dst().rcv_thread_id/*, cap2.dst().snd_phone, cap2.dst().rcv_thread_id*/);
 
 	while(1);
 	Genode::printf("exiting main()\n");

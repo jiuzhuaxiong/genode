@@ -39,7 +39,14 @@ namespace Genode {
 			/* Number of capabilities to be send / received */
 			addr_t            _cap_count;
 
+			void              _remove_cap(int pos)
+			{
+				for(int i=pos; (i+1)<MAX_CAP_ARGS; i++)
+					_caps[i] = _caps[i+1];
+			}
+
 		public:
+			explicit Msgbuf_base() : _cap_count(0) { }
 			/*
 			 * Begin of actual message buffer
 			 */
@@ -83,6 +90,7 @@ namespace Genode {
 				for(addr_t i=0; i<_cap_count; i++)
 					if(id == _caps[i].local_name()) {
 						*cap = _caps[i];
+						_remove_cap(i);
 						return true;
 					}
 
