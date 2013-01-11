@@ -3,8 +3,8 @@
 
 /* Genode includes */
 #include <base/native_types.h>
-#include <base/ipc_call.h>
-#include <base/ipc_call_queue.h>
+#include <base/ipc_message.h>
+#include <base/ipc_message_queue.h>
 #include <base/lock.h>
 
 /* SPARTAN includes */
@@ -15,9 +15,9 @@ namespace Genode {
 	class Thread_utcb
 	{
 		private:
-			Native_task      _task_id;
-			Native_thread_id _thread_id;
-			Ipc_call_queue   _call_queue;
+			Native_task       _task_id;
+			Native_thread_id  _thread_id;
+			Ipc_message_queue _msg_queue;
 
 			bool             _waiting_for_ipc;
 
@@ -31,9 +31,9 @@ namespace Genode {
 			Native_thread_id thread_id() { return _thread_id; }
 			void             set_thread_id(Native_thread_id tid);
 
-			void             insert_call(Ipc_call call);
-			Ipc_call         wait_for_call(addr_t imethod=0);
-			Ipc_call         wait_for_reply(Native_ipc_callid callid=0);
+			void             insert_msg(Ipc_message msg);
+			Ipc_message      wait_for_call(addr_t imethod=0);
+			Ipc_message      wait_for_answer(Native_ipc_callid callid=0);
 
 			bool             is_waiting_for_ipc();
 	};

@@ -29,7 +29,7 @@ namespace Genode {
 			Native_utcb* exists_threadid(Native_thread_id thread_id);
 			int          exists_utcbpt(Thread_utcb* utcb);
 
-			void         message_all(Ipc_call call,
+			void         message_all(Ipc_message msg,
 			                         Native_thread_id thread_id=0);
 			void         del(Thread_utcb* utcb);
 	};

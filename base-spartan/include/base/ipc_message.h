@@ -9,7 +9,7 @@
 
 
 namespace Genode {
-	class Ipc_call
+	class Ipc_message
 	{
 		private:
 			Native_ipc_call _call;
@@ -27,10 +27,10 @@ namespace Genode {
 			}
 
 		public:
-			explicit Ipc_call()
+			explicit Ipc_message()
 			: _call(_invalid_ipc_call()) {}
 
-			explicit Ipc_call(Native_ipc_call call)
+			explicit Ipc_message(Native_ipc_call call)
 			: _call(call) {}
 
 			Native_ipc_callid callid() { return _call.callid; }
@@ -135,20 +135,20 @@ namespace Genode {
 			/***********************
 			 * comparing operators *
 			 ***********************/
-			bool operator == (Ipc_call &other)
+			bool operator == (Ipc_message &other)
 			{
 				return ( (callid() == other.callid())
 					&& (dst_thread_id() == other.dst_thread_id()));
 			}
 
-			bool operator != (Ipc_call &other)
+			bool operator != (Ipc_message &other)
 			{
 				return !(*this == other);
 			}
 
 			bool is_valid() {
-				static Ipc_call cmp_call;
-				return (*this != cmp_call);
+				static Ipc_message cmp_msg;
+				return (*this != cmp_msg);
 			}
 	};
 }

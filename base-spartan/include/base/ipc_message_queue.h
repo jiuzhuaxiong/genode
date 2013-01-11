@@ -5,7 +5,7 @@
 #include <base/semaphore.h>
 #include <base/exception.h>
 
-#include <base/ipc_call.h>
+#include <base/ipc_message.h>
 
 namespace Genode {
 	enum {
@@ -18,22 +18,22 @@ namespace Genode {
 	 *
 	 * this class is ment to be used in a worker thread
 	 */
-	class Ipc_call_queue
+	class Ipc_message_queue
 	{
 		private:
-			Ipc_call  _queue[QUEUE_SIZE];
-			addr_t    _item_count;
+			Ipc_message _queue[QUEUE_SIZE];
+			addr_t      _item_count;
 			/* semaphore for counting not visited calls when
 			 *  looking for a specific call
 			 * has to be reset to the number of calls waiting
 			 *  in the ring_buffer (_sem.cnt()) every time waiting
 			 *  for a call is finished */
-			Semaphore _sem;
-			Lock      _read_lock, _write_lock;
+			Semaphore   _sem;
+			Lock        _read_lock, _write_lock;
 
-			void     _remove_from_queue(addr_t pos);
-			Ipc_call _get_first(bool blocking, addr_t cmp_val,
-			                    bool (*cmp_fktn)(Ipc_call, addr_t));
+			void        _remove_from_queue(addr_t pos);
+			Ipc_message _get_first(bool blocking, addr_t cmp_val,
+			                    bool (*cmp_fktn)(Ipc_message, addr_t));
 
 
 		public:
@@ -42,13 +42,15 @@ namespace Genode {
 			/**
 			 * Constructor
 			 */
-			Ipc_call_queue()
+			Ipc_message_queue()
 			: _item_count(0) {}
 
-			void     insert_new(Ipc_call new_call);
-			Ipc_call get_first_imethod(bool blocking, addr_t imethod=0);
-			Ipc_call get_first_reply_callid(bool blocking, addr_t callid=0);
-			Ipc_call get_last(void);
+			void        insert_new(Ipc_message new_msg);
+			Ipc_message get_first_imethod(bool blocking,
+			                              addr_t imethod=0);
+			Ipc_message get_first_answer_callid(bool blocking,
+			                                    addr_t msgid=0);
+			Ipc_message get_last(void);
 	};
 }
 

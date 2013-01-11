@@ -1,7 +1,7 @@
 #include <base/printf.h>
 #include <base/thread.h>
 
-#include <base/ipc_call_queue.h>
+#include <base/ipc_message_queue.h>
 
 #include <spartan/syscalls.h>
 
@@ -26,33 +26,21 @@ _i_lt_head(int i, int head, int tail)
 
 /* compare an imethod with the imethod of a call */
 bool
-_cmp_imethod(Ipc_call call, addr_t imethod)
+_cmp_imethod(Ipc_message msg, addr_t imethod)
 {
-	return (!call.is_answer()
-	        && (call.method() == imethod
+	return (!msg.is_answer()
+	        && (msg.method() == imethod
 	         || imethod == 0));
-/*
-	return (!(call.callid() & IPC_CALLID_ANSWERED) //the call is not an answer
-	        && ((call.method() == imethod) //the call has the imethod we are looking for
-	         || (!call.is_valid()) //we are advised to take over government of the ipc_manager
-	         || (imethod == 0))); //we are not looking for a specific imethod
-*/
 }
 
 
 /* check whether a call is an answer to the specified callid */
 bool
-_cmp_reply_callid(Ipc_call call, Native_ipc_callid callid)
+_cmp_answer_callid(Ipc_message msg, Native_ipc_callid callid)
 {
-//	PDBG("is %lu answer to %lu?: %i", call.callid(), callid, call.is_answer_to(callid));
-	return (call.is_answer_to(callid)
+//	PDBG("is %lu answer to %lu?: %i", msg.callid(), callid, msg.is_answer_to(callid));
+	return (msg.is_answer_to(callid)
 	        || callid == 0);
-/*
-	return ((call.callid() & IPC_CALLID_ANSWERED) //the call is an answer
-	         && (((call.callid() | IPC_CALLID_ANSWERED) == callid) //the call is the answer to the call we are looking for
-	          || callid == 0)); //we are not looking for a specific answer
-	        || (!call.is_valid())); //we are advised to take over government of the ipc_manager
-*/
 }
 
 /*********************
@@ -64,7 +52,7 @@ _cmp_reply_callid(Ipc_call call, Native_ipc_callid callid)
  * make shure to safe the element in question before calling this function!
  */
 void
-Ipc_call_queue::_remove_from_queue(addr_t pos)
+Ipc_message_queue::_remove_from_queue(addr_t pos)
 {
 	/* lock queue for writing */
 	Lock::Guard write_lock(_write_lock);
@@ -80,11 +68,11 @@ Ipc_call_queue::_remove_from_queue(addr_t pos)
  * get first occurence of a specific call from th queue
  *  comparison is defined through a function pointer
  */
-Ipc_call
-Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
-                           bool (*cmp_fktn)(Ipc_call, addr_t))
+Ipc_message
+Ipc_message_queue::_get_first(bool blocking, addr_t cmp_val,
+                           bool (*cmp_fktn)(Ipc_message, addr_t))
 {
-	Ipc_call ret_call;
+	Ipc_message ret_msg;
 	addr_t   pt = 0;
 	bool     do_block = blocking;
 
@@ -98,7 +86,7 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
 			/* break if the queue request is non-blocking */
 			if(!do_block) {
 				PDBG("%lu: NON-blocking return", Spartan::thread_get_id());
-				ret_call = Ipc_call();
+				ret_msg = Ipc_message();
 				break;
 			}
 
@@ -115,7 +103,7 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
 		/* did we find the requested call? */
 		if(cmp_fktn(_queue[pt], cmp_val)) {
 //			PDBG("%lu: requested message found at position %lu", Spartan::thread_get_id(), pt);
-			ret_call = _queue[pt];
+			ret_msg = _queue[pt];
 			_remove_from_queue(pt);
 
 			break;
@@ -135,7 +123,7 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
 //		PDBG("%lu: requested message not found at position %lu", Spartan::thread_get_id(), pt);
 	}
 
-	return ret_call;
+	return ret_msg;
 }
 
 /********************
@@ -143,26 +131,26 @@ Ipc_call_queue::_get_first(bool blocking, addr_t cmp_val,
  ********************/
 
 /* get the first call with the specified imethod */
-Ipc_call
-Ipc_call_queue::get_first_imethod(bool blocking, addr_t imethod)
+Ipc_message
+Ipc_message_queue::get_first_imethod(bool blocking, addr_t imethod)
 {
 	return _get_first(blocking, imethod, &_cmp_imethod);
 }
 
 
 /* get the first reply to the sepcified callid */
-Ipc_call
-Ipc_call_queue::get_first_reply_callid(bool blocking, Native_ipc_callid callid)
+Ipc_message
+Ipc_message_queue::get_first_answer_callid(bool blocking, Native_ipc_callid callid)
 {
-	return _get_first(blocking, callid, &_cmp_reply_callid);
+	return _get_first(blocking, callid, &_cmp_answer_callid);
 }
 
 
 /* get the last call/answer without any checking */
-Ipc_call
-Ipc_call_queue::get_last(void)
+Ipc_message
+Ipc_message_queue::get_last(void)
 {
-	Ipc_call call;
+	Ipc_message call;
 	/* lock the queue for reading
 	 * writing is still allowed */
 	Lock::Guard read_lock(_read_lock);
@@ -180,7 +168,7 @@ Ipc_call_queue::get_last(void)
 
 /* inserts a new call into the queue */
 void
-Ipc_call_queue::insert_new(Ipc_call new_call)
+Ipc_message_queue::insert_new(Ipc_message new_call)
 {
 //	PDBG("%lu: starting to insert new call by thread %lu. Current _item_count=%lu, _sem.cnt()=%lu",
 //	     new_call.dst_thread_id(), Spartan::thread_get_id(), _item_count, _sem.cnt());

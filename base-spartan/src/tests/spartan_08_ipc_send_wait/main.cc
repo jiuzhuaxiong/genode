@@ -45,17 +45,17 @@ Genode::addr_t      phonehash_nameserv;
 bool _register_with_nameserv(Genode::Thread_utcb* thread)
 {
 	Genode::addr_t msg_callid;
-	Genode::Ipc_call call;
+	Genode::Ipc_message msg;
 
 	msg_callid = Spartan::ipc_connect_to_me(PHONE_NAMESERV, THREAD_NAMESERV,
 	                                                    Spartan::thread_get_id());
-	call = thread->wait_for_reply();
+	msg = thread->wait_for_answer();
 
-	task_id_nameserv = call.snd_task_id();
-	phonehash_nameserv = call.snd_phonehash();
+	task_id_nameserv = msg.snd_task_id();
+	phonehash_nameserv = msg.snd_phonehash();
 
-	if ((IPC_GET_RETVAL(call.call()) == EOK) && (call.callid() & IPC_CALLID_ANSWERED)
-			&& (call.callid() == (msg_callid | IPC_CALLID_ANSWERED)))
+	if ((IPC_GET_RETVAL(msg.call()) == EOK) && (msg.callid() & IPC_CALLID_ANSWERED)
+			&& (msg.callid() == (msg_callid | IPC_CALLID_ANSWERED)))
 		return true;
 
 	return false;
@@ -69,23 +69,23 @@ int _connect_to_myself(Genode::Thread_utcb* thread)
 	}
 	PDBG("Successfully registered with nameserv!");
 
-	Genode::Ipc_call call;
+	Genode::Ipc_message msg;
 	Genode::Native_thread_id mythread = Spartan::thread_get_id();
 
 	Genode::addr_t msg_callid;
 	msg_callid = Spartan::ipc_connect_me_to(PHONE_NAMESERV, mythread,
 	                                        mythread);
 
-	call = thread->wait_for_call(IPC_M_CONNECT_ME_TO);
-	if(call.dst_thread_id() != mythread)
-		Spartan::ipc_answer_0(call.callid(), call.snd_thread_id(),
+	msg = thread->wait_for_call(IPC_M_CONNECT_ME_TO);
+	if(msg.dst_thread_id() != mythread)
+		Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(),
 		                      E__IPC_DESTINATION_UNKNOWN);
 
-	Spartan::ipc_answer_1(call.callid(), call.snd_thread_id(), EOK,
+	Spartan::ipc_answer_1(msg.callid(), msg.snd_thread_id(), EOK,
 	                      IPC_M_PHONE_HANDLE);
-	call = thread->wait_for_reply();
+	msg = thread->wait_for_answer();
 
-	return call.cloned_phone();
+	return msg.cloned_phone();
 }
 
 /**

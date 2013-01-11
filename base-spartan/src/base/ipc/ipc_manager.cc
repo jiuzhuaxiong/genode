@@ -4,7 +4,7 @@
 
 /* SPARTAN sepcefic Genode includes */
 #include <base/native_types.h>
-#include <base/ipc_call.h>
+#include <base/ipc_message.h>
 #include <base/ipc_manager.h>
 #include <base/thread.h>
 
@@ -60,7 +60,7 @@ int Thread_buffer<QUEUE_SIZE>::exists_utcbpt(Thread_utcb* utcb)
 /* sends a certain message to all registered threads except the 
  *  one specified by thread_id */
 template<int QUEUE_SIZE>
-void Thread_buffer<QUEUE_SIZE>::message_all(Ipc_call call,
+void Thread_buffer<QUEUE_SIZE>::message_all(Ipc_message msg,
                                             Native_thread_id thread_id)
 {
 	Lock::Guard lock(_thread_lock);
@@ -68,7 +68,7 @@ void Thread_buffer<QUEUE_SIZE>::message_all(Ipc_call call,
 //		PDBG("%lu(%lu): waiting for ipc = %i", _threads[i]->thread_id(), _threads[i], _threads[i]->is_waiting_for_ipc());
 		if(_threads[i]->is_waiting_for_ipc()
 		   && !(_threads[i]->thread_id() == thread_id))
-			_threads[i]->insert_call(call);
+			_threads[i]->insert_msg(msg);
 	}
 }
 
@@ -111,36 +111,36 @@ Ipc_manager::_wait_for_calls()
 		     IPC_GET_ARG5(n_call), my_thread_id);
 
 		/* check whether the incomming call is valid. if not, desmiss it */
-		Ipc_call call = Ipc_call(n_call);
-		if(!call.is_valid()) {
+		Ipc_message msg = Ipc_message(n_call);
+		if(!msg.is_valid()) {
 			continue;
 		}
 
 		/* look up the destined thread */
-		Thread_utcb* dest_thread = _threads.exists_threadid(call.dst_thread_id());
+		Thread_utcb* dest_thread = _threads.exists_threadid(msg.dst_thread_id());
 		if(dest_thread == 0) {
 			/* there is no such thread */
 			PDBG("Ipc_manager:\trejecting call because no such"
 			     " requested thread found\n");
-			Spartan::ipc_answer_0(call.callid(), call.snd_thread_id(),
+			Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(),
 			                      E__IPC_DESTINATION_UNKNOWN);
 			continue;
 		}
 
 		/* insert the received call into the threads call queue */
 		try {
-			dest_thread->insert_call(call);
-		} catch (Ipc_call_queue::Overflow) {
+			dest_thread->insert_msg(msg);
+		} catch (Ipc_message_queue::Overflow) {
 			/* could not insert call */
 			PDBG("Ipc_manager:\trejecting call because of full"
 			     " call queue\n");
-			Spartan::ipc_answer_0(call.callid(),
-			                      call.snd_thread_id(),
+			Spartan::ipc_answer_0(msg.callid(),
+			                      msg.snd_thread_id(),
 			                      E__IPC_CALL_QUEUE_FULL);
 		}
 
 		/* handle the case the destined thread is the current govenor thread */
-		if(call.dst_thread_id() == my_thread_id) {
+		if(msg.dst_thread_id() == my_thread_id) {
 			PDBG("thread %lu laying down governorship", my_thread_id);
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
@@ -150,7 +150,7 @@ Ipc_manager::_wait_for_calls()
 			 *  to take over the government
 			 *  by sending an invalid ipc call
 			 */
-			_threads.message_all(Ipc_call(), my_thread_id);
+			_threads.message_all(Ipc_message(), my_thread_id);
 
 			return;
 		}

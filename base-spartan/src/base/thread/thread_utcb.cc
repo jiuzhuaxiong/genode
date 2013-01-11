@@ -11,10 +11,10 @@ using namespace Genode;
 
 Thread_utcb::~Thread_utcb()
 {
-	Ipc_call del_call;
-	Ipc_call cmp_val = Ipc_call();
+	Ipc_message del_call;
+	Ipc_message cmp_val = Ipc_message();
 	/* Answer every pending call, which is not an answer, with error code */
-	while(((del_call = _call_queue.get_last()) != cmp_val)
+	while(((del_call = _msg_queue.get_last()) != cmp_val)
 	      && !(del_call.callid() & IPC_CALLID_ANSWERED)) {
 		Spartan::ipc_answer_0(del_call.callid(), del_call.snd_task_id(), E__THREAD_KILLED);
 	}
@@ -31,28 +31,28 @@ Thread_utcb::set_thread_id(Native_thread_id tid)
 
 
 void
-Thread_utcb::insert_call(Ipc_call call)
+Thread_utcb::insert_msg(Ipc_message msg)
 {
 	/* if an invalid call is to be inserted (marking to take 
 	 *  the governship of the Ipc_manager) unset _waiting_for_ipc
 	 *  so no more invalid calls will get inserted until the 
-	 *  Ipc_call_queue has been left and initiated again */
-	if(!call.is_valid())
+	 *  Ipc_message_queue has been left and initiated again */
+	if(!msg.is_valid())
 		_waiting_for_ipc = false;
 
-	_call_queue.insert_new(call);
+	_msg_queue.insert_new(msg);
 }
 
 
-Ipc_call
+Ipc_message
 Thread_utcb::wait_for_call(addr_t imethod)
 {
-	Ipc_call call = _call_queue.get_first_imethod(false, imethod);
+	Ipc_message call = _msg_queue.get_first_imethod(false, imethod);
 
 	while(!call.is_valid()) {
 		Ipc_manager::singleton()->get_call();
 		_waiting_for_ipc = true;
-		call = _call_queue.get_first_imethod(true, imethod);
+		call = _msg_queue.get_first_imethod(true, imethod);
 		/**
 		 * if the returned call is invalid the
 		 *  government of the ipc_manager of another
@@ -65,15 +65,15 @@ Thread_utcb::wait_for_call(addr_t imethod)
 }
 
 
-Ipc_call
-Thread_utcb::wait_for_reply(Native_ipc_callid callid)
+Ipc_message
+Thread_utcb::wait_for_answer(Native_ipc_callid callid)
 {
-	Ipc_call answer = _call_queue.get_first_reply_callid(false, callid);
+	Ipc_message answer = _msg_queue.get_first_answer_callid(false, callid);
 
 	while(!answer.is_valid()) {
 		Ipc_manager::singleton()->get_call();
 		_waiting_for_ipc = true;
-		answer = _call_queue.get_first_reply_callid(true, callid);
+		answer = _msg_queue.get_first_answer_callid(true, callid);
 		/**
 		 * if the returned answer is invalid the
 		 *  government of the ipc_manager of another
