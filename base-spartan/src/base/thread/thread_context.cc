@@ -14,6 +14,8 @@
 #include <base/thread.h>
 #include <base/thread_utcb.h>
 
+#include <spartan/syscalls.h>
+
 #include <base/printf.h>
 
 using namespace Genode;
@@ -47,3 +49,4 @@ Native_utcb *Thread_base::utcb()
 
 	return &_context->utcb;
 }
+

@@ -37,12 +37,12 @@ addr_t _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 	                               snd_cap.local_name(),
 	                               snd_cap.dst().rcv_thread_id,
 	                               dest_cap.dst().rcv_thread_id,
-	                               Thread_base::myself()->utcb()->thread_id());
+	                               Spartan::thread_get_id());
 }
 
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
-	Ipc_call call = Thread_base::myself()->utcb()->wait_for_call(
+	Ipc_call call = Ipc_manager::singleton()->my_utcb()->wait_for_call(
 	                 IPC_M_CONNECTION_CLONE);
 
 	Ipc_destination dest = {call.target_thread_id(), call.cloned_phone()};
@@ -74,9 +74,10 @@ void Ipc_ostream::_send()
 	snd_callid[0] = Spartan::ipc_data_write(_dst.dst().snd_phone,
 	                                     _snd_msg->buf, _snd_msg->size(),
 	                                     _dst.dst().rcv_thread_id,
-	                                     Thread_base::myself()->utcb()->thread_id());
+	                                     Spartan::thread_get_id());
 
-	rpl_call = Thread_base::myself()->utcb()->wait_for_reply(snd_callid[0]);
+	rpl_call = Ipc_manager::singleton()->my_utcb()->wait_for_reply(
+	            snd_callid[0]);
 	if(rpl_call.answer_code() != EOK) {
 		PERR("ipc error in _send [ErrorCode: %lu]",
 		     rpl_call.answer_code());
@@ -122,7 +123,6 @@ Ipc_ostream::Ipc_ostream(Native_capability dst, Msgbuf_base *snd_msg)
  ** Ipc_istream **
  *****************/
 
-//void Ipc_istream::_wait() { }
 void Ipc_istream::_wait()
 {
 	Ipc_call		call;
@@ -131,7 +131,7 @@ void Ipc_istream::_wait()
 	/*
 	 * Wait for IPC message
 	 */
-	call = Thread_base::myself()->utcb()->wait_for_call(IPC_M_DATA_WRITE);
+	call = Ipc_manager::singleton()->my_utcb()->wait_for_call(IPC_M_DATA_WRITE);
 	PDBG("got call with callid %lu\n", call.callid());
 	if(call.method() != IPC_M_DATA_WRITE) {
 		/* unknown sender */

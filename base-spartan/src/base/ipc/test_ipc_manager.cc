@@ -173,6 +173,17 @@ Ipc_manager::get_call()
 }
 
 
+Native_utcb*
+Ipc_manager::my_utcb()
+{
+	Native_utcb* utcb = _threads.exists_threadid(Spartan::thread_get_id());
+	if(utcb == 0)
+		return Thread_base::myself()->utcb();
+
+	return utcb;
+}
+
+
 void
 Ipc_manager::register_thread(Thread_utcb* utcb)
 {
