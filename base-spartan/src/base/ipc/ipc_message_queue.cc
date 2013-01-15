@@ -57,7 +57,7 @@ Ipc_message_queue::_remove_from_queue(addr_t pos)
 	/* lock queue for writing */
 	Lock::Guard write_lock(_write_lock);
 	/* reorder queue removing the element in question */
-	PDBG("removing %lu. element from queue", pos);
+	PDBG("%lu: removing element %lu with callid %lu from queue", Spartan::thread_get_id(), pos, _queue[pos].callid());
 	for(; pos<(_item_count-1); pos++)
 		_queue[pos] = _queue[pos+1];
 	/* reduce the _item_count to its new value */
@@ -81,25 +81,27 @@ Ipc_message_queue::_get_first(bool blocking, addr_t cmp_val,
 
 	while(1) {
 //		PDBG("%lu: looking up new postion. pt=%i, _item_count=%i, do_block=%i", Spartan::thread_get_id(), pt, _item_count, do_block);
-		/* if the message we are looking for cpuld not be found */
-		if(pt >= _item_count) {
-			/* break if the queue request is non-blocking */
-			if(!do_block) {
-				PDBG("%lu: NON-blocking return", Spartan::thread_get_id());
-				ret_msg = Ipc_message();
-				break;
-			}
-
-			PDBG("%lu: BLOCKING while pt=%lu & _item_count=%lu", Spartan::thread_get_id(), pt, _item_count);
-			/**
-			 * decrease _sem and therefor cause the thread to be blocked whenever
-			 * 1) there is no message in the queue (on fresh entry of this function)
-			 * 2) no unread message are in the queue (else)
-			 * until it es woken up be a call to insert_new() by another thread
-			 */
-			_sem.down();
-			PDBG("%lu: AWAKEN", Spartan::thread_get_id());
+		/* break if the queue request is non-blocking */
+		if((pt >= _item_count) && (!do_block)) {
+			PDBG("%lu: NON-blocking return", Spartan::thread_get_id());
+			ret_msg = Ipc_message();
+			break;
 		}
+		/* if the message we are looking for cpuld not be found */
+		if(pt >= _item_count)
+			PDBG("%lu: BLOCKING while pt=%lu & _item_count=%lu", Spartan::thread_get_id(), pt, _item_count);
+
+		/**
+		 * decrease _sem and therefor cause the thread to be blocked whenever
+		 * 1) there is no message in the queue (on fresh entry of this function)
+		 * 2) no unread message are in the queue (else)
+		 * until it es woken up be a call to insert_new() by another thread
+		 */
+		_sem.down();
+
+		if(pt >= _item_count)
+			PDBG("%lu: AWAKEN", Spartan::thread_get_id());
+
 		/* did we find the requested call? */
 		if(cmp_fktn(_queue[pt], cmp_val)) {
 //			PDBG("%lu: requested message found at position %lu", Spartan::thread_get_id(), pt);
@@ -122,6 +124,12 @@ Ipc_message_queue::_get_first(bool blocking, addr_t cmp_val,
 
 //		PDBG("%lu: requested message not found at position %lu", Spartan::thread_get_id(), pt);
 	}
+
+	/* prepare the semaphore for next search by re-increaseing
+	 *  the semaphore so it consists of the exact same
+	 *  count as _sem */
+	for(int i=0; i<pt; i++)
+		_sem.up();
 
 	return ret_msg;
 }
@@ -159,7 +167,7 @@ Ipc_message_queue::get_last(void)
 	if(_item_count > 0) {
 		_item_count--;
 		call = _queue[_item_count];
-//		_sem.down();
+		_sem.down();
 	}
 
 	return call;
@@ -171,7 +179,7 @@ void
 Ipc_message_queue::insert_new(Ipc_message new_call)
 {
 //	PDBG("%lu: starting to insert new call by thread %lu. Current _item_count=%lu, _sem.cnt()=%lu",
-//	     new_call.dst_thread_id(), Spartan::thread_get_id(), _item_count, _sem.cnt());
+	     new_call.dst_thread_id(), Spartan::thread_get_id(), _item_count, _sem.cnt());
 	if(_item_count >= QUEUE_SIZE)
 		throw Overflow();
 
@@ -181,9 +189,6 @@ Ipc_message_queue::insert_new(Ipc_message new_call)
 	_queue[_item_count++] = new_call;
 	/* increase _sem to wake up the waiting thread */
 	_sem.up();
-	/* if no thread has been waiting redecrease _sem */
-	if(_sem.cnt() > 0)
-		_sem.down();
 //	PDBG("%lu: new _item_count=%lu, _sem.cnt()=%lu", new_call.dst_thread_id(), _item_count, _sem.cnt());
 }
 

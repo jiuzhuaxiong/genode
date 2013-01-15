@@ -235,19 +235,31 @@ int Spartan::ipc_hangup(int phoneid, Native_thread_id dest_threadid,
  * Send & receive buffered data *
  ********************************/
 
-Genode::Native_ipc_callid Spartan::ipc_data_write(int snd_phone, const void* data,
+Native_ipc_callid Spartan::ipc_data_write(int snd_phone, const void* data,
                                                   size_t size,
-                                                  Genode::Native_thread_id dst_threadid,
-                                                  Genode::Native_thread_id my_threadid,
-                                                  Genode::addr_t req_callid)
+                                                  Native_thread_id dst_threadid,
+                                                  Native_thread_id my_threadid)
 {
-	return ipc_call_async_slow(snd_phone, IPC_M_DATA_WRITE, (addr_t)data, size,
-	                           my_threadid, dst_threadid, req_callid);
+	return ipc_call_async_fast(snd_phone, IPC_M_DATA_WRITE, (addr_t)data, size,
+	                           my_threadid, dst_threadid);
 }
 
-Genode::addr_t Spartan::ipc_data_accept(Genode::addr_t callid, void* data,
-                                        size_t size,
-                                        Genode::Native_thread_id dest_threadid)
+addr_t Spartan::ipc_data_write_accept(addr_t callid, void* data, size_t size,
+                                      Native_thread_id snd_threadid)
 {
-	return ipc_answer_2(callid, dest_threadid, EOK, (addr_t)data, size);
+	return ipc_answer_2(callid, snd_threadid, EOK, (addr_t)data, size);
+}
+
+Native_ipc_callid Spartan::ipc_data_read(int snd_phone, void* data, size_t size,
+                                        Native_thread_id dst_threadid,
+                                        Native_thread_id my_threadid)
+{
+	return ipc_call_async_fast(snd_phone, IPC_M_DATA_READ, (addr_t)data, size,
+	                           my_threadid, dst_threadid);
+}
+
+addr_t Spartan::ipc_data_read_accept(addr_t callid, const void* data,
+                                     size_t size, Native_thread_id snd_threadid)
+{
+	return ipc_answer_2(callid, snd_threadid, EOK, (addr_t)data, size);
 }

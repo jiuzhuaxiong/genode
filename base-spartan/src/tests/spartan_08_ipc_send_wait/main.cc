@@ -22,8 +22,8 @@
 #include <base/thread.h>
 
 /* Spartan syscall includes */
-#include <spartan/ipc.h>
-#include <spartan/methods.h>
+//#include <spartan/ipc.h>
+//#include <spartan/methods.h>
 #include <spartan/errno.h>
 
 /* local includes */
@@ -107,6 +107,9 @@ static void sender_thread_entry()
 	/* Since the for this test constructed Native_capability is a local,
 	 * the capability is not send via ipc */
 	os << a << b << c << os.dst()/* << os.dst() */<< Genode::IPC_SEND;
+
+//	Genode::addr_t snd_callid = Spartan::ipc_connect_to_me(1, 6, 7);
+//	PDBG("%lu: snd_callid = %lu", Spartan::thread_get_id(), snd_callid);
 
 	while(1);
 }
