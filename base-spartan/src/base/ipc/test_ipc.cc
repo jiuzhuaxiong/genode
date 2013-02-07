@@ -37,7 +37,8 @@ addr_t _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 	                               snd_cap.local_name(),
 	                               snd_cap.dst().rcv_thread_id,
 	                               dest_cap.dst().rcv_thread_id,
-	                               Spartan::thread_get_id());
+	                               Ipc_manager::singleton()->my_utcb()->thread_id());
+//	                               Spartan::thread_get_id());
 }
 
 bool _receive_capability(Msgbuf_base *rcv_msg)
@@ -59,7 +60,7 @@ bool _receive_capability(Msgbuf_base *rcv_msg)
 
 void Ipc_ostream::_send()
 {
-	PDBG("%lu", Spartan::thread_get_id());
+	PDBG("%lu", Ipc_manager::singleton()->my_utcb()->thread_id());
 	Ipc_message rpl_msg;
 	Native_ipc_callid snd_callid[Msgbuf_base::MAX_CAP_ARGS];
 	/* insert number of capabilities to be send into msgbuf */
@@ -72,7 +73,7 @@ void Ipc_ostream::_send()
 	snd_callid[0] = Spartan::ipc_data_write(_dst.dst().snd_phone,
 	                                     _snd_msg->buf, _snd_msg->size(),
 	                                     _dst.dst().rcv_thread_id,
-	                                     Spartan::thread_get_id());
+	                                     Ipc_manager::singleton()->my_utcb()->thread_id());
 
 	rpl_msg = Ipc_manager::singleton()->my_utcb()->wait_for_answer(
 	           snd_callid[0]);
@@ -188,7 +189,7 @@ void Ipc_client::_call()
 	                                    Ipc_istream::_rcv_msg->buf,
 	                                    Ipc_istream::_rcv_msg->size(),
 	                                    Ipc_ostream::_dst.dst().rcv_thread_id,
-	                                    Spartan::thread_get_id());
+	                                    Ipc_manager::singleton()->my_utcb()->thread_id());
 
 	rpl_msg = Ipc_manager::singleton()->my_utcb()->wait_for_answer(
 	           snd_callid);

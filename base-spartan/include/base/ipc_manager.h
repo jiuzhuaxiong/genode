@@ -27,6 +27,7 @@ namespace Genode {
 			 * returns 0 when not found
 			 */
 			Native_utcb* exists_threadid(Native_thread_id thread_id);
+			Native_utcb* exists_global_threadid(Native_thread_id thread_id);
 			int          exists_utcbpt(Thread_utcb* utcb);
 
 			void         message_all(Ipc_message msg,
@@ -68,7 +69,7 @@ namespace Genode {
 				return &manager;
 			}
 
-			bool                get_call();
+			bool                get_call(Native_thread_id thread_id);
 			Native_utcb*        my_utcb();
 			void                register_thread(Thread_utcb* utcb);
 			void                unregister_thread(Thread_utcb *utcb);

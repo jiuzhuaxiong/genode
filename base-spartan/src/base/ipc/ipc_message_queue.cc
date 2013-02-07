@@ -179,7 +179,7 @@ void
 Ipc_message_queue::insert_new(Ipc_message new_call)
 {
 //	PDBG("%lu: starting to insert new call by thread %lu. Current _item_count=%lu, _sem.cnt()=%lu",
-	     new_call.dst_thread_id(), Spartan::thread_get_id(), _item_count, _sem.cnt());
+//	     new_call.dst_thread_id(), Spartan::thread_get_id(), _item_count, _sem.cnt());
 	if(_item_count >= QUEUE_SIZE)
 		throw Overflow();
 

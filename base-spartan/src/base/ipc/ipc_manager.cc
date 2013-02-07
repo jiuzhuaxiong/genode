@@ -91,7 +91,7 @@ void Thread_buffer<QUEUE_SIZE>::del(Thread_utcb* utcb)
 void
 Ipc_manager::_wait_for_calls()
 {
-	Native_thread_id my_thread_id = Spartan::thread_get_id();
+//	Native_thread_id my_thread_id = Spartan::thread_get_id();
 		//Thread_base::myself()->utcb()->thread_id();
 
 	/* loop and grab all incomming calls as long as there is no call for me */
@@ -108,7 +108,7 @@ Ipc_manager::_wait_for_calls()
 		     n_call.callid, IPC_GET_IMETHOD(n_call), 
 		     IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call), 
 		     IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call), 
-		     IPC_GET_ARG5(n_call), my_thread_id);
+		     IPC_GET_ARG5(n_call), _governor);
 
 		/* check whether the incomming call is valid. if not, desmiss it */
 		Ipc_message msg = Ipc_message(n_call);
@@ -140,8 +140,8 @@ Ipc_manager::_wait_for_calls()
 		}
 
 		/* handle the case the destined thread is the current govenor thread */
-		if(msg.dst_thread_id() == my_thread_id) {
-			PDBG("thread %lu laying down governorship", my_thread_id);
+		if(msg.dst_thread_id() == _governor) {
+			PDBG("thread %lu laying down governorship", _governor);
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
 			/**
@@ -150,7 +150,7 @@ Ipc_manager::_wait_for_calls()
 			 *  to take over the government
 			 *  by sending an invalid ipc call
 			 */
-			_threads.message_all(Ipc_message(), my_thread_id);
+			_threads.message_all(Ipc_message(), _governor);
 
 			return;
 		}
@@ -159,9 +159,12 @@ Ipc_manager::_wait_for_calls()
 
 
 bool
-Ipc_manager::get_call()
+Ipc_manager::get_call(Native_thread_id thread_id)
 {
-	if(cmpxchg(&_governor, GOV_FREE, GOV_TAKEN)) {
+	/* FIXME
+	 * is it safe to insert thread_id (addr_t) into _governor (int) ?
+	 */
+	if(cmpxchg(&_governor, GOV_FREE, thread_id)) {
 		PDBG("new governor is thread with id %lu",
 		     Spartan::thread_get_id());
 		_wait_for_calls();

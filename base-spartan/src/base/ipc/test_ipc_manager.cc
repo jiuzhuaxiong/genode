@@ -22,14 +22,15 @@ void Thread_buffer<QUEUE_SIZE>::add(Thread_utcb* utcb)
 
 	int pos = exists_utcbpt(utcb);
 	Lock::Guard lock(_thread_lock);
-//	PDBG("%lu: adding thread %lu(%lu), pos=%i", this, utcb->thread_id(), utcb, pos);
+	PDBG("%lu: adding thread %lu(%lu)[%lu], pos=%i", this, utcb->thread_id(),  utcb->global_thread_id(), utcb, pos);
 	if(pos < 0) {
 		_threads[_thread_count++] = utcb;
-//		PDBG("new _thread_count=%i", _thread_count);
+		PDBG("new _thread_count=%i", _thread_count);
 	}
-//	for(int i=0; i<_thread_count; i++)
-//		PDBG("_threads[%i](%lu)->thread_id()=%lu, waiting=%i", i, _threads[i], _threads[i]->thread_id(), _threads[i]->is_waiting_for_ipc());
+	for(int i=0; i<_thread_count; i++)
+		PDBG("_threads[%i](%lu)->thread_id()=%lu, waiting=%i", i, _threads[i], _threads[i]->thread_id(), _threads[i]->is_waiting_for_ipc());
 }
+
 
 /* look for a threads specified by its id */
 template<int QUEUE_SIZE>
@@ -39,6 +40,18 @@ Thread_utcb* Thread_buffer<QUEUE_SIZE>::exists_threadid(Native_thread_id thread_
 
 	for(int i=0; i<_thread_count; i++)
 		if(_threads[i]->thread_id() == thread_id)
+			return _threads[i];
+	return 0;
+}
+
+/* look for a threads specified by its id */
+template<int QUEUE_SIZE>
+Thread_utcb* Thread_buffer<QUEUE_SIZE>::exists_global_threadid(Native_thread_id thread_id)
+{
+	Lock::Guard lock(_thread_lock);
+
+	for(int i=0; i<_thread_count; i++)
+		if(_threads[i]->global_thread_id() == thread_id)
 			return _threads[i];
 	return 0;
 }
@@ -91,7 +104,7 @@ void Thread_buffer<QUEUE_SIZE>::del(Thread_utcb* utcb)
 void
 Ipc_manager::_wait_for_calls()
 {
-	Native_thread_id my_thread_id = Spartan::thread_get_id();
+//	Native_thread_id my_thread_id = Spartan::thread_get_id();
 		//Thread_base::myself()->utcb()->thread_id();
 
 	/* loop and grab all incomming calls as long as there is no call for me */
@@ -108,7 +121,7 @@ Ipc_manager::_wait_for_calls()
 		     n_call.callid, IPC_GET_IMETHOD(n_call), 
 		     IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call), 
 		     IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call), 
-		     IPC_GET_ARG5(n_call), my_thread_id);
+		     IPC_GET_ARG5(n_call), _governor);
 
 		/* check whether the incomming call is valid. if not, desmiss it */
 		Ipc_message msg = Ipc_message(n_call);
@@ -140,8 +153,10 @@ Ipc_manager::_wait_for_calls()
 		}
 
 		/* handle the case the destined thread is the current govenor thread */
-		if(msg.dst_thread_id() == my_thread_id) {
-			PDBG("thread %lu laying down governorship", my_thread_id);
+		if(msg.dst_thread_id() == _governor) {
+//		if(msg.dst_thread_id() == my_thread_id) {
+			PDBG("thread %lu laying down governorship", _governor);
+//			PDBG("thread %lu laying down governorship", my_thread_id);
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
 			/**
@@ -150,7 +165,7 @@ Ipc_manager::_wait_for_calls()
 			 *  to take over the government
 			 *  by sending an invalid ipc call
 			 */
-			_threads.message_all(Ipc_message(), my_thread_id);
+			_threads.message_all(Ipc_message(), _governor);
 
 			return;
 		}
@@ -159,11 +174,12 @@ Ipc_manager::_wait_for_calls()
 
 
 bool
-Ipc_manager::get_call()
+Ipc_manager::get_call(Native_thread_id thread_id)
 {
-	if(cmpxchg(&_governor, GOV_FREE, GOV_TAKEN)) {
+//	if(cmpxchg(&_governor, GOV_FREE, GOV_TAKEN)) {
+	if(cmpxchg(&_governor, GOV_FREE, thread_id)) {
 		PDBG("new governor is thread with id %lu",
-		     Spartan::thread_get_id());
+		     thread_id); //Spartan::thread_get_id());
 		_wait_for_calls();
 
 		return true;
@@ -176,7 +192,7 @@ Ipc_manager::get_call()
 Native_utcb*
 Ipc_manager::my_utcb()
 {
-	Native_utcb* utcb = _threads.exists_threadid(Spartan::thread_get_id());
+	Native_utcb* utcb = _threads.exists_global_threadid(Spartan::thread_get_id());
 	if(utcb == 0)
 		return Thread_base::myself()->utcb();
 

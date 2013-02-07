@@ -42,14 +42,14 @@ Genode::Native_task task_id_nameserv;
 Genode::addr_t      phonehash_nameserv;
 
 
-bool _register_with_nameserv(Genode::Thread_utcb* thread)
+bool _register_with_nameserv(Genode::Thread_utcb* my_thread)
 {
 	Genode::addr_t msg_callid;
 	Genode::Ipc_message msg;
 
-	msg_callid = Spartan::ipc_connect_to_me(PHONE_NAMESERV, THREAD_NAMESERV,
-	                                                    Spartan::thread_get_id());
-	msg = thread->wait_for_answer();
+	msg_callid = Spartan::ipc_connect_to_me(PHONE_NAMESERV, THREAD_NAMESERV, my_thread->thread_id());
+//	                                                    Spartan::thread_get_id());
+	msg = my_thread->wait_for_answer();
 
 	task_id_nameserv = msg.snd_task_id();
 	phonehash_nameserv = msg.snd_phonehash();
@@ -61,29 +61,29 @@ bool _register_with_nameserv(Genode::Thread_utcb* thread)
 	return false;
 }
 
-int _connect_to_myself(Genode::Thread_utcb* thread)
+int _connect_to_myself(Genode::Thread_utcb* my_thread)
 {
-	if(!_register_with_nameserv(thread)) {
+	if(!_register_with_nameserv(my_thread)) {
 		PDBG("Could not register with nameserv!");
 		return 0;
 	}
 	PDBG("Successfully registered with nameserv!");
 
 	Genode::Ipc_message msg;
-	Genode::Native_thread_id mythread = Spartan::thread_get_id();
+	Genode::Native_thread_id mythread = my_thread->thread_id(); //Spartan::thread_get_id();
 
 	Genode::addr_t msg_callid;
 	msg_callid = Spartan::ipc_connect_me_to(PHONE_NAMESERV, mythread,
 	                                        mythread);
 
-	msg = thread->wait_for_call(IPC_M_CONNECT_ME_TO);
+	msg = my_thread->wait_for_call(IPC_M_CONNECT_ME_TO);
 	if(msg.dst_thread_id() != mythread)
 		Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(),
 		                      E__IPC_DESTINATION_UNKNOWN);
 
 	Spartan::ipc_answer_1(msg.callid(), msg.snd_thread_id(), EOK,
 	                      IPC_M_PHONE_HANDLE);
-	msg = thread->wait_for_answer();
+	msg = my_thread->wait_for_answer();
 
 	return msg.cloned_phone();
 }
@@ -94,7 +94,7 @@ int _connect_to_myself(Genode::Thread_utcb* thread)
 static void sender_thread_entry()
 {
 	Genode::Thread_utcb thread;
-	thread.set_thread_id(Spartan::thread_get_id());
+//	thread.set_thread_id(Spartan::thread_get_id());
 //	Genode::Ipc_manager::singleton()->register_thread(&thread);
 
 	static Genode::Msgbuf<256> sndbuf;
@@ -121,7 +121,7 @@ static void sender_thread_entry()
 int main()
 {
 	Genode::Thread_utcb thread;
-	thread.set_thread_id(Spartan::thread_get_id());
+//	thread.set_thread_id(Spartan::thread_get_id());
 //	Genode::Ipc_manager::singleton()->register_thread(&thread);
 
 	static Genode::Msgbuf<256> rcvbuf;

@@ -9,6 +9,12 @@
 using namespace Genode;
 
 
+Thread_utcb::Thread_utcb()
+: _waiting_for_ipc(false)
+{
+	set_thread_id();
+}
+
 Thread_utcb::~Thread_utcb()
 {
 	Ipc_message del_call;
@@ -23,9 +29,14 @@ Thread_utcb::~Thread_utcb()
 
 
 void
-Thread_utcb::set_thread_id(Native_thread_id tid)
+Thread_utcb::set_thread_id(bool is_main_thread)
 {
-	_thread_id = tid;
+	if(!is_main_thread)
+		_thread_id = _thread_counter()->inc();
+	else
+		_thread_id = 0;
+	_global_thread_id = Spartan::thread_get_id();
+
 	Ipc_manager::singleton()->register_thread(this);
 }
 
@@ -50,7 +61,7 @@ Thread_utcb::wait_for_call(addr_t imethod)
 	Ipc_message call = _msg_queue.get_first_imethod(false, imethod);
 
 	while(!call.is_valid()) {
-		Ipc_manager::singleton()->get_call();
+		Ipc_manager::singleton()->get_call(_thread_id);
 		_waiting_for_ipc = true;
 		call = _msg_queue.get_first_imethod(true, imethod);
 		/**
@@ -71,7 +82,7 @@ Thread_utcb::wait_for_answer(Native_ipc_callid callid)
 	Ipc_message answer = _msg_queue.get_first_answer_callid(false, callid);
 
 	while(!answer.is_valid()) {
-		Ipc_manager::singleton()->get_call();
+		Ipc_manager::singleton()->get_call(_thread_id);
 		_waiting_for_ipc = true;
 		answer = _msg_queue.get_first_answer_callid(true, callid);
 		/**

@@ -23,7 +23,14 @@ using namespace Genode;
 
 Native_utcb *main_thread_utcb()
 {
+	static bool        _initialized = false;
 	static Native_utcb _main_utcb;
+
+	if(!_initialized) {
+		_main_utcb.set_thread_id(true);
+		_initialized = true;
+	}
+
 	return &_main_utcb;
 }
 
