@@ -26,10 +26,10 @@ namespace Genode {
 				private:
 					addr_t _cnt;
 				public:
-					Thread_counter()
+					explicit Thread_counter()
 					: _cnt(0) {}
 
-					addr_t inc() {
+					addr_t new_id() {
 						return ++_cnt;
 					}
 			};
