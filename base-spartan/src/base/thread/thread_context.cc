@@ -4,12 +4,12 @@
  * \date   2012-08-14
  */
 
-/*
- * Copyright (C) 2010-2012 Genode Labs GmbH
- *
- * This file is part of the Genode OS framework, which is distributed
- * under the terms of the GNU General Public License version 2.
- */
+ /*
+  * Copyright (C) 2010-2012 Genode Labs GmbH
+  *
+  * This file is part of the Genode OS framework, which is distributed
+  * under the terms of the GNU General Public License version 2.
+  */
 
 #include <base/thread.h>
 #include <base/thread_utcb.h>
@@ -23,25 +23,19 @@ using namespace Genode;
 
 Native_utcb *main_thread_utcb()
 {
-	static bool        _initialized = false;
 	static Native_utcb _main_utcb;
-
-	if(!_initialized) {
-		_main_utcb.set_thread_id(true);
-		_initialized = true;
-	}
 
 	return &_main_utcb;
 }
 
 void Thread_base::_init_platform_thread()
 {
-	PWRN("Not implemented and not needed.");
+		PWRN("Not implemented and not needed.");
 }
 
 void Thread_base::_deinit_platform_thread()
 {
-	PWRN("Not implemented and not needed.");
+		PWRN("Not implemented and not needed.");
 }
 
 Native_utcb *Thread_base::utcb()

@@ -12,7 +12,10 @@ using namespace Genode;
 Thread_utcb::Thread_utcb()
 : _waiting_for_ipc(false)
 {
-	set_thread_id();
+	_thread_id = _thread_counter()->inc();
+	_global_thread_id = Spartan::thread_get_id();
+
+	Ipc_manager::singleton()->register_thread(this);
 }
 
 Thread_utcb::~Thread_utcb()
@@ -25,19 +28,6 @@ Thread_utcb::~Thread_utcb()
 		Spartan::ipc_answer_0(del_call.callid(), del_call.snd_task_id(), E__THREAD_KILLED);
 	}
 	Ipc_manager::singleton()->unregister_thread(this);
-}
-
-
-void
-Thread_utcb::set_thread_id(bool is_main_thread)
-{
-	if(!is_main_thread)
-		_thread_id = _thread_counter()->inc();
-	else
-		_thread_id = 0;
-	_global_thread_id = Spartan::thread_get_id();
-
-	Ipc_manager::singleton()->register_thread(this);
 }
 
 

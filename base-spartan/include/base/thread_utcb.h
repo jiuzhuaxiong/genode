@@ -48,7 +48,6 @@ namespace Genode {
 
 			Native_thread_id thread_id() { return _thread_id; }
 			Native_thread_id global_thread_id() { return _global_thread_id; }
-			void             set_thread_id(bool is_main_thread = 0);
 
 			void             insert_msg(Ipc_message msg);
 			Ipc_message      wait_for_call(addr_t imethod=0);
