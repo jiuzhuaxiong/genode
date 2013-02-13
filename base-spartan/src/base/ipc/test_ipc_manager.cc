@@ -73,15 +73,17 @@ int Thread_buffer<QUEUE_SIZE>::exists_utcbpt(Thread_utcb* utcb)
 /* sends a certain message to all registered threads except the 
  *  one specified by thread_id */
 template<int QUEUE_SIZE>
-void Thread_buffer<QUEUE_SIZE>::message_all(Ipc_message msg,
-                                            Native_thread_id thread_id)
+void Thread_buffer<QUEUE_SIZE>::message_first_waiting(Ipc_message msg,
+                                                      Native_thread_id thread_id)
 {
 	Lock::Guard lock(_thread_lock);
 	for(int i=0; i<_thread_count; i++) {
 //		PDBG("%lu(%lu): waiting for ipc = %i", _threads[i]->thread_id(), _threads[i], _threads[i]->is_waiting_for_ipc());
 		if(_threads[i]->is_waiting_for_ipc()
-		   && !(_threads[i]->thread_id() == thread_id))
+		   && !(_threads[i]->thread_id() == thread_id)) {
 			_threads[i]->insert_msg(msg);
+			return;
+		}
 	}
 }
 
@@ -165,7 +167,7 @@ Ipc_manager::_wait_for_calls()
 			 *  to take over the government
 			 *  by sending an invalid ipc call
 			 */
-			_threads.message_all(Ipc_message(), _governor);
+			_threads.message_first_waiting(Ipc_message(), _governor);
 
 			return;
 		}
@@ -176,8 +178,7 @@ Ipc_manager::_wait_for_calls()
 bool
 Ipc_manager::get_call(Native_thread_id thread_id)
 {
-//	if(cmpxchg(&_governor, GOV_FREE, GOV_TAKEN)) {
-	if(cmpxchg(&_governor, GOV_FREE, thread_id)) {
+	if(cmpxchg((int*)&_governor, GOV_FREE, thread_id)) {
 		PDBG("new governor is thread with id %lu",
 		     thread_id); //Spartan::thread_get_id());
 		_wait_for_calls();

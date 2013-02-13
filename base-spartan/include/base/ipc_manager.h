@@ -30,8 +30,8 @@ namespace Genode {
 			Native_utcb* exists_global_threadid(Native_thread_id thread_id);
 			int          exists_utcbpt(Thread_utcb* utcb);
 
-			void         message_all(Ipc_message msg,
-			                         Native_thread_id thread_id=0);
+			void         message_first_waiting(Ipc_message msg,
+			                                   Native_thread_id thread_id);
 			void         del(Thread_utcb* utcb);
 	};
 
@@ -44,15 +44,14 @@ namespace Genode {
 	{
 		enum {
 			/* governot states */
-			GOV_FREE,
-			GOV_TAKEN,
+			GOV_FREE = 0,
 
 			/* maximum number of threads to serve */
 			MAX_THREAD_COUNT = 16,
 		};
 
 		private:
-			int                             _governor;
+			addr_t                          _governor;
 
 			Thread_buffer<MAX_THREAD_COUNT> _threads;
 			Lock                            _thread_lock;
