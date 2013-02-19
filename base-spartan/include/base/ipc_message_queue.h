@@ -51,6 +51,8 @@ namespace Genode {
 			Ipc_message get_first_answer_callid(bool blocking,
 			                                    addr_t msgid=0);
 			Ipc_message get_last(void);
+
+			bool        is_waiting();
 	};
 }
 

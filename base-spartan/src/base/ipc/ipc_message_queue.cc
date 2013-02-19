@@ -192,3 +192,10 @@ Ipc_message_queue::insert_new(Ipc_message new_call)
 //	PDBG("%lu: new _item_count=%lu, _sem.cnt()=%lu", new_call.dst_thread_id(), _item_count, _sem.cnt());
 }
 
+bool
+Ipc_message_queue::is_waiting()
+{
+//	PDBG("_sem.cnt() = %i", _sem.cnt());
+	return (_sem.cnt() < 0);
+}
+

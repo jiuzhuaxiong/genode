@@ -89,6 +89,8 @@ Thread_utcb::wait_for_answer(Native_ipc_callid callid)
 bool
 Thread_utcb::is_waiting_for_ipc()
 {
-	return _waiting_for_ipc;
+//	PDBG("is ht queue waiting?: %i", _msg_queue.is_waiting());
+//	return _waiting_for_ipc;
+	return _msg_queue.is_waiting();
 }
 
