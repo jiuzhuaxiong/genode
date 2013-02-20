@@ -154,7 +154,7 @@ __wait(Msgbuf_base* rcv_msg, addr_t rep_callid=0)
 void Ipc_ostream::_send()
 {
 	/* IPC send operation */
-	__send(_dst, _snd_msg, _dst.dst().rcv_thread_id, 
+	__send(_dst, _snd_msg,
 	       Thread_base::myself()->utcb()->thread_id());
 
 	_write_offset = sizeof(addr_t);
@@ -234,11 +234,11 @@ Ipc_client::Ipc_client(Native_capability const &srv, Msgbuf_base *snd_msg,
  ** Ipc_server **
  ****************/
 
-//void Ipc_server::_prepare_next_reply_wait()
-//{
-//	/* now we have a request to reply */
-//	_reply_needed = true;
-//}
+void Ipc_server::_prepare_next_reply_wait()
+{
+	/* now we have a request to reply */
+	_reply_needed = true;
+}
 
 void Ipc_server::_wait()
 {
@@ -250,26 +250,26 @@ void Ipc_server::_wait()
 	                         Ipc_ostream::_dst.dst().snd_phone };
 	Ipc_ostream::_dst = Native_capability( dest, Ipc_ostream::_dst.local_name() );
 
-//_prepare_next_reply_wait();
+//	_prepare_next_reply_wait();
 }
 
 void Ipc_server::_reply()
 {
 	__send(Ipc_ostream::_dst, Ipc_ostream::_snd_msg, 
 	       Thread_base::myself()->utcb()->thread_id(),
-	       _rcv_msg->callid);
+	       Ipc_istream::_rcv_msg->callid);
 
 	_write_offset = sizeof(addr_t);
 }
 
 void Ipc_server::_reply_wait()
 {
-	if (_reply_needed)
+//	if (_reply_needed)
 		_reply();
 
 	_wait();
 
-	_prepare_next_reply_wait();
+//	_prepare_next_reply_wait();
 }
 
 Ipc_server::Ipc_server(Msgbuf_base *snd_msg, Msgbuf_base *rcv_msg)

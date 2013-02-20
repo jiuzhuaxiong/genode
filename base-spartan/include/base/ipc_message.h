@@ -88,6 +88,15 @@ namespace Genode {
 					return 0;
 			}
 
+			bool valid_data_write(addr_t rep_callid)
+			{
+				if(method() == IPC_M_DATA_WRITE)
+					return (rep_callid == 0
+						|| arg5() == rep_callid);
+				else
+					return true;
+			}
+
 
 			/********************
 			 * handling answers *

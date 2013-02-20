@@ -31,8 +31,7 @@ _cmp_imethod(Ipc_message msg, addr_t imethod, addr_t rep_callid)
 	return (!msg.is_answer()
 	        && (msg.method() == imethod
 	         || imethod == 0)
-	        && (msg.arg5() == rep_callid
-	         || rep_callid == 0));
+	        && msg.valid_data_write(rep_callid));
 }
 
 
