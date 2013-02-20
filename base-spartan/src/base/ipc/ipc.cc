@@ -40,6 +40,7 @@ addr_t _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 	                               Thread_base::myself()->utcb()->thread_id());
 }
 
+
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
 	Ipc_message msg = Thread_base::myself()->utcb()->wait_for_call(
@@ -53,45 +54,46 @@ bool _receive_capability(Msgbuf_base *rcv_msg)
 }
 
 
-/*****************
- ** Ipc_ostream **
- *****************/
-
-void Ipc_ostream::_send()
+Native_ipc_callid
+__send(Native_capability dst_cap, Msgbuf_base *snd_msg,
+                         Native_thread_id my_tid, addr_t rep_callid=0)
 {
-	Ipc_message rpl_msg;
-	Native_ipc_callid snd_callid[Msgbuf_base::MAX_CAP_ARGS];
+	Ipc_message       rpl_msg;
+	Native_ipc_callid snd_callid;
+	Native_ipc_callid cap_callid[Msgbuf_base::MAX_CAP_ARGS];
+
 	/* insert number of capabilities to be send into msgbuf */
-	_snd_msg->buf[0] = _snd_msg->cap_count();
 //	PDBG("_snd_msg->buf[0]=%i, _snd_msg->cap_count()=%lu", _snd_msg->buf[0], _snd_msg->cap_count());
+	snd_msg->buf[0] = snd_msg->cap_count();
 	/* perform IPC send operation
 	 *
 	 * Check whether the phone_id is valid and send the message
 	 */
-	snd_callid[0] = Spartan::ipc_data_write(_dst.dst().snd_phone,
-	                                     _snd_msg->buf, _snd_msg->size(),
-	                                     _dst.dst().rcv_thread_id,
-	                                     Thread_base::myself()->utcb()->thread_id());
+	snd_callid = Spartan::ipc_data_write_slow(dst_cap.dst().snd_phone,
+	                                          snd_msg->buf, snd_msg->size(),
+	                                          dst_cap.dst().rcv_thread_id,
+	                                          my_tid, rep_callid);
 
-	rpl_msg = Thread_base::myself()->utcb()->wait_for_answer(snd_callid[0]);
+	rpl_msg = Thread_base::myself()->utcb()->wait_for_answer(snd_callid);
 	if(rpl_msg.answer_code() != EOK) {
 		PERR("ipc error in _send [ErrorCode: %lu]",
 		     rpl_msg.answer_code());
 		throw Genode::Ipc_error();
 	}
+	snd_msg->callid = snd_callid;
 
 	/* After sending the message itself, send all pending 
 	 * capabilities (clone phones) */
-	for(addr_t i=0; i<_snd_msg->cap_count(); i++) {
+	for(addr_t i=0; i<snd_msg->cap_count(); i++) {
 		Native_capability snd_cap;
-		if(!_snd_msg->cap_get_by_order(i, &snd_cap))
+		if(!snd_msg->cap_get_by_order(i, &snd_cap))
 			continue;
-		snd_callid[i] = _send_capability(_dst, snd_cap);
+		cap_callid[i] = _send_capability(dst_cap, snd_cap);
 	}
 	/* now wait for all answers to the sent capabilities */
-	for(addr_t i=0; i<_snd_msg->cap_count(); i++) {
-		rpl_msg = Ipc_manager::singleton()->my_utcb()->wait_for_answer(
-		           snd_callid[i]);
+	for(addr_t i=0; i<snd_msg->cap_count(); i++) {
+		rpl_msg = Thread_base::myself()->utcb()->wait_for_answer(
+		           cap_callid[i]);
 		if(rpl_msg.answer_code() != EOK) {
 			PERR("ipc error while sending capabilities "
 			     "[ErrorCode: %lu]", rpl_msg.answer_code());
@@ -99,9 +101,65 @@ void Ipc_ostream::_send()
 		}
 	}
 
+	return snd_callid;
+}
+
+Native_ipc_callid
+__wait(Msgbuf_base* rcv_msg, addr_t rep_callid=0)
+{
+	Ipc_message      msg;
+	addr_t           size;
+	Native_thread_id rcv_thread_id;
+
+	/*
+	 * Wait for IPC message
+	 */
+	msg = Thread_base::myself()->utcb()->wait_for_call(rep_callid,
+	                                                   IPC_M_DATA_WRITE);
+	if(msg.method() != IPC_M_DATA_WRITE) {
+		/* unknown sender */
+		PDBG("wrong call method (msg.call_method()!=IPC_M_DATA_WRITE)!\n");
+		Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(), -1);
+		return 0;
+	}
+	rcv_msg->callid = msg.callid();
+	size = msg.msg_size();
+
+	/* Retrieve the message */
+	/* TODO compare send message size with my own message size
+	 * -> which policy msgld be implemented?
+	 */
+	Spartan::ipc_data_write_accept(msg.callid(), rcv_msg->buf, size,
+	                               msg.snd_thread_id());
+//	PDBG("Ipc_istream:\twrite finalize returned %i\n", ret);
+
+	/* set dst so it can be used in Ipc_server */
+	rcv_thread_id = msg.snd_thread_id();
+
+	/* extract all retrieved capailities */
+//	PDBG("_rcv_msg->buf[0] = %i\n", _rcv_msg->buf[0]);
+	for(int i=0; i<rcv_msg->buf[0]; i++) {
+		_receive_capability(rcv_msg);
+	}
+
+	return rcv_thread_id;
+}
+
+
+
+/*****************
+ ** Ipc_ostream **
+ *****************/
+
+void Ipc_ostream::_send()
+{
+	/* IPC send operation */
+	__send(_dst, _snd_msg, _dst.dst().rcv_thread_id, 
+	       Thread_base::myself()->utcb()->thread_id());
 
 	_write_offset = sizeof(addr_t);
 }
+
 
 Ipc_ostream::Ipc_ostream(Native_capability dst, Msgbuf_base *snd_msg)
 :
@@ -115,6 +173,7 @@ Ipc_ostream::Ipc_ostream(Native_capability dst, Msgbuf_base *snd_msg)
 }
 
 
+
 /*****************
  ** Ipc_istream **
  *****************/
@@ -122,38 +181,11 @@ Ipc_ostream::Ipc_ostream(Native_capability dst, Msgbuf_base *snd_msg)
 //void Ipc_istream::_wait() { }
 void Ipc_istream::_wait()
 {
-	Ipc_message		msg;
-	addr_t			size;
-
-	/*
-	 * Wait for IPC message
+	/**
+	 * wait for an incomming message
+	 *  and set dst so it can be used in Ipc_server
 	 */
-	msg = Thread_base::myself()->utcb()->wait_for_call(IPC_M_DATA_WRITE);
-	if(msg.method() != IPC_M_DATA_WRITE) {
-		/* unknown sender */
-		PDBG("wrong call method (msg.call_method()!=IPC_M_DATA_WRITE)!\n");
-		Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(), -1);
-		return;
-	}
-	_rcv_msg->callid = msg.callid();
-	size = msg.msg_size();
-
-	/* Retrieve the message */
-	/* TODO compare send message size with my own message size
-	 * -> which policy msgld be implemented?
-	 */
-	Spartan::ipc_data_write_accept(msg.callid(), _rcv_msg->buf, size,
-	                         msg.snd_thread_id());
-//	PDBG("Ipc_istream:\twrite finalize returned %i\n", ret);
-
-	/* set dst so it can be used in Ipc_server */
-	_dst.rcv_thread_id = msg.snd_thread_id();
-
-	/* extract all retrieved capailities */
-//	PDBG("_rcv_msg->buf[0] = %i\n", _rcv_msg->buf[0]);
-	for(int i=0; i<_rcv_msg->buf[0]; i++) {
-		_receive_capability(_rcv_msg);
-	}
+	_dst.rcv_thread_id = __wait(_rcv_msg);;
 
 	/* reset unmarshaller */
 	_read_offset = sizeof(addr_t);
@@ -180,28 +212,12 @@ Ipc_istream::~Ipc_istream() { }
 
 void Ipc_client::_call()
 {
-	Ipc_message       rpl_msg;
-	Native_ipc_callid snd_callid;
-
+	/* send the request */
 	Ipc_ostream::_send();
+	_write_offset = sizeof(addr_t);
 
-	snd_callid = Spartan::ipc_data_read(Ipc_ostream::_dst.dst().snd_phone,
-	                                    Ipc_istream::_rcv_msg->buf,
-	                                    Ipc_istream::_rcv_msg->size(),
-	                                    Ipc_ostream::_dst.dst().rcv_thread_id,
-	                                    Spartan::thread_get_id());
-
-	rpl_msg = Thread_base::myself()->utcb()->wait_for_answer(snd_callid);
-	if(rpl_msg.answer_code() != EOK) {
-		PERR("ipc error in _call [ErrorCode: %lu]",
-		     rpl_msg.answer_code());
-		throw Genode::Ipc_error();
-	}
-
-//	PDBG("_rcv_msg->buf[0] = %i\n", Ipc_istream::_rcv_msg->buf[0]);
-	for(int i=0; i<Ipc_istream::_rcv_msg->buf[0]; i++) {
-		_receive_capability(Ipc_istream::_rcv_msg);
-	}
+	/* wait for the corresponding reply */
+	__wait(Ipc_istream::_rcv_msg, _snd_msg->callid);
 	_read_offset = sizeof(addr_t);
 }
 
@@ -213,21 +229,16 @@ Ipc_client::Ipc_client(Native_capability const &srv, Msgbuf_base *snd_msg,
 { }
 
 
+
 /****************
  ** Ipc_server **
  ****************/
 
-void Ipc_server::_prepare_next_reply_wait()
-{
-	/* now we have a request to reply */
-	_reply_needed = true;
-
-	/* leave space for return value at the beginning of the msgbuf */
-	_write_offset = 2*sizeof(addr_t);
-
-	/* receive buffer offset */
-	_read_offset = sizeof(addr_t);
-}
+//void Ipc_server::_prepare_next_reply_wait()
+//{
+//	/* now we have a request to reply */
+//	_reply_needed = true;
+//}
 
 void Ipc_server::_wait()
 {
@@ -239,55 +250,27 @@ void Ipc_server::_wait()
 	                         Ipc_ostream::_dst.dst().snd_phone };
 	Ipc_ostream::_dst = Native_capability( dest, Ipc_ostream::_dst.local_name() );
 
-	_prepare_next_reply_wait();
+//_prepare_next_reply_wait();
 }
 
 void Ipc_server::_reply()
 {
-	Ipc_message       msg;
-	addr_t            size;
-	Native_ipc_callid snd_callid[Msgbuf_base::MAX_CAP_ARGS];
+	__send(Ipc_ostream::_dst, Ipc_ostream::_snd_msg, 
+	       Thread_base::myself()->utcb()->thread_id(),
+	       _rcv_msg->callid);
 
-	/*
-	 * Wait for IPC message
-	 */
-	msg = Thread_base::myself()->utcb()->wait_for_call(IPC_M_DATA_READ);
-	if(msg.method() != IPC_M_DATA_READ) {
-		/* unknown sender */
-		PDBG("wrong call method (msg.call_method()!=IPC_M_DATA_READ)!\n");
-		Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(), -1);
-		return;
-	}
-	size = msg.msg_size();
-
-	/* Send the message */
-	Spartan::ipc_data_read_accept(msg.callid(), Ipc_ostream::_snd_msg->buf,
-	                              size,
-	                              msg.snd_thread_id());
-	/* TODO
-	 * did it send all content (size == Ipc_ostream::_snd_msg->size()?) */
-
-	/* After sending the message itself, send all pending 
-	 * capabilities (clone phones) */
-	for(addr_t i=0; i<Ipc_ostream::_snd_msg->cap_count(); i++) {
-		Native_capability snd_cap;
-		if(!_snd_msg->cap_get_by_order(i, &snd_cap))
-			continue;
-		snd_callid[i] = _send_capability(Ipc_ostream::_dst, snd_cap);
-	}
-	/* now wait for all answers to the sent capabilities */
-	for(addr_t i=0; i<_snd_msg->cap_count(); i++) {
-		msg = Ipc_manager::singleton()->my_utcb()->wait_for_answer(
-		           snd_callid[i]);
-		if(msg.answer_code() != EOK) {
-			PERR("ipc error while sending capabilities "
-			     "[ErrorCode: %lu]", msg.answer_code());
-			throw Genode::Ipc_error();
-		}
-	}
+	_write_offset = sizeof(addr_t);
 }
 
-void Ipc_server::_reply_wait() { }
+void Ipc_server::_reply_wait()
+{
+	if (_reply_needed)
+		_reply();
+
+	_wait();
+
+	_prepare_next_reply_wait();
+}
 
 Ipc_server::Ipc_server(Msgbuf_base *snd_msg, Msgbuf_base *rcv_msg)
 :

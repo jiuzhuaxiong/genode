@@ -46,14 +46,17 @@ Thread_utcb::insert_msg(Ipc_message msg)
 
 
 Ipc_message
-Thread_utcb::wait_for_call(addr_t imethod)
+Thread_utcb::wait_for_call(addr_t rep_callid, addr_t imethod)
 {
-	Ipc_message call = _msg_queue.get_first_imethod(false, imethod);
+	Ipc_message call = _msg_queue.get_first_imethod(false,
+	                                                rep_callid,
+	                                                imethod);
 
 	while(!call.is_valid()) {
 		Ipc_manager::singleton()->get_call(_thread_id);
 		_waiting_for_ipc = true;
-		call = _msg_queue.get_first_imethod(true, imethod);
+		call = _msg_queue.get_first_imethod(true, rep_callid,
+		                                    imethod);
 		/**
 		 * if the returned call is invalid the
 		 *  government of the ipc_manager of another

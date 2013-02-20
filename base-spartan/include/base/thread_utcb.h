@@ -50,7 +50,8 @@ namespace Genode {
 			Native_thread_id global_thread_id() { return _global_thread_id; }
 
 			void             insert_msg(Ipc_message msg);
-			Ipc_message      wait_for_call(addr_t imethod=0);
+			Ipc_message      wait_for_call(addr_t rep_callid,
+			                               addr_t imethod=0);
 			Ipc_message      wait_for_answer(Native_ipc_callid callid=0);
 
 			bool             is_waiting_for_ipc();

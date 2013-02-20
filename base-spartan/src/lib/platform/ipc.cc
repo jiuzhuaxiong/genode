@@ -235,13 +235,22 @@ int Spartan::ipc_hangup(int phoneid, Native_thread_id dest_threadid,
  * Send & receive buffered data *
  ********************************/
 
-Native_ipc_callid Spartan::ipc_data_write(int snd_phone, const void* data,
+Native_ipc_callid Spartan::ipc_data_write_fast(int snd_phone, const void* data,
                                                   size_t size,
                                                   Native_thread_id dst_threadid,
                                                   Native_thread_id my_threadid)
 {
-	return ipc_call_async_fast(snd_phone, IPC_M_DATA_WRITE, (addr_t)data, size,
-	                           my_threadid, dst_threadid);
+	return ipc_call_async_fast(snd_phone, IPC_M_DATA_WRITE, (addr_t)data, 
+	                           size, my_threadid, dst_threadid);
+}
+Native_ipc_callid Spartan::ipc_data_write_slow(int snd_phone, const void* data,
+                                                  size_t size,
+                                                  Native_thread_id dst_threadid,
+                                                  Native_thread_id my_threadid,
+                                                  addr_t req_callid)
+{
+	return ipc_call_async_slow(snd_phone, IPC_M_DATA_WRITE, (addr_t)data, 
+	                           size, my_threadid, dst_threadid, req_callid);
 }
 
 addr_t Spartan::ipc_data_write_accept(addr_t callid, void* data, size_t size,

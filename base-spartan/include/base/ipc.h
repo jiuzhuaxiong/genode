@@ -1,5 +1,5 @@
- #ifndef _INCLUDE__BASE__IPC_H_
- #define _INCLUDE__BASE__IPC_H_
+#ifndef _INCLUDE__BASE__IPC_H_
+#define _INCLUDE__BASE__IPC_H_
 
 #include <base/ipc_generic.h>
 
@@ -13,8 +13,9 @@ inline void Genode::Ipc_ostream::_marshal_capability(Genode::Native_capability c
 
 	/* only transfer kernel-capability if it's no local capability and valid */
 //	if (!local && id) {
+	/* only transfer the capability if it is valid */
+	if(id)
 		_snd_msg->cap_append(cap);
-//	}
 }
 
 inline void Genode::Ipc_istream::_unmarshal_capability(Genode::Native_capability &cap)

@@ -32,8 +32,9 @@ namespace Genode {
 			Lock        _read_lock, _write_lock;
 
 			void        _remove_from_queue(addr_t pos);
-			Ipc_message _get_first(bool blocking, addr_t cmp_val,
-			                    bool (*cmp_fktn)(Ipc_message, addr_t));
+			Ipc_message _get_first(bool blocking, addr_t rep_callid,
+			                       addr_t cmp_val,
+			                       bool (*cmp_fktn)(Ipc_message, addr_t, addr_t));
 
 
 		public:
@@ -47,6 +48,7 @@ namespace Genode {
 
 			void        insert_new(Ipc_message new_msg);
 			Ipc_message get_first_imethod(bool blocking,
+			                              addr_t rep_callid,
 			                              addr_t imethod=0);
 			Ipc_message get_first_answer_callid(bool blocking,
 			                                    addr_t msgid=0);

@@ -26,17 +26,19 @@ _i_lt_head(int i, int head, int tail)
 
 /* compare an imethod with the imethod of a call */
 bool
-_cmp_imethod(Ipc_message msg, addr_t imethod)
+_cmp_imethod(Ipc_message msg, addr_t imethod, addr_t rep_callid)
 {
 	return (!msg.is_answer()
 	        && (msg.method() == imethod
-	         || imethod == 0));
+	         || imethod == 0)
+	        && (msg.arg5() == rep_callid
+	         || rep_callid == 0));
 }
 
 
 /* check whether a call is an answer to the specified callid */
 bool
-_cmp_answer_callid(Ipc_message msg, Native_ipc_callid callid)
+_cmp_answer_callid(Ipc_message msg, Native_ipc_callid callid, addr_t dummy)
 {
 //	PDBG("is %lu answer to %lu?: %i", msg.callid(), callid, msg.is_answer_to(callid));
 	return (msg.is_answer_to(callid)
@@ -69,8 +71,8 @@ Ipc_message_queue::_remove_from_queue(addr_t pos)
  *  comparison is defined through a function pointer
  */
 Ipc_message
-Ipc_message_queue::_get_first(bool blocking, addr_t cmp_val,
-                           bool (*cmp_fktn)(Ipc_message, addr_t))
+Ipc_message_queue::_get_first(bool blocking, addr_t rep_callid, addr_t cmp_val,
+                           bool (*cmp_fktn)(Ipc_message, addr_t, addr_t))
 {
 	Ipc_message ret_msg;
 	addr_t   pt = 0;
@@ -103,7 +105,7 @@ Ipc_message_queue::_get_first(bool blocking, addr_t cmp_val,
 			PDBG("%lu: AWAKEN", Spartan::thread_get_id());
 
 		/* did we find the requested call? */
-		if(cmp_fktn(_queue[pt], cmp_val)) {
+		if(cmp_fktn(_queue[pt], cmp_val, rep_callid)) {
 //			PDBG("%lu: requested message found at position %lu", Spartan::thread_get_id(), pt);
 			ret_msg = _queue[pt];
 			_remove_from_queue(pt);
@@ -140,9 +142,9 @@ Ipc_message_queue::_get_first(bool blocking, addr_t cmp_val,
 
 /* get the first call with the specified imethod */
 Ipc_message
-Ipc_message_queue::get_first_imethod(bool blocking, addr_t imethod)
+Ipc_message_queue::get_first_imethod(bool blocking, addr_t rep_callid, addr_t imethod)
 {
-	return _get_first(blocking, imethod, &_cmp_imethod);
+	return _get_first(blocking, rep_callid, imethod, &_cmp_imethod);
 }
 
 
@@ -150,7 +152,7 @@ Ipc_message_queue::get_first_imethod(bool blocking, addr_t imethod)
 Ipc_message
 Ipc_message_queue::get_first_answer_callid(bool blocking, Native_ipc_callid callid)
 {
-	return _get_first(blocking, callid, &_cmp_answer_callid);
+	return _get_first(blocking, 0, callid, &_cmp_answer_callid);
 }
 
 

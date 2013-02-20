@@ -175,11 +175,17 @@ namespace Spartan
 	               Genode::Native_thread_id my_threadid);
 
 
-	Genode::Native_ipc_callid ipc_data_write(int snd_phone,
+	Genode::Native_ipc_callid ipc_data_write_fast(int snd_phone,
 	                                         const void* data,
 	                                         size_t size,
 	                                         Genode::Native_thread_id dst_threadid,
 	                                         Genode::Native_thread_id my_threadid);
+	Genode::Native_ipc_callid ipc_data_write_slow(int snd_phone,
+	                                         const void* data,
+	                                         size_t size,
+	                                         Genode::Native_thread_id dst_threadid,
+	                                         Genode::Native_thread_id my_threadid,
+	                                         Genode::addr_t req_callid=0);
 	Genode::addr_t ipc_data_write_accept(Genode::addr_t callid, void* data,
 	                               size_t size,
 	                               Genode::Native_thread_id snd_thread_id);
