@@ -24,6 +24,7 @@ using namespace Genode;
 
 enum {
 	PHONE_CORE = 0,
+	PHONE_TO_MYSELF = 1,
 };
 
 /**********************
@@ -44,7 +45,7 @@ addr_t _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
 	Ipc_message msg = Thread_base::myself()->utcb()->wait_for_call(
-	                  IPC_M_CONNECTION_CLONE);
+	                                                 IPC_M_CONNECTION_CLONE);
 
 	Ipc_destination dest = {msg.target_thread_id(), msg.cloned_phone()};
 	Native_capability  cap = Native_capability(dest, msg.capability_id());
@@ -114,8 +115,8 @@ __wait(Msgbuf_base* rcv_msg, addr_t rep_callid=0)
 	/*
 	 * Wait for IPC message
 	 */
-	msg = Thread_base::myself()->utcb()->wait_for_call(rep_callid,
-	                                                   IPC_M_DATA_WRITE);
+	msg = Thread_base::myself()->utcb()->wait_for_call(IPC_M_DATA_WRITE,
+	                                                   rep_callid);
 	if(msg.method() != IPC_M_DATA_WRITE) {
 		/* unknown sender */
 		PDBG("wrong call method (msg.call_method()!=IPC_M_DATA_WRITE)!\n");
@@ -212,13 +213,31 @@ Ipc_istream::~Ipc_istream() { }
 
 void Ipc_client::_call()
 {
+	Native_ipc_callid snd_callid;
+	Ipc_message       rpl_msg;
+
 	/* send the request */
 	Ipc_ostream::_send();
-	_write_offset = sizeof(addr_t);
+
+	/**
+	 * clone the phone to myself to the server
+	 *  so it can send back the reply
+	 */
+	snd_callid = Spartan::ipc_send_phone(Ipc_ostream::_dst.dst().snd_phone,
+	                               PHONE_TO_MYSELF, 0,
+	                               Thread_base::myself()->utcb()->thread_id(),
+	                               Ipc_ostream::_dst.dst().rcv_thread_id,
+	                               Thread_base::myself()->utcb()->thread_id());
+	rpl_msg = Thread_base::myself()->utcb()->wait_for_answer(snd_callid);
+	if(rpl_msg.answer_code() != EOK) {
+		PERR("ipc error in _send [ErrorCode: %lu]",
+		     rpl_msg.answer_code());
+		throw Genode::Ipc_error();
+	}
 
 	/* wait for the corresponding reply */
 	__wait(Ipc_istream::_rcv_msg, _snd_msg->callid);
-	_read_offset = sizeof(addr_t);
+	Ipc_istream::_read_offset = sizeof(addr_t);
 }
 
 Ipc_client::Ipc_client(Native_capability const &srv, Msgbuf_base *snd_msg,
@@ -242,12 +261,28 @@ void Ipc_server::_prepare_next_reply_wait()
 
 void Ipc_server::_wait()
 {
+	Ipc_message msg;
+
 	/* wait for new server request */
 	Ipc_istream::_wait();
 
+	/**
+	 * wait for a cloned phone to arrive where the
+	 *  reply is send over
+	 */
+	msg = Thread_base::myself()->utcb()->wait_for_call(IPC_M_CONNECTION_CLONE,
+	                                                   0);
+	if(msg.method() != IPC_M_CONNECTION_CLONE) {
+		/* unknown sender */
+		PDBG("wrong call method (msg.call_method()!=IPC_M_DATA_WRITE)!\n");
+		Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(), -1);
+		return;
+	}
+	Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(), 0);
+
 	/* define destination of next reply */
-	Ipc_destination dest = { Ipc_istream::_dst.rcv_thread_id,
-	                         Ipc_ostream::_dst.dst().snd_phone };
+	Ipc_destination dest = { msg.snd_thread_id(),
+	                         msg.cloned_phone() };
 	Ipc_ostream::_dst = Native_capability( dest, Ipc_ostream::_dst.local_name() );
 
 //	_prepare_next_reply_wait();
@@ -255,21 +290,26 @@ void Ipc_server::_wait()
 
 void Ipc_server::_reply()
 {
+	/* send the reply */
 	__send(Ipc_ostream::_dst, Ipc_ostream::_snd_msg, 
 	       Thread_base::myself()->utcb()->thread_id(),
 	       Ipc_istream::_rcv_msg->callid);
+	Ipc_ostream::_write_offset = sizeof(addr_t);
 
-	_write_offset = sizeof(addr_t);
+	/* hangup the phone the reply is sent over */
+	Spartan::ipc_hangup(Ipc_ostream::_dst.dst().snd_phone,
+	                    Ipc_ostream::_dst.dst().rcv_thread_id,
+	                    Thread_base::myself()->utcb()->thread_id());
 }
 
 void Ipc_server::_reply_wait()
 {
-//	if (_reply_needed)
+	if (_reply_needed)
 		_reply();
 
 	_wait();
 
-//	_prepare_next_reply_wait();
+	_prepare_next_reply_wait();
 }
 
 Ipc_server::Ipc_server(Msgbuf_base *snd_msg, Msgbuf_base *rcv_msg)

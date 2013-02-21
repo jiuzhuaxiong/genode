@@ -28,6 +28,7 @@ _i_lt_head(int i, int head, int tail)
 bool
 _cmp_imethod(Ipc_message msg, addr_t imethod, addr_t rep_callid)
 {
+//	PDBG("%lu: imethod=%lu, rep_callid=%lu", Spartan::thread_get_id(), imethod, rep_callid);
 	return (!msg.is_answer()
 	        && (msg.method() == imethod
 	         || imethod == 0)
@@ -84,7 +85,7 @@ Ipc_message_queue::_get_first(bool blocking, addr_t rep_callid, addr_t cmp_val,
 //		PDBG("%lu: looking up new postion. pt=%i, _item_count=%i, do_block=%i", Spartan::thread_get_id(), pt, _item_count, do_block);
 		/* break if the queue request is non-blocking */
 		if((pt >= _item_count) && (!do_block)) {
-			PDBG("%lu: NON-blocking return", Spartan::thread_get_id());
+			PDBG("%lu: NON-blocking return at pt=%lu", Spartan::thread_get_id(), pt);
 			ret_msg = Ipc_message();
 			break;
 		}
@@ -104,6 +105,7 @@ Ipc_message_queue::_get_first(bool blocking, addr_t rep_callid, addr_t cmp_val,
 			PDBG("%lu: AWAKEN", Spartan::thread_get_id());
 
 		/* did we find the requested call? */
+		PDBG("%lu: cmp -> cmp_val=%lu, rep_callid=%lu", Spartan::thread_get_id(), cmp_val, rep_callid);
 		if(cmp_fktn(_queue[pt], cmp_val, rep_callid)) {
 //			PDBG("%lu: requested message found at position %lu", Spartan::thread_get_id(), pt);
 			ret_msg = _queue[pt];
@@ -141,7 +143,7 @@ Ipc_message_queue::_get_first(bool blocking, addr_t rep_callid, addr_t cmp_val,
 
 /* get the first call with the specified imethod */
 Ipc_message
-Ipc_message_queue::get_first_imethod(bool blocking, addr_t rep_callid, addr_t imethod)
+Ipc_message_queue::get_first_imethod(bool blocking, addr_t imethod, addr_t rep_callid)
 {
 	return _get_first(blocking, rep_callid, imethod, &_cmp_imethod);
 }

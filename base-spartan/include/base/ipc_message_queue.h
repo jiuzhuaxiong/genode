@@ -48,8 +48,8 @@ namespace Genode {
 
 			void        insert_new(Ipc_message new_msg);
 			Ipc_message get_first_imethod(bool blocking,
-			                              addr_t rep_callid,
-			                              addr_t imethod=0);
+			                              addr_t imethod=0,
+			                              addr_t rep_callid=0);
 			Ipc_message get_first_answer_callid(bool blocking,
 			                                    addr_t msgid=0);
 			Ipc_message get_last(void);
