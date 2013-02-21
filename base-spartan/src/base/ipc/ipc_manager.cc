@@ -174,13 +174,13 @@ Ipc_manager::get_call(Native_thread_id thread_id)
 	return false;
 }
 
-
+/*
 Native_utcb*
 Ipc_manager::my_utcb()
 {
 	return 0;
 }
-
+*/
 
 void
 Ipc_manager::register_thread(Thread_utcb* utcb)

@@ -66,6 +66,13 @@ __send(Native_capability dst_cap, Msgbuf_base *snd_msg,
 	/* insert number of capabilities to be send into msgbuf */
 //	PDBG("_snd_msg->buf[0]=%i, _snd_msg->cap_count()=%lu", _snd_msg->buf[0], _snd_msg->cap_count());
 	snd_msg->buf[0] = snd_msg->cap_count();
+/*
+	PDBG("NOM");
+	for(int i=0; i<50; i++) {
+		printf("%lu", snd_msg->buf[i]);
+	}
+	printf("\n");
+*/
 	/* perform IPC send operation
 	 *
 	 * Check whether the phone_id is valid and send the message
@@ -142,7 +149,13 @@ __wait(Msgbuf_base* rcv_msg, addr_t rep_callid=0)
 	for(int i=0; i<rcv_msg->buf[0]; i++) {
 		_receive_capability(rcv_msg);
 	}
-
+/*
+	PDBG("NOM");
+	for(int i=0; i<50; i++) {
+		printf("%lu", rcv_msg->buf[i]);
+	}
+	printf("\n");
+*/
 	return rcv_thread_id;
 }
 

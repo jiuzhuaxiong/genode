@@ -1,7 +1,7 @@
-
 /*
- * \brief  IPC implementation for OKL4
+ * \brief  IPC implementation for Spartan
  * \author Norman Feske
+ * \author tobias Börtitz
  * \date   2009-03-25
  */
 
@@ -31,6 +31,8 @@ enum {
  ** helper functions **
  **********************/
 
+extern "C++" Thread_utcb* _obtain_utcb();
+
 addr_t _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 {
 	return Spartan::ipc_send_phone(dest_cap.dst().snd_phone,
@@ -38,13 +40,13 @@ addr_t _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 	                               snd_cap.local_name(),
 	                               snd_cap.dst().rcv_thread_id,
 	                               dest_cap.dst().rcv_thread_id,
-	                               Thread_base::myself()->utcb()->thread_id());
+	                               _obtain_utcb()->thread_id());
 }
 
 
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
-	Ipc_message msg = Thread_base::myself()->utcb()->wait_for_call(
+	Ipc_message msg = _obtain_utcb()->wait_for_call(
 	                                                 IPC_M_CONNECTION_CLONE);
 
 	Ipc_destination dest = {msg.target_thread_id(), msg.cloned_phone()};
@@ -75,7 +77,7 @@ __send(Native_capability dst_cap, Msgbuf_base *snd_msg,
 	                                          dst_cap.dst().rcv_thread_id,
 	                                          my_tid, rep_callid);
 
-	rpl_msg = Thread_base::myself()->utcb()->wait_for_answer(snd_callid);
+	rpl_msg = _obtain_utcb()->wait_for_answer(snd_callid);
 	if(rpl_msg.answer_code() != EOK) {
 		PERR("ipc error in _send [ErrorCode: %lu]",
 		     rpl_msg.answer_code());
@@ -93,7 +95,7 @@ __send(Native_capability dst_cap, Msgbuf_base *snd_msg,
 	}
 	/* now wait for all answers to the sent capabilities */
 	for(addr_t i=0; i<snd_msg->cap_count(); i++) {
-		rpl_msg = Thread_base::myself()->utcb()->wait_for_answer(
+		rpl_msg = _obtain_utcb()->wait_for_answer(
 		           cap_callid[i]);
 		if(rpl_msg.answer_code() != EOK) {
 			PERR("ipc error while sending capabilities "
@@ -115,7 +117,7 @@ __wait(Msgbuf_base* rcv_msg, addr_t rep_callid=0)
 	/*
 	 * Wait for IPC message
 	 */
-	msg = Thread_base::myself()->utcb()->wait_for_call(IPC_M_DATA_WRITE,
+	msg = _obtain_utcb()->wait_for_call(IPC_M_DATA_WRITE,
 	                                                   rep_callid);
 	if(msg.method() != IPC_M_DATA_WRITE) {
 		/* unknown sender */
@@ -156,7 +158,7 @@ void Ipc_ostream::_send()
 {
 	/* IPC send operation */
 	__send(_dst, _snd_msg,
-	       Thread_base::myself()->utcb()->thread_id());
+	       _obtain_utcb()->thread_id());
 
 	_write_offset = sizeof(addr_t);
 }
@@ -225,10 +227,10 @@ void Ipc_client::_call()
 	 */
 	snd_callid = Spartan::ipc_send_phone(Ipc_ostream::_dst.dst().snd_phone,
 	                               PHONE_TO_MYSELF, 0,
-	                               Thread_base::myself()->utcb()->thread_id(),
+	                               _obtain_utcb()->thread_id(),
 	                               Ipc_ostream::_dst.dst().rcv_thread_id,
-	                               Thread_base::myself()->utcb()->thread_id());
-	rpl_msg = Thread_base::myself()->utcb()->wait_for_answer(snd_callid);
+	                               _obtain_utcb()->thread_id());
+	rpl_msg = _obtain_utcb()->wait_for_answer(snd_callid);
 	if(rpl_msg.answer_code() != EOK) {
 		PERR("ipc error in _send [ErrorCode: %lu]",
 		     rpl_msg.answer_code());
@@ -257,6 +259,9 @@ void Ipc_server::_prepare_next_reply_wait()
 {
 	/* now we have a request to reply */
 	_reply_needed = true;
+
+	_write_offset = 2*sizeof(umword_t);
+	_read_offset = sizeof(umword_t);
 }
 
 void Ipc_server::_wait()
@@ -270,7 +275,7 @@ void Ipc_server::_wait()
 	 * wait for a cloned phone to arrive where the
 	 *  reply is send over
 	 */
-	msg = Thread_base::myself()->utcb()->wait_for_call(IPC_M_CONNECTION_CLONE,
+	msg = _obtain_utcb()->wait_for_call(IPC_M_CONNECTION_CLONE,
 	                                                   0);
 	if(msg.method() != IPC_M_CONNECTION_CLONE) {
 		/* unknown sender */
@@ -285,21 +290,23 @@ void Ipc_server::_wait()
 	                         msg.cloned_phone() };
 	Ipc_ostream::_dst = Native_capability( dest, Ipc_ostream::_dst.local_name() );
 
-//	_prepare_next_reply_wait();
+	_prepare_next_reply_wait();
 }
 
 void Ipc_server::_reply()
 {
 	/* send the reply */
 	__send(Ipc_ostream::_dst, Ipc_ostream::_snd_msg, 
-	       Thread_base::myself()->utcb()->thread_id(),
+	       _obtain_utcb()->thread_id(),
 	       Ipc_istream::_rcv_msg->callid);
 	Ipc_ostream::_write_offset = sizeof(addr_t);
 
 	/* hangup the phone the reply is sent over */
 	Spartan::ipc_hangup(Ipc_ostream::_dst.dst().snd_phone,
 	                    Ipc_ostream::_dst.dst().rcv_thread_id,
-	                    Thread_base::myself()->utcb()->thread_id());
+	                    _obtain_utcb()->thread_id());
+
+	_prepare_next_reply_wait();
 }
 
 void Ipc_server::_reply_wait()
