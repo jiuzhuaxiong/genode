@@ -132,13 +132,6 @@ namespace Spartan
 		                       dest_threadid, arg4);
 	}
 
-	inline Genode::addr_t ipc_answer_5(Genode::addr_t callid,
-	                            Genode::addr_t retval, Genode::addr_t arg1,
-	                            Genode::addr_t arg2, Genode::addr_t arg3,
-	                            Genode::addr_t arg4, Genode::addr_t arg5) {
-		return ipc_answer_slow(callid, retval, arg1, arg2, arg3, arg4, arg5);
-	}
-
 	/**
 	 * Request connection
 	 */
@@ -165,8 +158,9 @@ namespace Spartan
 	/**
 	 * Ask for a cloned phone
 	 */
-	int ipc_receive_phone(int snd_phone, Genode::Native_task dst_task_id,
-	                      Genode::Native_thread_id dst_thread_id);
+	Genode::addr_t ipc_receive_phone(int snd_phone, Genode::addr_t cap_id,
+	                                 Genode::Native_thread_id dst_thread_id,
+	                                 Genode::Native_thread_id my_thread_id);
 
 	/**
 	 * Hangup a phone
@@ -180,12 +174,13 @@ namespace Spartan
 	                                         size_t size,
 	                                         Genode::Native_thread_id dst_threadid,
 	                                         Genode::Native_thread_id my_threadid);
-	Genode::addr_t ipc_data_write_accept(Genode::addr_t callid, void* data,
-	                               size_t size,
-	                               Genode::Native_thread_id snd_thread_id);
+	Genode::addr_t ipc_data_write_accept(Genode::addr_t callid, 
+	                                     const void* data,
+	                                     size_t size,
+	                                     Genode::Native_thread_id snd_thread_id);
 
 	Genode::Native_ipc_callid ipc_data_read(int snd_phone,
-	                                        void* data,
+	                                        const void* data,
 	                                        size_t size,
 	                                        Genode::Native_thread_id dst_threadid,
 	                                        Genode::Native_thread_id my_threadid);

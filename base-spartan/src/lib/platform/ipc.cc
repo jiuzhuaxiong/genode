@@ -184,7 +184,8 @@ addr_t Spartan::ipc_answer_slow(addr_t callid, addr_t retval, addr_t arg1,
  * Connection management *
  *************************/
 
-addr_t Spartan::ipc_connect_me_to(int phoneid, Native_thread_id dest_threadid,
+addr_t Spartan::ipc_connect_me_to(int phoneid,
+                                  Native_thread_id dest_threadid,
                                   Native_thread_id my_threadid)
 {
 	return ipc_call_async_fast(phoneid, IPC_M_CONNECT_ME_TO, 0, 0,
@@ -219,6 +220,16 @@ addr_t Spartan::ipc_send_phone(int snd_phone, int clone_phone, addr_t local_name
 }
 
 
+addr_t Spartan::ipc_receive_phone(int snd_phone, addr_t cap_id,
+                                  Native_thread_id dst_thread_id,
+                                  Native_thread_id my_thread_id)
+{
+	return ipc_call_async_fast(snd_phone, IPC_M_CLONE_ESTABLISH,
+	                           0, cap_id, my_thread_id,
+	                           dst_thread_id);
+}
+
+
 
 /****************
  * Hangup phone *
@@ -244,15 +255,16 @@ Native_ipc_callid Spartan::ipc_data_write(int snd_phone, const void* data,
 	                           my_threadid, dst_threadid);
 }
 
-addr_t Spartan::ipc_data_write_accept(addr_t callid, void* data, size_t size,
-                                      Native_thread_id snd_threadid)
+addr_t Spartan::ipc_data_write_accept(addr_t callid, const void* data,
+                                      size_t size,Native_thread_id snd_threadid)
 {
 	return ipc_answer_2(callid, snd_threadid, EOK, (addr_t)data, size);
 }
 
-Native_ipc_callid Spartan::ipc_data_read(int snd_phone, void* data, size_t size,
-                                        Native_thread_id dst_threadid,
-                                        Native_thread_id my_threadid)
+Native_ipc_callid Spartan::ipc_data_read(int snd_phone, const void* data, 
+                                         size_t size,
+                                         Native_thread_id dst_threadid,
+                                         Native_thread_id my_threadid)
 {
 	return ipc_call_async_fast(snd_phone, IPC_M_DATA_READ, (addr_t)data, size,
 	                           my_threadid, dst_threadid);
