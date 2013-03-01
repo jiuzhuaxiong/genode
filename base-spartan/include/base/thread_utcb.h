@@ -34,9 +34,9 @@ namespace Genode {
 					}
 			};
 
-			Thread_counter*  _thread_counter() {
+			addr_t _new_thread_id() {
 				static Thread_counter counter;
-				return &counter;
+				return counter.new_id();
 			}
 
 		public:
