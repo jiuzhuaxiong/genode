@@ -12,7 +12,7 @@ using namespace Genode;
 Thread_utcb::Thread_utcb()
 : _waiting_for_ipc(false)
 {
-	_thread_id = _thread_counter()->new_id();
+	_thread_id = _new_thread_id();
 	_global_thread_id = Spartan::thread_get_id();
 
 	Ipc_manager::singleton()->register_thread(this);
