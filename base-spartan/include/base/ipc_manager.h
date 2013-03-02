@@ -3,7 +3,7 @@
 
 #include <base/native_types.h>
 #include <base/lock.h>
-#include <base/thread.h>
+#include <base/thread_utcb.h>
 
 namespace Genode {
 

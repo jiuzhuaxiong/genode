@@ -46,8 +46,9 @@ addr_t _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
-	Ipc_message msg = _obtain_utcb()->wait_for_call(
-	                  IPC_M_CONNECTION_CLONE);
+	Thread_utcb* my_utcb = _obtain_utcb();
+	Ipc_message msg = my_utcb->msg_queue()->wait_for_call(
+	                  my_utcb->thread_id(), IPC_M_CONNECTION_CLONE);
 
 	Ipc_destination dest = {msg.target_thread_id(), msg.cloned_phone()};
 	Native_capability  cap = Native_capability(dest, msg.capability_id());
@@ -68,6 +69,7 @@ __send_buf(Native_capability dst_cap, Msgbuf_base *snd_msg,
 	Ipc_message       rpl_msg;
 	Native_ipc_callid snd_callid;
 
+	Thread_utcb* my_utcb = _obtain_utcb();
 
 	/* perform IPC send operation
 	 *
@@ -78,7 +80,8 @@ __send_buf(Native_capability dst_cap, Msgbuf_base *snd_msg,
 	                      dst_cap.dst().rcv_thread_id,
 	                      my_tid);
 
-	rpl_msg = _obtain_utcb()->wait_for_answer(snd_callid);
+	rpl_msg = my_utcb->msg_queue()->wait_for_answer(my_utcb->thread_id(),
+	                                                snd_callid);
 	if(rpl_msg.answer_code() != EOK) {
 		PERR("ipc error in _send [ErrorCode: %lu]",
 		     rpl_msg.answer_code());
@@ -96,6 +99,8 @@ __send_caps(Msgbuf_base *snd_msg, Native_capability dst_cap)
 	Native_ipc_callid cap_callid[Msgbuf_base::MAX_CAP_ARGS];
 	Ipc_message       rpl_msg;
 
+	Thread_utcb* my_utcb = _obtain_utcb();
+
 	/* After sending the message itself, send all pending 
 	 * capabilities (clone phones) */
 	for(addr_t i=0; i<snd_msg->cap_count(); i++) {
@@ -106,8 +111,8 @@ __send_caps(Msgbuf_base *snd_msg, Native_capability dst_cap)
 	}
 	/* now wait for all answers to the sent capabilities */
 	for(addr_t i=0; i<snd_msg->cap_count(); i++) {
-		rpl_msg = _obtain_utcb()->wait_for_answer(
-		           cap_callid[i]);
+		rpl_msg = my_utcb->msg_queue()->wait_for_answer(
+		           my_utcb->thread_id(), cap_callid[i]);
 		if(rpl_msg.answer_code() != EOK) {
 			PERR("ipc error while sending capabilities "
 			     "[ErrorCode: %lu]", rpl_msg.answer_code());
@@ -128,10 +133,12 @@ __rec_buf(Msgbuf_base* rcv_msg,
 	addr_t           size;
 	Native_thread_id rcv_thread_id;
 
+	Thread_utcb* my_utcb = _obtain_utcb();
+
 	/*
 	 * Wait for IPC message
 	 */
-	msg = _obtain_utcb()->wait_for_call(imethod);
+	msg = my_utcb->msg_queue()->wait_for_call(my_utcb->thread_id(), imethod);
 
 	if(msg.method() != imethod) {
 		/* unknown sender */
@@ -254,8 +261,9 @@ void Ipc_client::_call()
 		                           Ipc_ostream::_dst.dst().rcv_thread_id,
 		                           _obtain_utcb()->thread_id());
 	for(int i=0; i<Ipc_istream::_rcv_msg->buf[0]; i++) {
-		rpl_msg = _obtain_utcb()->wait_for_answer(
-		           cap_callid[i]);
+		Thread_utcb* my_utcb = _obtain_utcb();
+		rpl_msg = my_utcb->msg_queue()->wait_for_answer(
+		           my_utcb->thread_id(), cap_callid[i]);
 		if(rpl_msg.answer_code() != EOK) {
 			PERR("ipc error while sending capabilities "
 			     "[ErrorCode: %lu]", rpl_msg.answer_code());
@@ -312,8 +320,10 @@ void Ipc_server::_reply()
 
 	/* wait for the question to clone capabilities */
 	for(addr_t i=0; i<Ipc_ostream::_snd_msg->cap_count(); i++) {
-		Ipc_message msg = _obtain_utcb()->wait_for_call(
-		                                  IPC_M_CLONE_ESTABLISH);
+		Thread_utcb* my_utcb = _obtain_utcb();
+		Ipc_message msg = my_utcb->msg_queue()->wait_for_call(
+		                                        my_utcb->thread_id(),
+		                                        IPC_M_CLONE_ESTABLISH);
 
 		Native_capability snd_cap;
 		if(Ipc_ostream::_snd_msg->cap_get_by_order(msg.arg2(), &snd_cap))

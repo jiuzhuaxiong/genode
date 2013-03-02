@@ -68,7 +68,7 @@ void Thread_buffer<QUEUE_SIZE>::message_first_waiting(Ipc_message msg,
 //		PDBG("%lu(%lu): waiting for ipc = %i", _threads[i]->thread_id(), _threads[i], _threads[i]->is_waiting_for_ipc());
 		if(_threads[i]->is_waiting_for_ipc()
 		   && !(_threads[i]->thread_id() == thread_id)) {
-			_threads[i]->insert_msg(msg);
+			_threads[i]->msg_queue()->insert(msg);
 			return;
 		}
 	}
@@ -131,7 +131,7 @@ Ipc_manager::_wait_for_calls()
 
 		/* insert the received call into the threads call queue */
 		try {
-			dest_thread->insert_msg(msg);
+			dest_thread->msg_queue()->insert(msg);
 		} catch (Ipc_message_queue::Overflow) {
 			/* could not insert call */
 			PDBG("Ipc_manager:\trejecting call because of full"

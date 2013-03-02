@@ -3,7 +3,6 @@
 
 /* Genode includes */
 #include <base/native_types.h>
-#include <base/ipc_message.h>
 #include <base/ipc_message_queue.h>
 #include <base/lock.h>
 
@@ -46,12 +45,10 @@ namespace Genode {
 //			  _thread_count(0);
 			~Thread_utcb();
 
-			Native_thread_id thread_id() { return _thread_id; }
-			Native_thread_id global_thread_id() { return _global_thread_id; }
+			Native_thread_id   thread_id() { return _thread_id; }
+			Native_thread_id   global_thread_id() { return _global_thread_id; }
 
-			void             insert_msg(Ipc_message msg);
-			Ipc_message      wait_for_call(addr_t imethod=0);
-			Ipc_message      wait_for_answer(Native_ipc_callid callid=0);
+			Ipc_message_queue* msg_queue() { return &_msg_queue; }
 
 			bool             is_waiting_for_ipc();
 

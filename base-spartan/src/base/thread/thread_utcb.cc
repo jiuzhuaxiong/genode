@@ -31,66 +31,9 @@ Thread_utcb::~Thread_utcb()
 }
 
 
-void
-Thread_utcb::insert_msg(Ipc_message msg)
-{
-	/* if an invalid call is to be inserted (marking to take 
-	 *  the governship of the Ipc_manager) unset _waiting_for_ipc
-	 *  so no more invalid calls will get inserted until the 
-	 *  Ipc_message_queue has been left and initiated again */
-	if(!msg.is_valid())
-		_waiting_for_ipc = false;
-
-	_msg_queue.insert_new(msg);
-}
-
-
-Ipc_message
-Thread_utcb::wait_for_call(addr_t imethod)
-{
-	Ipc_message call = _msg_queue.get_first_imethod(false, imethod);
-
-	while(!call.is_valid()) {
-		Ipc_manager::singleton()->get_call(_thread_id);
-		_waiting_for_ipc = true;
-		call = _msg_queue.get_first_imethod(true, imethod);
-		/**
-		 * if the returned call is invalid the
-		 *  government of the ipc_manager of another
-		 *  thread has ended and should be acquired
-		 *  by someone
-		 */
-	}
-	_waiting_for_ipc = false;
-	return call;
-}
-
-
-Ipc_message
-Thread_utcb::wait_for_answer(Native_ipc_callid callid)
-{
-	Ipc_message answer = _msg_queue.get_first_answer_callid(false, callid);
-
-	while(!answer.is_valid()) {
-		Ipc_manager::singleton()->get_call(_thread_id);
-		_waiting_for_ipc = true;
-		answer = _msg_queue.get_first_answer_callid(true, callid);
-		/**
-		 * if the returned answer is invalid the
-		 *  government of the ipc_manager of another
-		 *  thread has ended and should be acquired
-		 *  by someone
-		 */
-	}
-	_waiting_for_ipc = false;
-	return answer;
-}
-
 bool
 Thread_utcb::is_waiting_for_ipc()
 {
-//	PDBG("is ht queue waiting?: %i", _msg_queue.is_waiting());
-//	return _waiting_for_ipc;
 	return _msg_queue.is_waiting();
 }
 

@@ -49,7 +49,7 @@ bool _register_with_nameserv(Genode::Thread_utcb* my_thread)
 
 	msg_callid = Spartan::ipc_connect_to_me(PHONE_NAMESERV, THREAD_NAMESERV, my_thread->thread_id());
 //	                                                    Spartan::thread_get_id());
-	msg = my_thread->wait_for_answer();
+	msg = my_thread->msg_queue()->wait_for_answer(my_thread->thread_id());
 
 	task_id_nameserv = msg.snd_task_id();
 	phonehash_nameserv = msg.snd_phonehash();
@@ -76,14 +76,14 @@ int _connect_to_myself(Genode::Thread_utcb* my_thread)
 	msg_callid = Spartan::ipc_connect_me_to(PHONE_NAMESERV, mythread,
 	                                        mythread);
 
-	msg = my_thread->wait_for_call(IPC_M_CONNECT_ME_TO);
+	msg = my_thread->msg_queue()->wait_for_call(my_thread->thread_id(), IPC_M_CONNECT_ME_TO);
 	if(msg.dst_thread_id() != mythread)
 		Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(),
 		                      E__IPC_DESTINATION_UNKNOWN);
 
 	Spartan::ipc_answer_1(msg.callid(), msg.snd_thread_id(), EOK,
 	                      IPC_M_PHONE_HANDLE);
-	msg = my_thread->wait_for_answer();
+	msg = my_thread->msg_queue()->wait_for_answer(my_thread->thread_id());
 
 	return msg.cloned_phone();
 }
