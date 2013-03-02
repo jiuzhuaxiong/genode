@@ -46,8 +46,9 @@ addr_t _send_capability(Native_capability dest_cap, Native_capability snd_cap)
 
 bool _receive_capability(Msgbuf_base *rcv_msg)
 {
-	Ipc_message msg = _obtain_utcb()->wait_for_call(
-	                                                 IPC_M_CONNECTION_CLONE);
+	Thread_utcb* my_utcb = _obtain_utcb();
+	Ipc_message msg = my_utcb->msg_queue()->wait_for_call(
+	                  my_utcb->thread_id(), IPC_M_CONNECTION_CLONE);
 
 	Ipc_destination dest = {msg.target_thread_id(), msg.cloned_phone()};
 	Native_capability  cap = Native_capability(dest, msg.capability_id());
@@ -65,8 +66,9 @@ __send(Native_capability dst_cap, Msgbuf_base *snd_msg,
 	Native_ipc_callid snd_callid;
 	Native_ipc_callid cap_callid[Msgbuf_base::MAX_CAP_ARGS];
 
+	Thread_utcb* my_utcb = _obtain_utcb();
+
 	/* insert number of capabilities to be send into msgbuf */
-//	PDBG("_snd_msg->buf[0]=%i, _snd_msg->cap_count()=%lu", _snd_msg->buf[0], _snd_msg->cap_count());
 	snd_msg->buf[0] = snd_msg->cap_count();
 	/* perform IPC send operation
 	 *
@@ -77,7 +79,8 @@ __send(Native_capability dst_cap, Msgbuf_base *snd_msg,
 	                                          dst_cap.dst().rcv_thread_id,
 	                                          my_tid, rep_callid);
 
-	rpl_msg = _obtain_utcb()->wait_for_answer(snd_callid);
+	rpl_msg = my_utcb->msg_queue()->wait_for_answer(my_utcb->thread_id(),
+	                                                snd_callid);
 	if(rpl_msg.answer_code() != EOK) {
 		PERR("ipc error in _send [ErrorCode: %lu]",
 		     rpl_msg.answer_code());
@@ -95,8 +98,8 @@ __send(Native_capability dst_cap, Msgbuf_base *snd_msg,
 	}
 	/* now wait for all answers to the sent capabilities */
 	for(addr_t i=0; i<snd_msg->cap_count(); i++) {
-		rpl_msg = _obtain_utcb()->wait_for_answer(
-		           cap_callid[i]);
+		rpl_msg = my_utcb->msg_queue()->wait_for_answer(
+		           my_utcb->thread_id(), cap_callid[i]);
 		if(rpl_msg.answer_code() != EOK) {
 			PERR("ipc error while sending capabilities "
 			     "[ErrorCode: %lu]", rpl_msg.answer_code());
@@ -114,11 +117,14 @@ __wait(Msgbuf_base* rcv_msg, addr_t rep_callid=0)
 	addr_t           size;
 	Native_thread_id rcv_thread_id;
 
+	Thread_utcb* my_utcb = _obtain_utcb();
+
+	msg = my_utcb->msg_queue()->wait_for_call(my_utcb->thread_id(),
+	                                          IPC_M_DATA_WRITE,
+	                                          rep_callid);
 	/*
 	 * Wait for IPC message
 	 */
-	msg = _obtain_utcb()->wait_for_call(IPC_M_DATA_WRITE,
-	                                                   rep_callid);
 	if(msg.method() != IPC_M_DATA_WRITE) {
 		/* unknown sender */
 		PDBG("wrong call method (msg.call_method()!=IPC_M_DATA_WRITE)!\n");
@@ -140,7 +146,7 @@ __wait(Msgbuf_base* rcv_msg, addr_t rep_callid=0)
 	rcv_thread_id = msg.snd_thread_id();
 
 	/* extract all retrieved capailities */
-//	PDBG("_rcv_msg->buf[0] = %i\n", _rcv_msg->buf[0]);
+	PDBG("_rcv_msg->buf[0] = %i\n", rcv_msg->buf[0]);
 	for(int i=0; i<rcv_msg->buf[0]; i++) {
 		_receive_capability(rcv_msg);
 	}
@@ -218,6 +224,8 @@ void Ipc_client::_call()
 	Native_ipc_callid snd_callid;
 	Ipc_message       rpl_msg;
 
+	Thread_utcb* my_utcb = _obtain_utcb();
+
 	/* send the request */
 	Ipc_ostream::_send();
 
@@ -230,7 +238,8 @@ void Ipc_client::_call()
 	                               _obtain_utcb()->thread_id(),
 	                               Ipc_ostream::_dst.dst().rcv_thread_id,
 	                               _obtain_utcb()->thread_id());
-	rpl_msg = _obtain_utcb()->wait_for_answer(snd_callid);
+	rpl_msg = my_utcb->msg_queue()->wait_for_answer(my_utcb->thread_id(),
+	                                                snd_callid);
 	if(rpl_msg.answer_code() != EOK) {
 		PERR("ipc error in _send [ErrorCode: %lu]",
 		     rpl_msg.answer_code());
@@ -267,6 +276,7 @@ void Ipc_server::_prepare_next_reply_wait()
 void Ipc_server::_wait()
 {
 	Ipc_message msg;
+	Thread_utcb* my_utcb = _obtain_utcb();
 
 	/* wait for new server request */
 	Ipc_istream::_wait();
@@ -275,8 +285,8 @@ void Ipc_server::_wait()
 	 * wait for a cloned phone to arrive where the
 	 *  reply is send over
 	 */
-	msg = _obtain_utcb()->wait_for_call(IPC_M_CONNECTION_CLONE,
-	                                                   0);
+	msg = my_utcb->msg_queue()->wait_for_call(my_utcb->thread_id(),
+	                                          IPC_M_CONNECTION_CLONE, 0);
 	if(msg.method() != IPC_M_CONNECTION_CLONE) {
 		/* unknown sender */
 		PDBG("wrong call method (msg.call_method()!=IPC_M_DATA_WRITE)!\n");

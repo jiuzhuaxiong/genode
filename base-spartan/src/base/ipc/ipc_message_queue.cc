@@ -2,6 +2,7 @@
 #include <base/thread.h>
 
 #include <base/ipc_message_queue.h>
+#include <base/ipc_manager.h>
 
 #include <spartan/syscalls.h>
 
@@ -71,27 +72,25 @@ Ipc_message_queue::_remove_from_queue(addr_t pos)
  *  comparison is defined through a function pointer
  */
 Ipc_message
-Ipc_message_queue::_get_first(bool blocking, addr_t rep_callid, addr_t cmp_val,
-                           bool (*cmp_fktn)(Ipc_message, addr_t, addr_t))
+Ipc_message_queue::_get_first(Native_thread_id thread_id, addr_t rep_callid,
+                              addr_t cmp_val,
+                              bool (*cmp_fktn)(Ipc_message, addr_t, addr_t))
 {
 	Ipc_message ret_msg;
 	addr_t   pt = 0;
-	bool     do_block = blocking;
 
 	/* lock queue for reading */
 	Lock::Guard read_lock(_read_lock);
 
 	while(1) {
 //		PDBG("%lu: looking up new postion. pt=%i, _item_count=%i, do_block=%i", Spartan::thread_get_id(), pt, _item_count, do_block);
-		/* break if the queue request is non-blocking */
-		if((pt >= _item_count) && (!do_block)) {
-			PDBG("%lu: NON-blocking return at pt=%lu", Spartan::thread_get_id(), pt);
-			ret_msg = Ipc_message();
-			break;
-		}
 		/* if the message we are looking for cpuld not be found */
-		if(pt >= _item_count)
-			PDBG("%lu: BLOCKING while pt=%lu & _item_count=%lu", Spartan::thread_get_id(), pt, _item_count);
+		if(pt >= _item_count) {
+			PDBG("%lu: trying to obtain governorship of Ipc_manager", Spartan::thread_get_id());
+			Ipc_manager::singleton()->get_call(thread_id);
+			if(pt >= _item_count)
+				PDBG("%lu: BLOCKING", Spartan::thread_get_id());
+		}
 
 		/**
 		 * decrease _sem and therefor cause the thread to be blocked whenever
@@ -119,8 +118,6 @@ Ipc_message_queue::_get_first(bool blocking, addr_t rep_callid, addr_t cmp_val,
 		 *  the message we are looking for is not in the queue */
 		if(!_queue[pt].is_valid()) {
 			_remove_from_queue(pt);
-			do_block = false;
-//			PDBG("%lu: being requested to take over governship of the ipc_manager", Spartan::thread_get_id());
 		}
 		else
 			pt++;
@@ -143,17 +140,19 @@ Ipc_message_queue::_get_first(bool blocking, addr_t rep_callid, addr_t cmp_val,
 
 /* get the first call with the specified imethod */
 Ipc_message
-Ipc_message_queue::get_first_imethod(bool blocking, addr_t imethod, addr_t rep_callid)
+Ipc_message_queue::wait_for_call(Native_thread_id thread_id,
+                                 addr_t imethod, addr_t rep_callid)
 {
-	return _get_first(blocking, rep_callid, imethod, &_cmp_imethod);
+	return _get_first(thread_id, rep_callid, imethod, &_cmp_imethod);
 }
 
 
 /* get the first reply to the sepcified callid */
 Ipc_message
-Ipc_message_queue::get_first_answer_callid(bool blocking, Native_ipc_callid callid)
+Ipc_message_queue::wait_for_answer(Native_thread_id thread_id,
+                                   Native_ipc_callid callid)
 {
-	return _get_first(blocking, 0, callid, &_cmp_answer_callid);
+	return _get_first(thread_id, 0, callid, &_cmp_answer_callid);
 }
 
 
@@ -179,7 +178,7 @@ Ipc_message_queue::get_last(void)
 
 /* inserts a new call into the queue */
 void
-Ipc_message_queue::insert_new(Ipc_message new_call)
+Ipc_message_queue::insert(Ipc_message new_call)
 {
 //	PDBG("%lu: starting to insert new call by thread %lu. Current _item_count=%lu, _sem.cnt()=%lu",
 //	     new_call.dst_thread_id(), Spartan::thread_get_id(), _item_count, _sem.cnt());
