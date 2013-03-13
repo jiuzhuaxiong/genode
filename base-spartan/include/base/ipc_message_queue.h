@@ -23,6 +23,7 @@ namespace Genode {
 		private:
 			Ipc_message _queue[QUEUE_SIZE];
 			addr_t      _item_count;
+			addr_t      _msg_pt;
 			/* semaphore for counting not visited calls when
 			 *  looking for a specific call
 			 * has to be reset to the number of calls waiting
@@ -44,7 +45,7 @@ namespace Genode {
 			 * Constructor
 			 */
 			Ipc_message_queue()
-			: _item_count(0), _cmp_fktn(0) {}
+			: _item_count(0), _msg_pt(0), _cmp_fktn(0) {}
 
 			bool        insert(Ipc_message new_msg);
 			Ipc_message wait_for_call(Native_thread_id thread_id,
