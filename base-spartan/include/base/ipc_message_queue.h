@@ -31,11 +31,11 @@ namespace Genode {
 			Semaphore   _sem;
 			Lock        _read_lock, _write_lock;
 
-			void        _remove_from_queue(addr_t pos);
-			Ipc_message _get_first(Native_thread_id thread_id,
-			                       addr_t cmp_val,
-			                       bool (*cmp_fktn)(Ipc_message, addr_t));
+			bool        (*_cmp_fktn)(Ipc_message, addr_t);
+			addr_t      _cmp_val;
 
+			void        _remove_from_queue(addr_t pos);
+			Ipc_message _get_first(Native_thread_id thread_id);
 
 		public:
 			class Overflow : public Genode::Exception { };
@@ -44,9 +44,9 @@ namespace Genode {
 			 * Constructor
 			 */
 			Ipc_message_queue()
-			: _item_count(0) {}
+			: _item_count(0), _cmp_fktn(0) {}
 
-			void        insert(Ipc_message new_msg);
+			bool        insert(Ipc_message new_msg);
 			Ipc_message wait_for_call(Native_thread_id thread_id,
 			                          addr_t imethod=0);
 			Ipc_message wait_for_answer(Native_thread_id thread_id,
