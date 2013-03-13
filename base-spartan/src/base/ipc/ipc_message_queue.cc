@@ -72,9 +72,7 @@ Ipc_message_queue::_remove_from_queue(addr_t pos)
  *  comparison is defined through a function pointer
  */
 Ipc_message
-Ipc_message_queue::_get_first(Native_thread_id thread_id, addr_t rep_callid,
-                              addr_t cmp_val,
-                              bool (*cmp_fktn)(Ipc_message, addr_t, addr_t))
+Ipc_message_queue::_get_first(Native_thread_id thread_id)
 {
 	Ipc_message ret_msg;
 	addr_t   pt = 0;
@@ -84,29 +82,22 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id, addr_t rep_callid,
 
 	while(1) {
 //		PDBG("%lu: looking up new postion. pt=%i, _item_count=%i, do_block=%i", Spartan::thread_get_id(), pt, _item_count, do_block);
-		/* if the message we are looking for cpuld not be found */
+		/**
+		 * if the message we are looking for could not be found
+		 *  try to obtain the governorship over the Ipc_manager
+		 * if the governorship could not be obtained, block the 
+		 *   thread to actively wait for incoming messages
+		 */
 		if(pt >= _item_count) {
 			PDBG("%lu: trying to obtain governorship of Ipc_manager", Spartan::thread_get_id());
-			Ipc_manager::singleton()->get_call(thread_id);
-			if(pt >= _item_count)
+			if(!Ipc_manager::singleton()->get_call(thread_id)) {
 				PDBG("%lu: BLOCKING", Spartan::thread_get_id());
+				_sem.down();
+			}
 		}
 
-		/**
-		 * decrease _sem and therefor cause the thread to be blocked whenever
-		 * 1) there is no message in the queue (on fresh entry of this function)
-		 * 2) no unread message are in the queue (else)
-		 * until it es woken up be a call to insert_new() by another thread
-		 */
-		_sem.down();
-
-		if(pt >= _item_count)
-			PDBG("%lu: AWAKEN", Spartan::thread_get_id());
-
-		/* did we find the requested call? */
-		PDBG("%lu: cmp -> cmp_val=%lu, rep_callid=%lu", Spartan::thread_get_id(), cmp_val, rep_callid);
-		if(cmp_fktn(_queue[pt], cmp_val, rep_callid)) {
-//			PDBG("%lu: requested message found at position %lu", Spartan::thread_get_id(), pt);
+		/* do we find the requested message a the current postion? */
+		if(_cmp_fktn(_queue[pt], _cmp_val)) {
 			ret_msg = _queue[pt];
 			_remove_from_queue(pt);
 
@@ -121,15 +112,10 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id, addr_t rep_callid,
 		}
 		else
 			pt++;
-
-//		PDBG("%lu: requested message not found at position %lu", Spartan::thread_get_id(), pt);
 	}
 
-	/* prepare the semaphore for next search by re-increaseing
-	 *  the semaphore so it consists of the exact same
-	 *  count as _sem */
-	for(int i=0; i<pt; i++)
-		_sem.up();
+	while(_sem.cnt() > 0)
+		_sem.down();
 
 	return ret_msg;
 }
@@ -143,7 +129,15 @@ Ipc_message
 Ipc_message_queue::wait_for_call(Native_thread_id thread_id,
                                  addr_t imethod, addr_t rep_callid)
 {
-	return _get_first(thread_id, rep_callid, imethod, &_cmp_imethod);
+	Ipc_message msg;
+
+	_cmp_fktn = &_cmp_imethod;
+	_cmp_val = imethod;
+	msg = _get_first(thread_id);
+	_cmp_fktn = 0;
+	_cmp_val = 0;
+
+	return msg;
 }
 
 
@@ -152,7 +146,15 @@ Ipc_message
 Ipc_message_queue::wait_for_answer(Native_thread_id thread_id,
                                    Native_ipc_callid callid)
 {
-	return _get_first(thread_id, 0, callid, &_cmp_answer_callid);
+	Ipc_message msg;
+
+	_cmp_fktn = &_cmp_answer_callid;
+	_cmp_val = callid;
+	msg = _get_first(thread_id);
+	_cmp_fktn = 0;
+	_cmp_val = 0;
+
+	return msg;
 }
 
 
@@ -177,7 +179,7 @@ Ipc_message_queue::get_last(void)
 
 
 /* inserts a new call into the queue */
-void
+bool
 Ipc_message_queue::insert(Ipc_message new_call)
 {
 //	PDBG("%lu: starting to insert new call by thread %lu. Current _item_count=%lu, _sem.cnt()=%lu",
@@ -189,9 +191,14 @@ Ipc_message_queue::insert(Ipc_message new_call)
 	Lock::Guard write_lock(_write_lock);
 
 	_queue[_item_count++] = new_call;
-	/* increase _sem to wake up the waiting thread */
-	_sem.up();
-//	PDBG("%lu: new _item_count=%lu, _sem.cnt()=%lu", new_call.dst_thread_id(), _item_count, _sem.cnt());
+
+	if(_cmp_fktn
+	   && _cmp_fktn(new_call, _cmp_val)) {
+		_sem.up();
+		return true;
+	}
+
+	return false;
 }
 
 bool

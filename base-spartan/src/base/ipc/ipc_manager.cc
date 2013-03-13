@@ -66,7 +66,7 @@ void Thread_buffer<QUEUE_SIZE>::message_first_waiting(Ipc_message msg,
 	Lock::Guard lock(_thread_lock);
 	for(int i=0; i<_thread_count; i++) {
 //		PDBG("%lu(%lu): waiting for ipc = %i", _threads[i]->thread_id(), _threads[i], _threads[i]->is_waiting_for_ipc());
-		if(_threads[i]->is_waiting_for_ipc()
+		if(_threads[i]->msg_queue()->is_waiting()
 		   && !(_threads[i]->thread_id() == thread_id)) {
 			_threads[i]->msg_queue()->insert(msg);
 			return;
@@ -130,8 +130,9 @@ Ipc_manager::_wait_for_calls()
 		}
 
 		/* insert the received call into the threads call queue */
+		bool insert_success = false;
 		try {
-			dest_thread->msg_queue()->insert(msg);
+			insert_success = dest_thread->msg_queue()->insert(msg);
 		} catch (Ipc_message_queue::Overflow) {
 			/* could not insert call */
 			PDBG("Ipc_manager:\trejecting call because of full"
@@ -141,9 +142,12 @@ Ipc_manager::_wait_for_calls()
 			                      E__IPC_CALL_QUEUE_FULL);
 		}
 
-		/* handle the case the destined thread is the current govenor thread */
-		if(msg.dst_thread_id() == _governor) {
-			PDBG("thread %lu laying down governorship", _governor);
+		/**
+		 * handle the case the destined thread is the current govenor thread
+		 *  and the just inserted message is the one desired by the thread */
+		if(insert_success
+		   && msg.dst_thread_id() == _governor) {
+			PDBG("thread %lu laying down governorship | insert_success=%i", _governor, insert_success);
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
 			/**
@@ -153,6 +157,7 @@ Ipc_manager::_wait_for_calls()
 			 *  by sending an invalid ipc call
 			 */
 			_threads.message_first_waiting(Ipc_message(), _governor);
+			PDBG("ONMON");
 
 			return;
 		}
