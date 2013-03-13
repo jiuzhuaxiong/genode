@@ -29,7 +29,8 @@ _i_lt_head(int i, int head, int tail)
 bool
 _cmp_imethod(Ipc_message msg, addr_t imethod)
 {
-	return (!msg.is_answer()
+	return (msg.is_valid()
+	        && !msg.is_answer()
 	        && (msg.method() == imethod
 	         || imethod == 0));
 }
@@ -40,7 +41,8 @@ bool
 _cmp_answer_callid(Ipc_message msg, Native_ipc_callid callid)
 {
 //	PDBG("is %lu answer to %lu?: %i", msg.callid(), callid, msg.is_answer_to(callid));
-	return (msg.is_answer_to(callid)
+	return (msg.is_valid()
+	        && msg.is_answer_to(callid)
 	        || callid == 0);
 }
 
@@ -73,7 +75,9 @@ Ipc_message
 Ipc_message_queue::_get_first(Native_thread_id thread_id)
 {
 	Ipc_message ret_msg;
-	addr_t   pt = 0;
+
+	addr_t pt = 0;
+	_msg_pt = 0;
 
 	/* lock queue for reading */
 	Lock::Guard read_lock(_read_lock);
@@ -86,12 +90,20 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id)
 		 * if the governorship could not be obtained, block the 
 		 *   thread to actively wait for incoming messages
 		 */
-		if(pt >= _item_count) {
+		if(_msg_pt >= _item_count) {
 			PDBG("%lu: trying to obtain governorship of Ipc_manager", Spartan::thread_get_id());
 			if(!Ipc_manager::singleton()->get_call(thread_id)) {
 				PDBG("%lu: BLOCKING", Spartan::thread_get_id());
 				_sem.down();
 			}
+
+			/**
+			 * if the desired message has been inserted while being the governor
+			 *  of the IPC manager or the thread has been blocked, the desired 
+			 *  message will be located at the position _msg_pt is pointing to
+			 */
+			if(_msg_pt > pt)
+				pt = _msg_pt;
 		}
 
 		/* do we find the requested message a the current postion? */
@@ -105,13 +117,14 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id)
 		/* if there is a message that we should take over governship of the Ipc_manager
 		 *  remove the message from the queue and remember that should not block if
 		 *  the message we are looking for is not in the queue */
-		if(!_queue[pt].is_valid()) {
+		if(!_queue[_msg_pt].is_valid()) {
 			_remove_from_queue(pt);
 		}
 		else
 			pt++;
 	}
 
+	/* reset the semaphore for the next search */
 	while(_sem.cnt() > 0)
 		_sem.down();
 
@@ -129,8 +142,8 @@ Ipc_message_queue::wait_for_call(Native_thread_id thread_id,
 {
 	Ipc_message msg;
 
-	_cmp_fktn = &_cmp_imethod;
 	_cmp_val = imethod;
+	_cmp_fktn = &_cmp_imethod;
 	msg = _get_first(thread_id);
 	_cmp_fktn = 0;
 	_cmp_val = 0;
@@ -146,8 +159,8 @@ Ipc_message_queue::wait_for_answer(Native_thread_id thread_id,
 {
 	Ipc_message msg;
 
-	_cmp_fktn = &_cmp_answer_callid;
 	_cmp_val = callid;
+	_cmp_fktn = &_cmp_answer_callid;
 	msg = _get_first(thread_id);
 	_cmp_fktn = 0;
 	_cmp_val = 0;
@@ -192,6 +205,10 @@ Ipc_message_queue::insert(Ipc_message new_call)
 
 	if(_cmp_fktn
 	   && _cmp_fktn(new_call, _cmp_val)) {
+		/* set the message pointer to the desired message
+		 *  so it will be found instantly */
+		_msg_pt = _item_count - 1;
+		/* signale that the desired message has been inserted */
 		_sem.up();
 		return true;
 	}
