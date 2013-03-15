@@ -43,8 +43,8 @@ _cmp_answer_callid(Ipc_message msg, Native_ipc_callid callid, addr_t dummy)
 {
 //	PDBG("is %lu answer to %lu?: %i", msg.callid(), callid, msg.is_answer_to(callid));
 	return (msg.is_valid()
-	        && msg.is_answer_to(callid)
-	        || callid == 0);
+	        && (msg.is_answer_to(callid)
+	        || callid == 0));
 }
 
 /*********************
