@@ -91,7 +91,7 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id)
 		 * if the governorship could not be obtained, block the 
 		 *   thread to actively wait for incoming messages
 		 */
-		if(_msg_pt >= _item_count) {
+		if(pt >= _item_count) {
 			PDBG("%lu: trying to obtain governorship of Ipc_manager", Spartan::thread_get_id());
 			if(!Ipc_manager::singleton()->get_call(thread_id)) {
 				PDBG("%lu: BLOCKING", Spartan::thread_get_id());
@@ -118,7 +118,7 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id)
 		/* if there is a message that we should take over governship of the Ipc_manager
 		 *  remove the message from the queue and remember that should not block if
 		 *  the message we are looking for is not in the queue */
-		if(!_queue[_msg_pt].is_valid()) {
+		if(!_queue[pt].is_valid()) {
 			_remove_from_queue(pt);
 		}
 		else
