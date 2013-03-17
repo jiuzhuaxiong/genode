@@ -157,7 +157,6 @@ Ipc_manager::_wait_for_calls()
 			 *  by sending an invalid ipc call
 			 */
 			_threads.message_first_waiting(Ipc_message(), _governor);
-			PDBG("ONMON");
 
 			return;
 		}

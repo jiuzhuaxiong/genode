@@ -27,9 +27,10 @@ extern "C" {
 #include <abi/synch.h>
 }
 
+extern "C" int _main();
+
 
 using namespace Spartan;
-
 
 /**************************************
  *  Send requests & wrapper functions *
@@ -275,3 +276,25 @@ addr_t Spartan::ipc_data_read_accept(addr_t callid, const void* data,
 {
 	return ipc_answer_2(callid, snd_threadid, EOK, (addr_t)data, size);
 }
+
+
+/**************************
+ * Share a memory segment *
+ **************************/
+
+Native_ipc_callid Spartan::ipc_share_segment(int snd_phone, const void* data,
+                                             addr_t size, unsigned int flags,
+                                             Native_thread_id dst_threadid,
+                                             Native_thread_id my_threadid)
+{
+	return ipc_call_async_slow(snd_phone, IPC_M_SHARE_OUT, (addr_t)data, 0,
+	                           (addr_t)flags, dst_threadid, my_threadid);
+}
+
+addr_t Spartan::ipc_share_accept(Genode::addr_t callid,
+                                 void **dst,
+                                 Genode::Native_thread_id snd_threadid)
+{
+	return ipc_answer_2(callid, snd_threadid, EOK, (addr_t) _main, (addr_t)dst);
+}
+

@@ -1,6 +1,7 @@
 SRC_CC += syscalls.cc \
           futex.cc \
-	  ipc.cc
+          as.cc \
+          ipc.cc
 
 SPARTAN_SYS_INC += syscall.h \
                    sys/types.h \
@@ -25,4 +26,5 @@ $(BUILD_BASE_DIR)/include/%: $(SPARTAN_LIBC_DIR)/include/%
 
 vpath syscalls.cc $(REP_DIR)/src/lib/platform
 vpath futex.cc $(REP_DIR)/src/lib/platform
+vpath as.cc $(REP_DIR)/src/lib/platform
 vpath ipc.cc $(REP_DIR)/src/lib/platform

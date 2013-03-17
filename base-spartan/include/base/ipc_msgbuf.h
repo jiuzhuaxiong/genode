@@ -15,6 +15,9 @@
 #ifndef _INCLUDE__BASE__IPC_MSGBUF_H_
 #define _INCLUDE__BASE__IPC_MSGBUF_H_
 
+#include <base/printf.h>
+#include <spartan/as.h>
+
 namespace Genode {
 
 	/**
@@ -107,9 +110,16 @@ namespace Genode {
 	{
 		public:
 
-			char buf[BUF_SIZE];
+			char* buf;
 
-			Msgbuf() { _size = BUF_SIZE; }
+			Msgbuf()
+			{
+				buf = (char*)Spartan::as_area_create((void*) -1,
+				                      BUF_SIZE,
+				                      AS_AREA_READ | AS_AREA_WRITE);
+				PDBG("created buf is at %lu", buf);
+				_size = BUF_SIZE;
+			}
 	};
 }
 

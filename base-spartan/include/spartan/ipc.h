@@ -25,6 +25,7 @@ namespace Spartan
 {
 #include <sys/types.h>
 #include <abi/ipc/ipc.h>
+#include <abi/mm/as.h>
 
 	/**
 	 * Fast asynchronous call
@@ -169,6 +170,9 @@ namespace Spartan
 	               Genode::Native_thread_id my_threadid);
 
 
+	/*
+	 * Send and receive buffered data by copying
+	 */
 	Genode::Native_ipc_callid ipc_data_write(int snd_phone,
 	                                         const void* data,
 	                                         size_t size,
@@ -187,6 +191,20 @@ namespace Spartan
 	Genode::addr_t ipc_data_read_accept(Genode::addr_t callid, 
 	                                    const void* data, size_t size,
 	                                    Genode::Native_thread_id snd_thread_id);
+
+	/*
+	 * Share a memroy segment
+	 */
+	Genode::Native_ipc_callid ipc_share_segment(int snd_phone,
+	                                            const void* data,
+	                                            Genode::addr_t size,
+	                                            unsigned int flags,
+	                                            Genode::Native_thread_id dst_threadid,
+	                                            Genode::Native_thread_id my_threadid);
+	Genode::addr_t ipc_share_accept(Genode::addr_t callid,
+	                                void **dst,
+	                                Genode::Native_thread_id snd_thread_id);
+
 }
 
 #endif /* _INCLUDE__SPARTAN__IPC_H_ */

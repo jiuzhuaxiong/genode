@@ -35,6 +35,7 @@ CXX_LINK_OPT    += -static -nostdlib -Wl,-nostdlib
 EXT_OBJECTS     += $(shell $(CUSTOM_CXX_LIB) -print-file-name=libsupc++.a) \
                    $(shell $(CUSTOM_CXX_LIB) -print-file-name=libgcc_eh.a) \
 			$(shell $(CUSTOM_CXX_LIB) -print-libgcc-file-name)
+#QEMU_OPT        += -gdb tcp::5022 -S
 
 #
 # Startup code to be used when building a program

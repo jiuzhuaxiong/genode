@@ -55,7 +55,10 @@ namespace Genode {
 
 			Native_thread_id snd_thread_id()
 			{
-				return arg3();
+				if(method() != IPC_M_SHARE_OUT)
+					return arg3();
+				else
+					return arg5();
 			}
 
 			addr_t snd_phonehash()
