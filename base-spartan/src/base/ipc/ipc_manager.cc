@@ -102,15 +102,15 @@ Ipc_manager::_wait_for_calls()
 		/* wait for incoming calls */
 		n_call = Spartan::ipc_wait_for_call_timeout(0);
 
-		PDBG("Ipc_manager: received incomming call with callid=%lu\n"
-		     "\t\tIMETHOD=%lu, ARG1=%lu, "
-		     "ARG2=%lu, ARG3=%lu(sending thread), "
-		     "ARG4=%lu(destination thread), ARG5=%lu\n"
-		     "\t\tmy own thrad_id is %lu",
-		     n_call.callid, IPC_GET_IMETHOD(n_call), 
-		     IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call), 
-		     IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call), 
-		     IPC_GET_ARG5(n_call), _governor);
+//		PDBG("Ipc_manager: received incomming call with callid=%lu\n"
+//		     "\t\tIMETHOD=%lu, ARG1=%lu, "
+//		     "ARG2=%lu, ARG3=%lu(sending thread), "
+//		     "ARG4=%lu(destination thread), ARG5=%lu\n"
+//		     "\t\tmy own thrad_id is %lu",
+//		     n_call.callid, IPC_GET_IMETHOD(n_call), 
+//		     IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call), 
+//		     IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call), 
+//		     IPC_GET_ARG5(n_call), _governor);
 
 		/* check whether the incomming call is valid. if not, desmiss it */
 		Ipc_message msg = Ipc_message(n_call);
@@ -148,7 +148,7 @@ Ipc_manager::_wait_for_calls()
 		 *  and the just inserted message is the one desired by the thread */
 		if(insert_success
 		   && msg.dst_thread_id() == _governor) {
-			PDBG("thread %lu laying down governorship | insert_success=%i", _governor, insert_success);
+//			PDBG("thread %lu laying down governorship | insert_success=%i", _governor, insert_success);
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
 			/**
@@ -169,8 +169,8 @@ bool
 Ipc_manager::get_call(Native_thread_id thread_id)
 {
 	if(cmpxchg((int*)&_governor, GOV_FREE, thread_id)) {
-		PDBG("new governor is thread with id %lu",
-		     Spartan::thread_get_id());
+//		PDBG("new governor is thread with id %lu",
+//		     Spartan::thread_get_id());
 		_wait_for_calls();
 
 		return true;
