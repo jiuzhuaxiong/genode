@@ -73,7 +73,9 @@ Ipc_message_queue::_remove_from_queue(addr_t pos)
  *  comparison is defined through a function pointer
  */
 Ipc_message
-Ipc_message_queue::_get_first(Native_thread_id thread_id)
+Ipc_message_queue::_get_first(Native_thread_id thread_id,
+                              bool (*cmp_fktn)(Ipc_message, addr_t),
+                              addr_t cmp_val)
 {
 	Ipc_message ret_msg;
 
@@ -93,6 +95,8 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id)
 		 */
 		if(pt >= _item_count) {
 			PDBG("%lu: trying to obtain governorship of Ipc_manager", Spartan::thread_get_id());
+			_cmp_val = cmp_val;
+			_cmp_fktn = cmp_fktn;
 			if(!Ipc_manager::singleton()->get_call(thread_id)) {
 				PDBG("%lu: BLOCKING", Spartan::thread_get_id());
 				_sem.down();
@@ -108,7 +112,7 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id)
 		}
 
 		/* do we find the requested message a the current postion? */
-		if(_cmp_fktn(_queue[pt], _cmp_val)) {
+		if(cmp_fktn(_queue[pt], _cmp_val)) {
 			ret_msg = _queue[pt];
 			_remove_from_queue(pt);
 
@@ -141,15 +145,7 @@ Ipc_message
 Ipc_message_queue::wait_for_call(Native_thread_id thread_id,
                                  addr_t imethod, addr_t rep_callid)
 {
-	Ipc_message msg;
-
-	_cmp_val = imethod;
-	_cmp_fktn = &_cmp_imethod;
-	msg = _get_first(thread_id);
-	_cmp_fktn = 0;
-	_cmp_val = 0;
-
-	return msg;
+	return _get_first(thread_id, &_cmp_imethod, imethod);
 }
 
 
@@ -158,15 +154,8 @@ Ipc_message
 Ipc_message_queue::wait_for_answer(Native_thread_id thread_id,
                                    Native_ipc_callid callid)
 {
-	Ipc_message msg;
 
-	_cmp_val = callid;
-	_cmp_fktn = &_cmp_answer_callid;
-	msg = _get_first(thread_id);
-	_cmp_fktn = 0;
-	_cmp_val = 0;
-
-	return msg;
+	return _get_first(thread_id, &_cmp_answer_callid, callid);
 }
 
 
@@ -209,6 +198,9 @@ Ipc_message_queue::insert(Ipc_message new_call)
 		/* set the message pointer to the desired message
 		 *  so it will be found instantly */
 		_msg_pt = _item_count - 1;
+		/* unset the searching function */
+		_cmp_fktn = 0;
+		_cmp_val = 0;
 		/* signale that the desired message has been inserted */
 		_sem.up();
 		return true;
