@@ -36,7 +36,9 @@ namespace Genode {
 			addr_t      _cmp_val;
 
 			void        _remove_from_queue(addr_t pos);
-			Ipc_message _get_first(Native_thread_id thread_id);
+			Ipc_message _get_first(Native_thread_id thread_id,
+			                       bool (*cmp_fktn)(Ipc_message, addr_t),
+			                       addr_t cmp_val);
 
 		public:
 			class Overflow : public Genode::Exception { };
