@@ -61,7 +61,7 @@ Ipc_message_queue::_remove_from_queue(addr_t pos)
 	/* lock queue for writing */
 	Lock::Guard write_lock(_write_lock);
 	/* reorder queue removing the element in question */
-	PDBG("%lu: removing element %lu with callid %lu from queue", Spartan::thread_get_id(), pos, _queue[pos].callid());
+//	PDBG("%lu: removing element %lu with callid %lu from queue", Spartan::thread_get_id(), pos, _queue[pos].callid());
 	for(; pos<(_item_count-1); pos++)
 		_queue[pos] = _queue[pos+1];
 	/* reduce the _item_count to its new value */
@@ -94,11 +94,11 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id,
 		 *   thread to actively wait for incoming messages
 		 */
 		if(pt >= _item_count) {
-			PDBG("%lu: trying to obtain governorship of Ipc_manager", Spartan::thread_get_id());
+//			PDBG("%lu: trying to obtain governorship of Ipc_manager", Spartan::thread_get_id());
 			_cmp_val = cmp_val;
 			_cmp_fktn = cmp_fktn;
 			if(!Ipc_manager::singleton()->get_call(thread_id)) {
-				PDBG("%lu: BLOCKING", Spartan::thread_get_id());
+//				PDBG("%lu: BLOCKING", Spartan::thread_get_id());
 				_sem.down();
 			}
 
