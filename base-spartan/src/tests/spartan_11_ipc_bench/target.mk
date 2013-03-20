@@ -1,0 +1,4 @@
+TARGET   = ipc_bench
+REQUIRES = spartan
+LIBS     = cxx core_printf ipc_test
+SRC_CC   = main.cc
