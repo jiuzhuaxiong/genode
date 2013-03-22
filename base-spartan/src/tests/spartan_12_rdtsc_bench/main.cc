@@ -45,84 +45,116 @@ inline_rdtsc_amd64() {
 	return (uint64_t)hi << 32 | lo;
 }
 
-inline uint64_t
-inline_diff_rdtsc_amd64() {
-	uint32_t lo_1, lo_2, hi_1, hi_2;
-	uint64_t begin, end;
-	__asm__ volatile (
-		"xorl %%eax,%%eax\n\t"
-		"cpuid\n\t"
-		:
-		:
-		: "%rax", "%rbx", "%rcx", "%rdx"
-	);
-	__asm__ volatile (
-		"rdtsc" : "=a" (lo_1), "=d" (hi_1)
-	);
-	__asm__ volatile (
-		"xorl %%eax,%%eax\n\t"
-		"cpuid\n\t"
-		:
-		:
-		: "%rax", "%rbx", "%rcx", "%rdx"
-	);
-	__asm__ volatile (
-		"rdtsc" : "=a" (lo_2), "=d" (hi_2)
-	);
 
-	begin = (uint64_t)hi_1 << 32 | lo_1;
-	end = (uint64_t)hi_2 << 32 | lo_2;
+uint64_t g_begin, g_end;
 
-	return end-begin;
+uint64_t global_normal_avg_cpuid(uint64_t loops)
+{
+	uint64_t average_base = 0;
+
+	printf("%llu\t",loops);
+	g_begin = 0;
+	g_end = 0;
+	average_base = 0;
+	for(uint64_t i=0; i<loops; i++) {
+		g_begin = rdtsc_amd64();
+		g_end = rdtsc_amd64();
+		average_base += g_end-g_begin;
+	}
+	average_base = average_base/ loops;
+
+	return average_base;
+}
+
+uint64_t global_inline_avg_cpuid(uint64_t loops)
+{
+	uint64_t average_base = 0;
+
+	printf("%llu\t",loops);
+	g_begin = 0;
+	g_end = 0;
+	average_base = 0;
+	for(uint64_t i=0; i<loops; i++) {
+		g_begin = inline_rdtsc_amd64();
+		g_end = inline_rdtsc_amd64();
+		average_base += g_end-g_begin;
+	}
+	average_base = average_base/ loops;
+
+	return average_base;
+}
+
+uint64_t local_normal_avg_cpuid(uint64_t loops)
+{
+	uint64_t average_base, l_begin, l_end;
+
+	printf("%llu\t",loops);
+	l_begin = 0;
+	l_end = 0;
+	average_base = 0;
+	for(uint64_t i=0; i<loops; i++) {
+		l_begin = rdtsc_amd64();
+		l_end = rdtsc_amd64();
+		average_base += l_end-l_begin;
+	}
+	average_base = average_base/ loops;
+
+	return average_base;
 }
 
 
-	uint64_t g_base1, g_base2, g_begin, g_end;
+uint64_t local_inline_avg_cpuid(uint64_t loops)
+{
+	uint64_t average_base, l_begin, l_end;
+
+	printf("%llu\t",loops);
+	l_begin = 0;
+	l_end = 0;
+	average_base = 0;
+	for(uint64_t i=0; i<loops; i++) {
+		l_begin = inline_rdtsc_amd64();
+		l_end = inline_rdtsc_amd64();
+		average_base += l_end-l_begin;
+	}
+	average_base = average_base/ loops;
+
+	return average_base;
+}
+
 
 /**
  * Main program
  */
 int main()
 {
-	uint64_t l_base1, l_base2, l_begin, l_end;
-//	uint64_t l_base[LOOPS];
-	uint64_t average_base = 0;
-
 	/* three warum up passes */
+	printf("warmups: ");
 	for(int i=0; i<10; i++)
-		rdtsc_amd64();
-	/* measure time consumed to execute 1 cpuid */
-	g_begin = rdtsc_amd64();
-	g_end = rdtsc_amd64();
-	g_base1 = g_end-g_begin;
-	g_base2 = diff_rdtsc_amd64();
-	printf("uncached global vars: base1=%llu, base2=%llu\n", g_base1, g_base2);
+		printf("%llu ", inline_rdtsc_amd64());
 
-	g_begin = rdtsc_amd64();
-	g_end = rdtsc_amd64();
-	g_base1 = g_end-g_begin;
-	g_base2 = diff_rdtsc_amd64();
-	printf("cached global vars: base1=%llu, base2=%llu\n", g_base1, g_base2);
+	printf("\n\nUsing global values and normal avg function:\n");
+	printf("loops\tavg baseu\n");
+	for(uint64_t i=1; i<=20000; i=(i*2))
+		printf("%llu\n", global_normal_avg_cpuid(i));
+	printf("done\n\n");
 
-	l_begin = rdtsc_amd64();
-	l_end = rdtsc_amd64();
-	l_base1 = l_end-l_begin;
-	l_base2 = diff_rdtsc_amd64();
-	printf("local vars normal: base1=%llu, base2=%llu\n", l_base1, l_base2);
-	l_begin = inline_rdtsc_amd64();
-	l_end = inline_rdtsc_amd64();
-	l_base1 = l_end-l_begin;
-	l_base2 = inline_diff_rdtsc_amd64();
-	printf("local vars inline: base1=%llu, base2=%llu\n", l_base1, l_base2);
+	printf("Using global values and inline avg function:\n");
+	printf("loops\tavg baseu\n");
+	for(uint64_t i=1; i<=20000; i=(i*2))
+		printf("%llu\n", global_inline_avg_cpuid(i));
+	printf("done\n\n");
 
-	for(int i=0; i<LOOPS; i++) {
-		l_begin = inline_rdtsc_amd64();
-		l_end = inline_rdtsc_amd64();
-		average_base += l_end-l_begin;
-	}
-	average_base = average_base/ LOOPS;
+	printf("Using local values and normal avg function:\n");
+	printf("loops\tavg baseu\n");
+	for(uint64_t i=1; i<=20000; i=(i*2))
+		printf("%llu\n", local_normal_avg_cpuid(i));
+	printf("done\n\n");
 
-	printf("average_base = %llu\n", average_base);
+	printf("Using local values and inline avg function:\n");
+	printf("loops\tavg baseu\n");
+	for(uint64_t i=1; i<=20000; i=(i*2))
+		printf("%llu\n", local_inline_avg_cpuid(i));
+	printf("done\n");
 
 	while(1);
 	return 0;
