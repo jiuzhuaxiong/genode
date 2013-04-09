@@ -19,10 +19,12 @@
 /* local includes */
 #include "../mini_env.h"
 
+#include <spartan/klog.h>
+
 using namespace Genode;
 
 enum {
-	LOOPS = 1000,
+	LOOPS = 5000,
 };
 
 extern "C++" uint64_t rdtsc_amd64();
@@ -53,6 +55,7 @@ uint64_t global_normal_avg_cpuid(uint64_t loops)
 	uint64_t average_base = 0;
 
 	printf("%llu\t",loops);
+	Spartan::klog_printf("%llu\t",loops);
 	g_begin = 0;
 	g_end = 0;
 	average_base = 0;
@@ -71,6 +74,7 @@ uint64_t global_inline_avg_cpuid(uint64_t loops)
 	uint64_t average_base = 0;
 
 	printf("%llu\t",loops);
+	Spartan::klog_printf("%llu\t",loops);
 	g_begin = 0;
 	g_end = 0;
 	average_base = 0;
@@ -89,6 +93,7 @@ uint64_t local_normal_avg_cpuid(uint64_t loops)
 	uint64_t average_base, l_begin, l_end;
 
 	printf("%llu\t",loops);
+	Spartan::klog_printf("%llu\t",loops);
 	l_begin = 0;
 	l_end = 0;
 	average_base = 0;
@@ -108,6 +113,7 @@ uint64_t local_inline_avg_cpuid(uint64_t loops)
 	uint64_t average_base, l_begin, l_end;
 
 	printf("%llu\t",loops);
+	Spartan::klog_printf("%llu\t",loops);
 	l_begin = 0;
 	l_end = 0;
 	average_base = 0;
@@ -133,28 +139,52 @@ int main()
 		printf("%llu ", inline_rdtsc_amd64());
 
 	printf("\n\nUsing global values and normal avg function:\n");
-	printf("loops\tavg baseu\n");
-	for(uint64_t i=1; i<=20000; i=(i*2))
-		printf("%llu\n", global_normal_avg_cpuid(i));
+	Spartan::klog_printf("\n\nUsing global values and normal avg function:\n");
+	printf("loops\tavg base\n");
+	Spartan::klog_printf("loops\tavg base\n");
+	for(uint64_t i=1; i<=20000; i=(i*2)) {
+		uint64_t foo = global_normal_avg_cpuid(i);
+		printf("%llu\n", foo);
+		Spartan::klog_printf("%llu\n", foo);
+	}
 	printf("done\n\n");
+	Spartan::klog_printf("done\n\n");
 
 	printf("Using global values and inline avg function:\n");
-	printf("loops\tavg baseu\n");
-	for(uint64_t i=1; i<=20000; i=(i*2))
-		printf("%llu\n", global_inline_avg_cpuid(i));
+	Spartan::klog_printf("Using global values and inline avg function:\n");
+	printf("loops\tavg base\n");
+	Spartan::klog_printf("loops\tavg base\n");
+	for(uint64_t i=1; i<=20000; i=(i*2)) {
+		uint64_t foo = global_inline_avg_cpuid(i);
+		printf("%llu\n", foo);
+		Spartan::klog_printf("%llu\n", foo);
+	}
 	printf("done\n\n");
+	Spartan::klog_printf("done\n\n");
 
 	printf("Using local values and normal avg function:\n");
-	printf("loops\tavg baseu\n");
-	for(uint64_t i=1; i<=20000; i=(i*2))
-		printf("%llu\n", local_normal_avg_cpuid(i));
+	Spartan::klog_printf("Using local values and normal avg function:\n");
+	printf("loops\tavg base\n");
+	Spartan::klog_printf("loops\tavg base\n");
+	for(uint64_t i=1; i<=20000; i=(i*2)) {
+		uint64_t foo = local_normal_avg_cpuid(i);
+		printf("%llu\n", foo);
+		Spartan::klog_printf("%llu\n", foo);
+	}
 	printf("done\n\n");
+	Spartan::klog_printf("done\n\n");
 
 	printf("Using local values and inline avg function:\n");
-	printf("loops\tavg baseu\n");
-	for(uint64_t i=1; i<=20000; i=(i*2))
-		printf("%llu\n", local_inline_avg_cpuid(i));
+	Spartan::klog_printf("Using local values and inline avg function:\n");
+	printf("loops\tavg base\n");
+	Spartan::klog_printf("loops\tavg base\n");
+	for(uint64_t i=1; i<=20000; i=(i*2)) {
+		uint64_t foo = local_inline_avg_cpuid(i);
+		printf("%llu\n", foo);
+		Spartan::klog_printf("%llu\n", foo);
+	}
 	printf("done\n");
+	Spartan::klog_printf("done\n\n");
 
 	while(1);
 	return 0;
