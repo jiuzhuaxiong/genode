@@ -1,7 +1,9 @@
 SRC_CC += syscalls.cc \
           futex.cc \
           as.cc \
-          ipc.cc
+          ipc.cc \
+          klog.cc
+>>>>>>> 623d4fb... Adds klog syscalls printing stuff onto SPARTAN's kernel console
 
 SPARTAN_SYS_INC += syscall.h \
                    sys/types.h \
@@ -28,3 +30,4 @@ vpath syscalls.cc $(REP_DIR)/src/lib/platform
 vpath futex.cc $(REP_DIR)/src/lib/platform
 vpath as.cc $(REP_DIR)/src/lib/platform
 vpath ipc.cc $(REP_DIR)/src/lib/platform
+vpath klog.cc $(REP_DIR)/src/lib/platform
