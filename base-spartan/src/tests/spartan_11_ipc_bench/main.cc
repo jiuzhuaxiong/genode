@@ -24,6 +24,7 @@
 /* Spartan syscall includes */
 //#include <spartan/syscalls.h>
 #include <spartan/errno.h>
+#include <spartan/klog.h>
 
 /* local includes */
 #include "../mini_env.h"
@@ -36,8 +37,9 @@ static Untyped_capability server_cap;
 enum {
 	PHONE_NAMESERV = 0,
 	THREAD_NAMESERV = 5,
-	LOOPS = 1000,
+	LOOPS = 5000,
 	RDTCS_CYCLES = 520,
+	BUF_SIZE = 256,
 };
 
 inline uint64_t
@@ -116,34 +118,54 @@ int _connect_to_myself(Genode::Thread_utcb* my_thread)
 static void client_thread_entry()
 {
 	Genode::Thread_utcb thread;
-	uint64_t base, begin, end, average=0;
+	uint64_t base, begin, end, average=0, max, max_idx, min, min_idx;
 	uint64_t diff_array[LOOPS];
 //	thread.set_thread_id(Spartan::thread_get_id());
 //	Genode::Ipc_manager::singleton()->register_thread(&thread);
 
-	Msgbuf<256> client_rcvbuf, client_sndbuf;
+	Msgbuf<BUF_SIZE> client_rcvbuf, client_sndbuf;
 	Ipc_client client(server_cap, &client_sndbuf, &client_rcvbuf);
 
 	/* three warum up passes */
-	for(int i=0; i<10; i++)
+	for(int i=0; i<5; i++)
 		rdtsc_amd64();
 
 	for(int i=0; i<LOOPS; i++) {
-		printf("client sends call(11, 12, 13)\n");
+//		printf("client sends call(11, 12, 13)\n");
 		int res, d = 0, e = 0;
 		begin = rdtsc_amd64();
 		res = (client << 11 << 12 << 13 << IPC_CALL >> d >> e).result();
 		end = rdtsc_amd64();
-		printf("client received reply d=%d, e=%d, res=%d\n", d, e, res);
+//		printf("client received reply d=%d, e=%d, res=%d\n", d, e, res);
+		if(d!=14 || e!=15) {
+			printf("WRONG VALUES RETURNED\n");
+			Spartan::klog_printf("WRONG VALUES RETURNED\n");
+		}
 		diff_array[i] = end - begin - RDTCS_CYCLES;
+		if(i==0) {
+			min = diff_array[i];
+			min_idx = i;
+			max = diff_array[i];
+			max_idx = i;
+		} else {
+			if(diff_array[i] < min) {
+				min = diff_array[i];
+				min_idx = i;
+			}
+			if(diff_array[i] > max) {
+				max = diff_array[i];
+				max_idx = i;
+			}
+		}
 	}
 
 	for(int i=0; i<LOOPS; i++) {
-		printf("diff %i = %llu\n", i, diff_array[i]);
+//		printf("diff %i = %llu\n", i, diff_array[i]);
 		average += diff_array[i];
 	}
 	average = average / LOOPS;
-	printf("average = %llu, while RDTCS_CYCLES = %llu\n", average, RDTCS_CYCLES);
+	printf("average = %llu, min = %llu (%llu), max = %llu (%llu), while RDTCS_CYCLES = %llu\n", average, min, min_idx, max, max_idx, RDTCS_CYCLES);
+	Spartan::klog_printf("average = %llu, min = %llu (%llu), max = %llu (%llu), while RDTCS_CYCLES = %llu\n", average, min, min_idx, max, max_idx, RDTCS_CYCLES);
 
 	while(1);
 }
@@ -156,7 +178,7 @@ int main()
 {
 	Genode::Thread_utcb thread;
 
-	Msgbuf<256> server_rcvbuf, server_sndbuf;
+	Msgbuf<BUF_SIZE> server_rcvbuf, server_sndbuf;
 	Ipc_server server(&server_sndbuf, &server_rcvbuf);
 
 	/* make server capability known */
@@ -175,14 +197,14 @@ int main()
 	/* infinite server loop */
 	int a = 0, b = 0, c = 0;
 	for (;;) {
-		printf("server: reply_wait\n");
+//		printf("server: reply_wait\n");
 
 		server >> IPC_REPLY_WAIT >> a >> b >> c;
-		server << a + b + c << a*b*c;
+		server << 14 << 15;
 		server.ret(33);
 
-		printf("server: received a=%d, b=%d, c=%d, sent reply %d, %d, res=33\n",
-		       a, b, c, a + b + c, a*b*c);
+//		printf("server: received a=%d, b=%d, c=%d, sent reply %d, %d, res=33\n",
+//		       a, b, c, a + b + c, a*b*c);
 	}
 	return 0;
 }
