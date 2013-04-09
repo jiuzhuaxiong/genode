@@ -22,8 +22,8 @@
 #include <base/ipc_manager.h>
 
 /* Spartan syscall includes */
-//#include <spartan/syscalls.h>
 #include <spartan/errno.h>
+#include <spartan/klog.h>
 
 /* local includes */
 #include "../mini_env.h"
@@ -104,6 +104,7 @@ static void client_thread_entry()
 	int res, d = 0, e = 0;
 	res = (client << 11 << 12 << 13 << IPC_CALL >> d >> e).result();
 	printf("client received reply d=%d, e=%d, res=%d\n", d, e, res);
+	Spartan::klog_printf("client received d=%d, e=%d, res=%d\n", d, e, res);
 
 	printf("client sends call(14, 15, 16)\n");
 	res = (client << 14 << 15 << 16 << IPC_CALL >> d >> e).result();
