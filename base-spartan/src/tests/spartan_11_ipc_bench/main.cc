@@ -17,9 +17,9 @@
 
 /* Genode includes */
 #include <base/ipc.h>
-#include <base/ipc_msgbuf.h>
-#include <base/ipc_message.h>
-#include <base/ipc_manager.h>
+//#include <base/ipc_msgbuf.h>
+//#include <base/ipc_message.h>
+//#include <base/ipc_manager.h>
 
 /* Spartan syscall includes */
 //#include <spartan/syscalls.h>
@@ -38,8 +38,8 @@ enum {
 	PHONE_NAMESERV = 0,
 	THREAD_NAMESERV = 5,
 	LOOPS = 5000,
-	RDTCS_CYCLES = 520,
-	BUF_SIZE = 256,
+	RDTCS_CYCLES = 245,
+	BUF_SIZE = 16384,
 };
 
 inline uint64_t
@@ -118,7 +118,7 @@ int _connect_to_myself(Genode::Thread_utcb* my_thread)
 static void client_thread_entry()
 {
 	Genode::Thread_utcb thread;
-	uint64_t base, begin, end, average=0, max, max_idx, min, min_idx;
+	uint64_t base, begin, end, average=0, max=0, max_idx, min=0, min_idx;
 	uint64_t diff_array[LOOPS];
 //	thread.set_thread_id(Spartan::thread_get_id());
 //	Genode::Ipc_manager::singleton()->register_thread(&thread);
