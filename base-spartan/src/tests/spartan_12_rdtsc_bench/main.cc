@@ -54,6 +54,11 @@ uint64_t global_normal_avg_cpuid(uint64_t loops)
 {
 	uint64_t average_base = 0;
 
+	/* three warum up passes */
+	printf("warmups: ");
+	for(int i=0; i<10; i++)
+		printf("%llu ", inline_rdtsc_amd64());
+
 	printf("%llu\t",loops);
 	Spartan::klog_printf("%llu\t",loops);
 	g_begin = 0;
@@ -72,6 +77,11 @@ uint64_t global_normal_avg_cpuid(uint64_t loops)
 uint64_t global_inline_avg_cpuid(uint64_t loops)
 {
 	uint64_t average_base = 0;
+
+	/* three warum up passes */
+	printf("warmups: ");
+	for(int i=0; i<10; i++)
+		printf("%llu ", inline_rdtsc_amd64());
 
 	printf("%llu\t",loops);
 	Spartan::klog_printf("%llu\t",loops);
@@ -92,6 +102,11 @@ uint64_t local_normal_avg_cpuid(uint64_t loops)
 {
 	uint64_t average_base, l_begin, l_end;
 
+	/* three warum up passes */
+	printf("warmups: ");
+	for(int i=0; i<10; i++)
+		printf("%llu ", inline_rdtsc_amd64());
+
 	printf("%llu\t",loops);
 	Spartan::klog_printf("%llu\t",loops);
 	l_begin = 0;
@@ -111,6 +126,11 @@ uint64_t local_normal_avg_cpuid(uint64_t loops)
 uint64_t local_inline_avg_cpuid(uint64_t loops)
 {
 	uint64_t average_base, l_begin, l_end;
+
+	/* three warum up passes */
+	printf("warmups: ");
+	for(int i=0; i<10; i++)
+		printf("%llu ", inline_rdtsc_amd64());
 
 	printf("%llu\t",loops);
 	Spartan::klog_printf("%llu\t",loops);
@@ -133,12 +153,8 @@ uint64_t local_inline_avg_cpuid(uint64_t loops)
  */
 int main()
 {
-	/* three warum up passes */
-	printf("warmups: ");
-	for(int i=0; i<10; i++)
-		printf("%llu ", inline_rdtsc_amd64());
-
-	printf("\n\nUsing global values and normal avg function:\n");
+/*
+	printf("Using global values and normal avg function:\n");
 	Spartan::klog_printf("\n\nUsing global values and normal avg function:\n");
 	printf("loops\tavg base\n");
 	Spartan::klog_printf("loops\tavg base\n");
@@ -173,7 +189,7 @@ int main()
 	}
 	printf("done\n\n");
 	Spartan::klog_printf("done\n\n");
-
+*/
 	printf("Using local values and inline avg function:\n");
 	Spartan::klog_printf("Using local values and inline avg function:\n");
 	printf("loops\tavg base\n");
