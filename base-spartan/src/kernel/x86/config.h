@@ -66,6 +66,12 @@
 /* Kernel symbol information */
 #define CONFIG_SYMTAB
 
+/* Detailed kernel logging */
+#define CONFIG_LOG
+
+/* Kernel function tracing */
+#define CONFIG_TRACE
+
 /* Compile kernel tests */
 #define CONFIG_TEST
 

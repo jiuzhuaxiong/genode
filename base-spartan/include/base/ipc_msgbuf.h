@@ -31,6 +31,8 @@ namespace Genode {
 			};
 
 			Native_ipc_callid callid;
+			void*         as_area;
+			addr_t        as_size;
 
 		protected:
 
@@ -49,11 +51,12 @@ namespace Genode {
 			}
 
 		public:
-			explicit Msgbuf_base() : _cap_count(0) { }
+			explicit Msgbuf_base() : as_area(0), _cap_count(0) { }
 			/*
 			 * Begin of actual message buffer
 			 */
 			char buf[];
+//			char* buf;
 
 			/**
 			 * Return size of message buffer
@@ -110,14 +113,14 @@ namespace Genode {
 	{
 		public:
 
-			char* buf;
+			char buf[BUF_SIZE];
 
 			Msgbuf()
 			{
-				buf = (char*)Spartan::as_area_create((void*) -1,
-				                      BUF_SIZE,
-				                      AS_AREA_READ | AS_AREA_WRITE);
-				PDBG("created buf is at %lu", buf);
+//				buf = (char*)Spartan::as_area_create((void*) -1,
+//				                      BUF_SIZE,
+//				                      AS_AREA_READ | AS_AREA_WRITE);
+//PDBG("created buf is at %lu", buf);
 				_size = BUF_SIZE;
 			}
 	};

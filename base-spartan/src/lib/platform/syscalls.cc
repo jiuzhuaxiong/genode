@@ -109,5 +109,17 @@ Native_thread Spartan::thread_create(void *ip, void *sp, addr_t stack_size,
 
 	return rc? rc : tid;
 }
+/*
+size_t klog_write(const void *buf, size_t size)
+{
+	ssize_t ret = (ssize_t) __SYSCALL3(SYS_KLOG, 1, (sysarg_t) buf, size);
+
+	if (ret >= 0)
+		return (size_t) ret;
+
+	return 0;
+}
+*/
+
 
 

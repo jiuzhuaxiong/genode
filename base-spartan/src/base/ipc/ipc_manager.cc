@@ -142,6 +142,7 @@ Ipc_manager::_wait_for_calls()
 			                      E__IPC_CALL_QUEUE_FULL);
 		}
 
+		PDBG("insert_success=%i, _governor=%lu", insert_success, _governor);
 		/**
 		 * handle the case the destined thread is the current govenor thread
 		 *  and the just inserted message is the one desired by the thread */

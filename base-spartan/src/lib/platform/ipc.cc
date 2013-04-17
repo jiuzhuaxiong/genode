@@ -72,8 +72,13 @@ Native_ipc_callid Spartan::ipc_call_async_slow(int phoneid, addr_t imethod,
 Native_ipc_call Spartan::ipc_wait_cycle(addr_t usec, unsigned int flags)
 {
 	Native_ipc_call call;
+	addr_t ret;
 
 	call.callid = __SYSCALL3(SYS_IPC_WAIT, (addr_t) &call, usec, flags);
+//	ret = __SYSCALL3(SYS_IPC_WAIT, (addr_t) &call, usec, flags);
+	PDBG("&call=%lu, arg0=%lu, arg1=%lu, arg2=%lu", &call, call.args[0], call.args[1], call.args[2]);
+//	call.callid = ret;
+
 /* DEBUG
 	Genode::printf("Spartan::ipc_wait_cycle:\treceived: callid=%lu, "
 	               "in_task_id=%lu, in_phonehash=%lu\t IMETHOD=%lu, "
