@@ -74,8 +74,8 @@ Ipc_message_queue::_remove_from_queue(addr_t pos)
  */
 Ipc_message
 Ipc_message_queue::_get_first(Native_thread_id thread_id,
-                              bool (*cmp_fktn)(Ipc_message, addr_t),
-                              addr_t cmp_val)
+                              bool (*cmp_fktn)(Ipc_message, addr_t, addr_t),
+                              addr_t cmp_val, addr_t rep_val)
 {
 	Ipc_message ret_msg;
 
@@ -112,7 +112,7 @@ Ipc_message_queue::_get_first(Native_thread_id thread_id,
 		}
 
 		/* do we find the requested message a the current postion? */
-		if(cmp_fktn(_queue[pt], _cmp_val)) {
+		if(cmp_fktn(_queue[pt], cmp_val, rep_val)) {
 			ret_msg = _queue[pt];
 			_remove_from_queue(pt);
 
@@ -145,7 +145,7 @@ Ipc_message
 Ipc_message_queue::wait_for_call(Native_thread_id thread_id,
                                  addr_t imethod, addr_t rep_callid)
 {
-	return _get_first(thread_id, &_cmp_imethod, imethod);
+	return _get_first(thread_id, &_cmp_imethod, imethod, rep_callid);
 }
 
 
@@ -155,7 +155,7 @@ Ipc_message_queue::wait_for_answer(Native_thread_id thread_id,
                                    Native_ipc_callid callid)
 {
 
-	return _get_first(thread_id, &_cmp_answer_callid, callid);
+	return _get_first(thread_id, &_cmp_answer_callid, callid, 0);
 }
 
 
@@ -194,7 +194,7 @@ Ipc_message_queue::insert(Ipc_message new_call)
 	_queue[_item_count++] = new_call;
 
 	if(_cmp_fktn
-	   && _cmp_fktn(new_call, _cmp_val)) {
+	   && _cmp_fktn(new_call, _cmp_val, _rep_val)) {
 		/* set the message pointer to the desired message
 		 *  so it will be found instantly */
 		_msg_pt = _item_count - 1;

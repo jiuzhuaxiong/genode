@@ -146,7 +146,7 @@ __wait(Msgbuf_base* rcv_msg, addr_t rep_callid=0)
 	rcv_thread_id = msg.snd_thread_id();
 
 	/* extract all retrieved capailities */
-	PDBG("_rcv_msg->buf[0] = %i\n", rcv_msg->buf[0]);
+//	PDBG("_rcv_msg->buf[0] = %i\n", rcv_msg->buf[0]);
 	for(int i=0; i<rcv_msg->buf[0]; i++) {
 		_receive_capability(rcv_msg);
 	}

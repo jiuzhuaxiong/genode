@@ -22,13 +22,13 @@ void Thread_buffer<QUEUE_SIZE>::add(Thread_utcb* utcb)
 
 	int pos = exists_utcbpt(utcb);
 	Lock::Guard lock(_thread_lock);
-	PDBG("%lu: adding thread %lu(%lu)[%lu], pos=%i", this, utcb->thread_id(),  utcb->global_thread_id(), utcb, pos);
+//	PDBG("%lu: adding thread %lu(%lu)[%lu], pos=%i", this, utcb->thread_id(),  utcb->global_thread_id(), utcb, pos);
 	if(pos < 0) {
 		_threads[_thread_count++] = utcb;
-		PDBG("new _thread_count=%i", _thread_count);
+//		PDBG("new _thread_count=%i", _thread_count);
 	}
-	for(int i=0; i<_thread_count; i++)
-		PDBG("_threads[%i](%lu)->thread_id()=%lu, waiting=%i", i, _threads[i], _threads[i]->thread_id(), _threads[i]->is_waiting_for_ipc());
+//	for(int i=0; i<_thread_count; i++)
+//		PDBG("_threads[%i](%lu)->thread_id()=%lu, waiting=%i", i, _threads[i], _threads[i]->thread_id(), _threads[i]->is_waiting_for_ipc());
 }
 
 
@@ -115,15 +115,15 @@ Ipc_manager::_wait_for_calls()
 		/* wait for incoming calls */
 		n_call = Spartan::ipc_wait_for_call_timeout(0);
 
-		PDBG("Ipc_manager: received incomming call with callid=%lu\n"
-		     "\t\tIMETHOD=%lu, ARG1=%lu, "
-		     "ARG2=%lu, ARG3=%lu(sending thread), "
-		     "ARG4=%lu(destination thread), ARG5=%lu\n"
-		     "\t\tmy own thrad_id is %lu",
-		     n_call.callid, IPC_GET_IMETHOD(n_call), 
-		     IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call), 
-		     IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call), 
-		     IPC_GET_ARG5(n_call), _governor);
+//		PDBG("Ipc_manager: received incomming call with callid=%lu\n"
+//		     "\t\tIMETHOD=%lu, ARG1=%lu, "
+//		     "ARG2=%lu, ARG3=%lu(sending thread), "
+//		     "ARG4=%lu(destination thread), ARG5=%lu\n"
+//		     "\t\tmy own thrad_id is %lu",
+//		     n_call.callid, IPC_GET_IMETHOD(n_call), 
+//		     IPC_GET_ARG1(n_call), IPC_GET_ARG2(n_call), 
+//		     IPC_GET_ARG3(n_call), IPC_GET_ARG4(n_call), 
+//		     IPC_GET_ARG5(n_call), _governor);
 
 		/* check whether the incomming call is valid. if not, desmiss it */
 		Ipc_message msg = Ipc_message(n_call);
@@ -135,8 +135,8 @@ Ipc_manager::_wait_for_calls()
 		Thread_utcb* dest_thread = _threads.exists_threadid(msg.dst_thread_id());
 		if(dest_thread == 0) {
 			/* there is no such thread */
-			PDBG("Ipc_manager:\trejecting call because no such"
-			     " requested thread found\n");
+//			PDBG("Ipc_manager:\trejecting call because no such"
+//			     " requested thread found\n");
 			Spartan::ipc_answer_0(msg.callid(), msg.snd_thread_id(),
 			                      E__IPC_DESTINATION_UNKNOWN);
 			continue;
@@ -147,8 +147,8 @@ Ipc_manager::_wait_for_calls()
 			dest_thread->msg_queue()->insert(msg);
 		} catch (Ipc_message_queue::Overflow) {
 			/* could not insert call */
-			PDBG("Ipc_manager:\trejecting call because of full"
-			     " call queue\n");
+//			PDBG("Ipc_manager:\trejecting call because of full"
+//			     " call queue\n");
 			Spartan::ipc_answer_0(msg.callid(),
 			                      msg.snd_thread_id(),
 			                      E__IPC_CALL_QUEUE_FULL);
@@ -157,7 +157,7 @@ Ipc_manager::_wait_for_calls()
 		/* handle the case the destined thread is the current govenor thread */
 		if(msg.dst_thread_id() == _governor) {
 //		if(msg.dst_thread_id() == my_thread_id) {
-			PDBG("thread %lu laying down governorship", _governor);
+//			PDBG("thread %lu laying down governorship", _governor);
 //			PDBG("thread %lu laying down governorship", my_thread_id);
 			/* mark the govenor as free */
 			_governor = GOV_FREE;
@@ -179,8 +179,8 @@ bool
 Ipc_manager::get_call(Native_thread_id thread_id)
 {
 	if(cmpxchg((int*)&_governor, GOV_FREE, thread_id)) {
-		PDBG("new governor is thread with id %lu",
-		     thread_id); //Spartan::thread_get_id());
+//		PDBG("new governor is thread with id %lu",
+//		     thread_id); //Spartan::thread_get_id());
 		_wait_for_calls();
 
 		return true;
