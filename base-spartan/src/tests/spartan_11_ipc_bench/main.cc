@@ -39,7 +39,7 @@ enum {
 	THREAD_NAMESERV = 5,
 	LOOPS = 5000,
 	RDTCS_CYCLES = 245,
-	BUF_SIZE = 16384,
+	BUF_SIZE = 256,
 };
 
 inline uint64_t

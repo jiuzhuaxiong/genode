@@ -3,7 +3,6 @@ SRC_CC += syscalls.cc \
           as.cc \
           ipc.cc \
           klog.cc
->>>>>>> 623d4fb... Adds klog syscalls printing stuff onto SPARTAN's kernel console
 
 SPARTAN_SYS_INC += syscall.h \
                    sys/types.h \

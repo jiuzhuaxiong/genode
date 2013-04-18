@@ -76,7 +76,6 @@ Native_ipc_call Spartan::ipc_wait_cycle(addr_t usec, unsigned int flags)
 
 	call.callid = __SYSCALL3(SYS_IPC_WAIT, (addr_t) &call, usec, flags);
 //	ret = __SYSCALL3(SYS_IPC_WAIT, (addr_t) &call, usec, flags);
-	PDBG("&call=%lu, arg0=%lu, arg1=%lu, arg2=%lu", &call, call.args[0], call.args[1], call.args[2]);
 //	call.callid = ret;
 
 /* DEBUG
