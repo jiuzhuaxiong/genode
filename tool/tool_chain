@@ -88,8 +88,8 @@ ECHO        = @echo -e
 VERBOSE     = @
 
 AUTOCONF_gcc_4.4.5 = autoconf2.59
-AUTOCONF_gcc_4.6.1 = autoconf2.64
-AUTOCONF_gcc_4.7.2 = autoconf2.64
+AUTOCONF_gcc_4.6.1 = autoconf-2.64
+AUTOCONF_gcc_4.7.2 = autoconf-2.64
 
 AUTOCONF = $(AUTOCONF_gcc_$(GCC_VERSION))
 

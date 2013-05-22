@@ -50,7 +50,7 @@ $(REAL_CONTRIB_DIR)/%:
 # used phony to always update the SVN on 'make prepare'
 # (before updating, we need to revert our custom patches)
 update_contrib_subdirs:
-	$((ECHO) "Updating contrib tree to revision $(BZR_REV)"
+	$(ECHO) "Updating contrib tree to revision $(BZR_REV)"
 	$(VERBOSE)bzr revert $(REAL_CONTRIB_DIR)
 	$(VERBOSE)bzr update -r $(BZR_REV) $(REAL_CONTRIB_DIR)
 
